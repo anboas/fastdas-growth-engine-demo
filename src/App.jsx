@@ -353,38 +353,65 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
         </div>
       </div>
       <div className="if-table-command-band if-toolbar fg-command-band">
-        <span className="fg-counter">{surface.table.count}</span>
-        {surface.filters.map(filter => (
+        <div className="if-table-command-band__leading fg-command-band__leading">
+          <label className="if-search fg-table-search">
+            <Icon name="search" />
+            <input
+              className="if-input"
+              type="search"
+              data-if-table-filter
+              placeholder="Search records, owners, sources..."
+              aria-label="Search current table"
+            />
+          </label>
+          <span className="if-badge fg-counter"><strong data-if-table-status="filtered">{surface.table.rows.length}</strong> visible</span>
+          <span className="if-badge fg-counter"><strong data-if-table-status="selected">0</strong> selected</span>
+        </div>
+        <div className="if-table-command-band__filters fg-command-band__filters">
+          {surface.filters.map(filter => (
+            <button
+              className="if-btn if-btn--secondary if-btn--sm fg-filter"
+              type="button"
+              key={filter}
+              onClick={() => onUtilityAction("Filter staged", `${filter} is now staged for the customer demo view.`, "blue")}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+        <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
-            className="if-btn if-btn--secondary if-btn--sm fg-filter"
+            className="if-btn if-btn--secondary fg-btn"
             type="button"
-            key={filter}
-            onClick={() => onUtilityAction("Filter staged", `${filter} is now staged for the customer demo view.`, "blue")}
+            data-if-table-clear
+            onClick={(event) => {
+              const control = event.currentTarget;
+              import("control-surface-ui").then(({ clearDataTableFilters }) => clearDataTableFilters(control));
+            }}
           >
-            {filter}
+            <Icon name="rotate" />Clear
           </button>
-        ))}
-        <span className="if-toolbar__group fg-command-band__spacer" />
-        <button
-          className="if-btn if-btn--secondary fg-btn"
-          type="button"
-          onClick={() => onUtilityAction("Column layout saved", "Decision-view columns are locked for this walkthrough.", "blue")}
-        >
-          <Icon name="columns" />Columns
-        </button>
-        <button
-          className="if-btn if-btn--primary fg-btn fg-btn--primary"
-          type="button"
-          data-fastdas-action="grid-primary"
-          onClick={() => onPrimaryAction(surface.id)}
-        >
-          <Icon name="arrowUp" />{surface.primaryAction}
-        </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            onClick={() => onUtilityAction("Column layout saved", "Decision-view columns are locked for this walkthrough.", "blue")}
+          >
+            <Icon name="columns" />Columns
+          </button>
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="grid-primary"
+            onClick={() => onPrimaryAction(surface.id)}
+          >
+            <Icon name="arrowUp" />{surface.primaryAction}
+          </button>
+        </div>
       </div>
       <div className="if-table-wrap if-table-scroll fg-table-wrap">
         <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
           <thead>
-            <tr>{columns.map(column => <th key={column}>{column}</th>)}</tr>
+            <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
           </thead>
           <tbody>
             {surface.table.rows.map(row => (
@@ -398,7 +425,21 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
                 >
                   {row.cells.map((cell, index) => (
                     <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
-                      <TableCell value={cell} column={columns[index]} />
+                      {index === 0 ? (
+                        <span className="if-table-actions fg-table-record-cell">
+                          <button
+                            className="if-icon-btn fg-expand-btn"
+                            type="button"
+                            data-if-table-expand
+                            aria-expanded={row.id === selectedRowId}
+                            aria-label={`Toggle ${splitCell(cell).primary}`}
+                            onClick={() => onSelect(row.id)}
+                          >
+                            <Icon name="chevronDown" />
+                          </button>
+                          <TableCell value={cell} column={columns[index]} />
+                        </span>
+                      ) : <TableCell value={cell} column={columns[index]} />}
                     </td>
                   ))}
                 </tr>

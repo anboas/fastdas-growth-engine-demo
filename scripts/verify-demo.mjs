@@ -77,8 +77,12 @@ for (const frameworkClass of [
   "if-panel__subtitle",
   "if-toolbar",
   "if-toolbar__group",
+  "if-table-command-band__leading",
+  "if-table-command-band__filters",
+  "if-table-command-band__actions",
   "if-table-shell",
   "if-table-wrap",
+  "if-table-actions",
   "if-table",
   "if-data-table",
   "if-table-detail",
@@ -109,6 +113,10 @@ assert.equal(app.includes("data-if-operations-current-label"), true, "operations
 assert.equal(app.includes("data-if-operations-reset"), true, "operations panels should expose reset controls");
 assert.equal(app.includes("data-if-balanced-grid"), true, "metric grids should expose balanced-grid behavior hooks");
 assert.equal(app.includes("data-if-table-detail"), true, "expanded rows should expose framework table-detail hooks");
+assert.equal(app.includes("data-if-table-filter"), true, "tables should expose framework search/filter controls");
+assert.equal(app.includes("data-if-table-status"), true, "tables should expose framework status counters");
+assert.equal(app.includes("data-if-table-clear"), true, "tables should expose framework clear controls");
+assert.equal(app.includes("data-if-table-expand"), true, "tables should expose native row expansion controls");
 assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");
 assert.equal(app.includes("data-control-segmented-option"), true, "segmented options should be identified by framework hooks");
 assert.equal(app.includes("fg-root fg-shell"), true, "FastDAS customization should layer on top of the framework shell");

@@ -1002,11 +1002,57 @@ button {
   background: var(--fg-slate-050);
 }
 
+.fg-command-band__leading,
+.fg-command-band__filters,
+.fg-command-band__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fg-command-band__leading {
+  flex: 1 1 340px;
+}
+
+.fg-command-band__filters {
+  flex: 999 1 520px;
+}
+
+.fg-command-band__actions {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
 .fg-counter {
   margin-right: 4px;
   color: #62778b;
   font-size: 11px;
   font-weight: 850;
+}
+
+.fg-table-search {
+  display: inline-flex;
+  width: min(320px, 100%);
+  min-width: 220px;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #c5d2df;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.fg-table-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #24435f;
+  font-size: 12px;
+  outline: 0;
 }
 
 .fg-filter {
@@ -1018,6 +1064,28 @@ button {
   color: #38536d;
   font-size: 11px;
   font-weight: 850;
+}
+
+.fg-table-record-cell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.fg-expand-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #c3d1df;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #37566f;
+}
+
+.fg-expand-btn[aria-expanded="true"] {
+  border-color: #0a7d83;
+  background: #e9f7f8;
+  color: #08737a;
 }
 
 .fg-table-wrap {

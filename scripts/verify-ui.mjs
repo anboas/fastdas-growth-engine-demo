@@ -88,6 +88,7 @@ try {
   await desktop.waitForSelector("[data-fastdas-command-dock]");
   await desktop.waitForSelector("[data-if-operations-workspace]");
   await desktop.waitForSelector('[data-control-segmented="fastdas-operator-mode"]');
+  await desktop.waitForSelector("[data-fg-icon-rendered]");
   await assertNoPageOverflow(desktop, "desktop");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
@@ -108,6 +109,14 @@ try {
   assert.equal(segmentedOptions, 3, "operator mode should use framework segmented-control options");
   const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
   assert.ok(dataTableShells >= 1, "workspace grid should use the framework data-table shell contract");
+  const commandBandAnatomy = await desktop.locator(".if-table-command-band__leading, .if-table-command-band__filters, .if-table-command-band__actions").count();
+  assert.ok(commandBandAnatomy >= 3, "table command band should use framework leading/filter/action anatomy");
+  const tableFilterControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").count();
+  assert.equal(tableFilterControls, 1, "opportunity grid should expose framework table search");
+  const tableStatusCounters = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-status]").count();
+  assert.ok(tableStatusCounters >= 2, "opportunity grid should expose framework status counters");
+  const expandControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-expand]").count();
+  assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
   const tableCellMain = await desktop.locator(".if-table-cell-main .if-table-cell-meta").count();
@@ -116,6 +125,10 @@ try {
   assert.ok(progressBars >= 1, "score cells should use framework progress anatomy");
   const commandCards = await desktop.locator("[data-fastdas-command-card]").count();
   assert.equal(commandCards, 4, "desktop command dock should expose four operator commands");
+  await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").fill("HarborPoint");
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent === "1");
+  await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-clear]").click();
+  await desktop.waitForFunction(() => Number(document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent || "0") > 1);
 
   await desktop.locator('[data-control-segmented="fastdas-operator-mode"] [data-control-segmented-option="Customer Review"]').click();
   await assertAuditContains(desktop, "Operator mode changed", "operator mode selector");
@@ -173,6 +186,7 @@ try {
   await mobile.waitForSelector("[data-fastdas-demo-app]");
   await mobile.waitForSelector("[data-fastdas-command-dock]");
   await mobile.waitForSelector("[data-if-operations-workspace]");
+  await mobile.waitForSelector("[data-fg-icon-rendered]");
   await assertNoPageOverflow(mobile, "mobile");
   const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
