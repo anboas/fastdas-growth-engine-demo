@@ -617,6 +617,34 @@ try {
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
   assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
+  await mobile.locator('[data-fastdas-table-row-id="HarborPoint Garage"]').click();
+  await mobile.waitForSelector('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]');
+  const mobileFocusPanels = await mobile.locator("[data-fastdas-record-focus-panel]").count();
+  assert.equal(mobileFocusPanels, 1, "mobile should render one selected-record focus panel, not a duplicate bottom panel");
+  const inlineFocusText = await mobile.locator('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]').textContent();
+  assert.ok(inlineFocusText.includes("HarborPoint Garage"), "mobile inline focus panel should use the clicked row record");
+  const mobileInlinePlacement = await mobile.evaluate(() => {
+    const selectedRow = document.querySelector('[data-fastdas-table-row-id="HarborPoint Garage"]');
+    const focusRow = document.querySelector('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"]');
+    const nextRow = document.querySelector('[data-fastdas-table-row-id="Arlington Medical Pavilion"]');
+    const selectedBox = selectedRow.getBoundingClientRect();
+    const focusBox = focusRow.getBoundingClientRect();
+    const nextBox = nextRow.getBoundingClientRect();
+    return {
+      selectedBottom: selectedBox.bottom,
+      focusTop: focusBox.top,
+      focusBottom: focusBox.bottom,
+      nextTop: nextBox.top,
+    };
+  });
+  assert.ok(
+    mobileInlinePlacement.focusTop >= mobileInlinePlacement.selectedBottom - 2,
+    "mobile selected focus panel should start directly after the clicked row",
+  );
+  assert.ok(
+    mobileInlinePlacement.focusBottom <= mobileInlinePlacement.nextTop + 2,
+    "mobile selected focus panel should appear before the next table row",
+  );
   await mobileMore.click();
   await mobile.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item", { hasText: "Conversion Board" }).click();
   await mobile.waitForSelector("[data-fastdas-conversion-focus-panel]");

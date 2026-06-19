@@ -1933,6 +1933,16 @@ button.fg-product-header__brand {
   box-shadow: inset 3px 0 0 #0a7d83;
 }
 
+.fg-mobile-focus-row {
+  display: none;
+}
+
+.fg-mobile-focus-row > td {
+  padding: 0;
+  border-bottom-color: #9edce3;
+  background: #f8fcfd;
+}
+
 .fg-command-center-workbench .fg-record-focus__facts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -2888,6 +2898,19 @@ button.fg-product-header__brand {
 
   .fg-command-center-workbench .fg-record-focus {
     margin: 0;
+  }
+
+  .fg-mobile-focus-row {
+    display: table-row;
+  }
+
+  .fg-command-center-workbench .fg-mobile-focus-row .fg-record-focus {
+    position: static;
+    min-height: auto;
+    margin: 0;
+    border-width: 0 0 1px;
+    border-radius: 0;
+    box-shadow: inset 3px 0 0 #0a7d83;
   }
 
   .fg-record-focus__header {

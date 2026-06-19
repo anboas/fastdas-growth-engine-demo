@@ -35,6 +35,20 @@ function signalIdForLabel(label) {
   return String(label || "signal").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+function useMobileWorkbenchLayout() {
+  const [isMobileWorkbench, setIsMobileWorkbench] = useState(() => window.matchMedia("(max-width: 900px)").matches);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const update = () => setIsMobileWorkbench(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  return isMobileWorkbench;
+}
+
 const BASE_EVENTS = [
   {
     id: "evt-golden-load",
@@ -1182,8 +1196,10 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   const columns = surface.table.columns;
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
+  const isMobileWorkbench = useMobileWorkbenchLayout();
   const isCommandCenter = surface.id === "command-center";
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
+  const shouldInlineFocusPanel = isFocusedWorkbench && isMobileWorkbench && !detailsOpen;
   const workbenchConfig = workbenchSurfaceConfig(surface.id);
   const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   const rows = isCommandCenter ? commandCenterRowsForFilter(surface, commandQuickFilterId) : surface.table.rows;
@@ -1285,6 +1301,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                   <tr
                     className={row.id === selectedRowId ? "is-selected" : ""}
                     data-if-table-row
+                    data-fastdas-table-row-id={row.id}
                     data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
                     data-if-table-search={row.cells.join(" ")}
                     tabIndex={0}
@@ -1320,6 +1337,19 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                       </td>
                     ))}
                   </tr>
+                  {shouldInlineFocusPanel && row.id === selectedRowId ? (
+                    <tr className="fg-mobile-focus-row" data-fastdas-mobile-focus-row data-fastdas-mobile-focus-row-id={row.id}>
+                      <td colSpan={columns.length}>
+                        <RecordFocusPanel
+                          surface={surface}
+                          selectedRowId={row.id}
+                          detailsOpen={detailsOpen}
+                          onOpenDetails={onOpenDetails}
+                          onRecordAction={onRecordAction}
+                        />
+                      </td>
+                    </tr>
+                  ) : null}
                   {row.id === selectedRowId && detailOpenRowId === row.id ? (
                     <ExpandedRecord
                       key={`${row.id}-expanded`}
@@ -1334,7 +1364,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             </tbody>
           </table>
         </div>
-        {!detailsOpen ? (
+        {!detailsOpen && !shouldInlineFocusPanel ? (
           <RecordFocusPanel
             surface={surface}
             selectedRowId={selectedRowId}
