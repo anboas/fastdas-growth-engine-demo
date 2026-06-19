@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { sidebarKpis, surfaces, workflowStages } from "./data.js";
 
 function Icon({ name }) {
@@ -176,9 +176,8 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
           </thead>
           <tbody>
             {surface.table.rows.map(row => (
-              <>
+              <Fragment key={row.id}>
                 <tr
-                  key={row.id}
                   className={row.id === selectedRowId ? "is-selected" : ""}
                   onClick={() => onSelect(row.id)}
                 >
@@ -189,11 +188,82 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
                   ))}
                 </tr>
                 {row.id === selectedRowId ? <ExpandedRecord key={`${row.id}-expanded`} surface={surface} /> : null}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+function DataManagement({ management }) {
+  if (!management) return null;
+
+  return (
+    <section className="fg-management" data-fastdas-data-management>
+      <div className="fg-management__control">
+        <div>
+          <div className="fg-eyebrow">Demo Data Control Plane</div>
+          <h2>Synthetic Dataset Operations</h2>
+          <p>Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
+        </div>
+        <div className="fg-management__actions">
+          <button className="fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Generate Variant</button>
+          <button className="fg-btn" type="button"><Icon name="download" />Export Bundle</button>
+          <button className="fg-btn fg-btn--danger" type="button"><Icon name="rotate" />Reset Demo</button>
+        </div>
+      </div>
+
+      <div className="fg-management__control-grid">
+        {management.controls.map(([label, value, body]) => (
+          <article className="fg-management-control-card" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <p>{body}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="fg-management-grid">
+        {management.areas.map(area => (
+          <article className="fg-management-card" key={area.title}>
+            <div className="fg-management-card__top">
+              <div>
+                <h3>{area.title}</h3>
+                <p>{area.body}</p>
+              </div>
+              <Chip tone={toneForValue(area.status)}>{area.status}</Chip>
+            </div>
+            <div className="fg-management-card__meta">
+              <span><strong>{area.count}</strong> Records / gates</span>
+              <span><strong>{area.owner}</strong> Owner</span>
+            </div>
+            <ul>
+              {area.checks.map(check => <li key={check}>{check}</li>)}
+            </ul>
+          </article>
+        ))}
+      </div>
+
+      <section className="fg-scenario-panel" data-fastdas-scenario-packs>
+        <div className="fg-panel__header">
+          <div>
+            <h2>Scenario Packs</h2>
+            <p>Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
+          </div>
+          <Chip tone="blue">4 packs ready</Chip>
+        </div>
+        <div className="fg-scenario-grid">
+          {management.scenarioPacks.map(([title, body, count]) => (
+            <article className="fg-scenario-card" key={title}>
+              <strong>{title}</strong>
+              <p>{body}</p>
+              <Chip tone={toneForValue(count)}>{count}</Chip>
+            </article>
+          ))}
+        </div>
+      </section>
     </section>
   );
 }
@@ -226,6 +296,11 @@ function BottomPanels({ surface }) {
       ["Offshore Work Packets", ["Verify 20 property manager contacts", "Enrich fire alarm partner list", "Clean duplicate building records"]],
       ["MVP Tech Stack", ["OpenClaw or Hermes Agent orchestration", "OpenAI/Azure OpenAI reasoning", "Airtable, HubSpot, Sheets, or PostgreSQL tracker"]],
       ["Exception Rules", ["Source confidence below .65", "Duplicate risk above 10%", "Generated technical language"]],
+    ],
+    "synthetic-data": [
+      ["Data Stewardship", ["Golden seed is versioned", "Scenario packs are customer-safe", "Exports omit private payloads"]],
+      ["Management Actions", ["Generate variant", "Export dataset bundle", "Reset golden demo state"]],
+      ["Quality Gates", ["No real contacts", "No unsupported claims", "Every score has evidence"]],
     ],
     "conversion-board": [
       ["First Offer Performance", ["Radio testing: high fit", "Cellular benchmark: high fit", "Health check: medium fit"]],
@@ -349,6 +424,8 @@ export default function App() {
           </section>
 
           <SourceCards cards={surface.sourceCards} />
+
+          <DataManagement management={surface.management} />
 
           <OpportunityGrid
             surface={surface}

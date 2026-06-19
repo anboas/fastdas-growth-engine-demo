@@ -19,6 +19,7 @@ const SURFACE_IDS = [
   "evidence-review",
   "outreach-queue",
   "agent-operations",
+  "synthetic-data",
   "conversion-board",
 ];
 
@@ -76,7 +77,7 @@ try {
   await assertNoPageOverflow(desktop, "desktop");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
-  assert.equal(surfaceButtons, 7, "desktop nav should expose seven control surfaces");
+  assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
@@ -86,6 +87,14 @@ try {
     const expandedSections = await desktop.locator("[data-fastdas-expanded-record] .fg-expanded__section").count();
     assert.equal(expandedSections, 3, `${surfaceId} should render the three-part expanded detail row`);
   }
+
+  await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-data-management]");
+  const managementCards = await desktop.locator(".fg-management-card").count();
+  assert.equal(managementCards, 6, "synthetic data surface should render six management areas");
+  const scenarioPacks = await desktop.locator("[data-fastdas-scenario-packs] .fg-scenario-card").count();
+  assert.equal(scenarioPacks, 4, "synthetic data surface should render four scenario packs");
+  await assertNoPageOverflow(desktop, "desktop synthetic data");
 
   await desktop.screenshot({ path: `${OUT_DIR}/fastdas-desktop.png`, fullPage: true });
 
@@ -98,9 +107,14 @@ try {
   await assertNoPageOverflow(mobile, "mobile conversion board");
   const mobileMetrics = await mobile.locator("[data-fastdas-metric-grid] .fg-metric").count();
   assert.equal(mobileMetrics, 6, "mobile surface should keep six metric cards visible");
+  await mobile.locator("[data-control-surface-nav] button", { hasText: "Synthetic Data" }).click();
+  await mobile.waitForSelector("[data-fastdas-data-management]");
+  await assertNoPageOverflow(mobile, "mobile synthetic data");
+  const mobileManagementCards = await mobile.locator(".fg-management-card").count();
+  assert.equal(mobileManagementCards, 6, "mobile synthetic data surface should keep six management areas");
   await mobile.screenshot({ path: `${OUT_DIR}/fastdas-mobile.png`, fullPage: true });
 
-  console.log("Verified FastDAS UI desktop/mobile screenshots, seven surfaces, expanded rows, and page overflow.");
+  console.log("Verified FastDAS UI desktop/mobile screenshots, eight surfaces, synthetic data management, expanded rows, and page overflow.");
 } finally {
   await browser.close();
   serverProcess?.kill("SIGTERM");

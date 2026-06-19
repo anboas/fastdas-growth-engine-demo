@@ -867,6 +867,182 @@ button {
   margin-top: 10px;
 }
 
+.fg-management {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fg-management__control,
+.fg-scenario-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-management__control {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+}
+
+.fg-management__control h2 {
+  margin: 0;
+  color: #142f49;
+  font-size: 17px;
+  font-weight: 940;
+}
+
+.fg-management__control p {
+  margin: 4px 0 0;
+  max-width: 820px;
+  color: #53677e;
+  font-size: 12px;
+}
+
+.fg-management__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.fg-management__control-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fg-management-control-card,
+.fg-management-card,
+.fg-scenario-card {
+  min-width: 0;
+  border: 1px solid #d5e1ec;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-management-control-card {
+  padding: 10px;
+}
+
+.fg-management-control-card span {
+  color: #63778d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fg-management-control-card strong {
+  display: block;
+  margin-top: 3px;
+  color: #071d3b;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.fg-management-control-card p,
+.fg-management-card p,
+.fg-scenario-card p {
+  margin: 5px 0 0;
+  color: #62768b;
+  font-size: 11px;
+}
+
+.fg-management-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fg-management-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.fg-management-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fg-management-card h3 {
+  margin: 0;
+  color: #18334e;
+  font-size: 14px;
+  font-weight: 930;
+}
+
+.fg-management-card__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fg-management-card__meta span {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #dbe5ef;
+  border-radius: 6px;
+  background: #f8fbfe;
+  color: #64788d;
+  font-size: 10px;
+}
+
+.fg-management-card__meta strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #18334e;
+  font-size: 13px;
+  font-weight: 920;
+}
+
+.fg-management-card ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fg-management-card li {
+  padding-left: 12px;
+  border-left: 3px solid #a9dce3;
+  color: #3d566d;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.fg-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.fg-scenario-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+}
+
+.fg-scenario-card strong {
+  color: #18334e;
+  font-size: 13px;
+  font-weight: 920;
+}
+
 .fg-bottom-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -896,6 +1072,15 @@ button {
   }
 
   .fg-source-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fg-management__control-grid,
+  .fg-scenario-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fg-management-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -987,6 +1172,14 @@ button {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .fg-management__control {
+    flex-direction: column;
+  }
+
+  .fg-management__actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1014,6 +1207,17 @@ button {
   .fg-command-band .fg-btn,
   .fg-filter {
     flex: 1 1 150px;
+  }
+
+  .fg-management__control-grid,
+  .fg-management-grid,
+  .fg-scenario-grid,
+  .fg-management-card__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-management__actions .fg-btn {
+    width: 100%;
   }
 
   .fg-footer {

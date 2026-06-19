@@ -84,6 +84,71 @@ export const opportunityRecords = [
   },
 ];
 
+export const syntheticDataManagement = {
+  controls: [
+    ["Active seed", "FD-GE-DEMO-0619", "Locks every table, score, source note, and outreach state for repeatable walkthroughs."],
+    ["Scenario mode", "Balanced pipeline", "Mixes closeout, complaint, health-check, partner, and portfolio signals."],
+    ["Dataset version", "2026.06.19-a", "Customer-safe synthetic records with no private source payloads."],
+    ["Reset target", "Golden demo state", "Restores the management console, queues, selected rows, and inline evidence examples."],
+  ],
+  areas: [
+    {
+      title: "Opportunity Dataset",
+      status: "Managed",
+      owner: "Growth Ops",
+      count: "246 records",
+      body: "Synthetic building, stakeholder, signal, score, and first-offer records used across Command Center, Workbench, and Conversion Board.",
+      checks: ["Score distribution locked", "No real contact data", "Inline detail records complete"],
+    },
+    {
+      title: "Source Registry Dataset",
+      status: "Source-safe",
+      owner: "Agent Ops",
+      count: "64 sources",
+      body: "Synthetic permit portals, review feeds, partner ecosystem feeds, parser exceptions, and source confidence history.",
+      checks: ["Source links abstracted", "Trust scores explainable", "Parser states demonstrable"],
+    },
+    {
+      title: "Outreach Queue Dataset",
+      status: "Human-gated",
+      owner: "Adam",
+      count: "43 tasks",
+      body: "Draft messages, approval states, cadence timers, opt-out handling, reply triage, and meeting brief examples.",
+      checks: ["No auto-send path", "Approval reasons visible", "Cadence states balanced"],
+    },
+    {
+      title: "Agent Run Dataset",
+      status: "Replayable",
+      owner: "Automation",
+      count: "8 workflows",
+      body: "Synthetic scheduled runs, exceptions, offshore packets, model confidence, run cost, and handoff boundaries.",
+      checks: ["Failure cases included", "Offshore packets populated", "Cost examples bounded"],
+    },
+    {
+      title: "Learning Dataset",
+      status: "Experiment-ready",
+      owner: "Conversion",
+      count: "12 learnings",
+      body: "First-offer performance, segment learning, conversion path hypotheses, and next experiment backlog.",
+      checks: ["Assessment wedge visible", "Follow-on path represented", "Learning loop closed"],
+    },
+    {
+      title: "Demo Safety Rules",
+      status: "Required",
+      owner: "Operator",
+      count: "9 gates",
+      body: "Quality gates that keep synthetic data credible, source-safe, technically safe, and customer-demo safe.",
+      checks: ["No private facts", "No unverified technical claims", "Every score has evidence"],
+    },
+  ],
+  scenarioPacks: [
+    ["Closeout Sprint", "Prioritizes permits, inspection timing, public-safety radio testing, and project-team stakeholder paths.", "18 urgent signals"],
+    ["Property Portfolio", "Emphasizes owner/property-manager portfolios, multi-site risk screens, and expansion wedges.", "27 mapped assets"],
+    ["Hospitality Coverage", "Surfaces noisy review language, validation holds, benchmark offers, and cautious outreach.", "12 complaint patterns"],
+    ["Maintenance Wedge", "Highlights existing-system health checks, recurring monitoring, and facilities handoffs.", "21 health-check fits"],
+  ],
+};
+
 export const surfaces = [
   {
     id: "command-center",
@@ -351,6 +416,52 @@ export const surfaces = [
         "Hold when technical language is generated or a contact role is not verified.",
       ],
       gates: ["Trigger", "Collect", "Parse", "Normalize", "Score", "Draft", "Human Gate"],
+    },
+  },
+  {
+    id: "synthetic-data",
+    nav: "Synthetic Data",
+    title: "Synthetic Data Management",
+    eyebrow: "Growth Operations / Demo Data Control",
+    summary: "Manage the synthetic records, scenario packs, seed state, data quality gates, and export/reset controls that power the customer demo.",
+    selected: "Opportunity Dataset",
+    primaryAction: "Generate Demo Variant",
+    metrics: [
+      ["Synthetic Records", "485", "Across 6 datasets", "No private customer data", "blue", "database"],
+      ["Scenario Packs", "4", "Balanced pipeline active", "Switchable demo stories", "purple", "layers"],
+      ["Golden Seed", "0619", "Repeatable walkthrough", "Deterministic demo state", "success", "shield"],
+      ["Quality Gates", "9/9", "Passing", "Source-safe + technical-safe", "success", "check"],
+      ["Editable Fields", "38", "Safe demo knobs", "No generated secrets", "neutral", "edit"],
+      ["Reset Time", "<1s", "Browser-local", "Golden state restore", "warning", "refresh"],
+    ],
+    filters: ["Dataset: All", "Scenario: Balanced", "Quality: Passing", "Privacy: Synthetic only", "Reset scope: Golden demo"],
+    management: syntheticDataManagement,
+    table: {
+      count: "6 managed datasets",
+      columns: ["Dataset", "Records", "Owner", "Freshness", "Provenance", "Quality Gate", "Demo Use"],
+      rows: [
+        ["Opportunity Dataset|Buildings, signals, scores, stakeholders", "246", "Growth Ops", "Current", "Synthetic / derived", "Pass", "Command Center + Workbench"],
+        ["Source Registry Dataset|Feeds, parser states, trust history", "64", "Agent Ops", "Current", "Synthetic source model", "Pass", "Signal Intake"],
+        ["Outreach Queue Dataset|Drafts, replies, cadences, approvals", "43", "Adam", "Current", "Synthetic message library", "Human approval", "Outreach Queue"],
+        ["Agent Run Dataset|Runs, exceptions, costs, offshore packets", "8", "Automation", "Current", "Synthetic runtime logs", "Pass", "Agent Operations"],
+        ["Conversion Learning Dataset|Outcomes, experiments, first-offer performance", "12", "Conversion", "Current", "Synthetic outcomes", "Pass", "Conversion Board"],
+        ["Scenario Seed Library|Golden seed, variants, reset targets", "4 packs", "Operator", "Pinned", "Versioned seed", "Required", "Demo management"],
+      ].map((cells, index) => ({ id: cells[0].split("|")[0] || `synthetic-${index}`, cells })),
+    },
+    expanded: {
+      title: "Opportunity Dataset",
+      description: "Primary synthetic dataset backing the top opportunity grid, inline record expansion, source provenance, stakeholder mapping, scoring, first-offer recommendations, and next actions.",
+      evidence: [
+        ["Data lineage", "Synthetic / 1.00", "Records are generated from demo-safe patterns and tagged with source, derived, manual, agent, and review provenance families."],
+        ["Scenario coverage", "Balanced", "Includes closeout, complaint, portfolio, health-check, partner, and conversion learning examples."],
+        ["Quality gate", "Pass", "No real contact payloads, no private source facts, no unsupported technical claims, and every score has an evidence packet."],
+      ],
+      actions: [
+        "Regenerate a scenario variant while preserving the same source-confidence distribution.",
+        "Export the dataset bundle for customer demo review without secrets or private contacts.",
+        "Reset all surfaces to the golden demo state after an interactive walkthrough.",
+      ],
+      gates: ["Seed", "Generate", "Validate", "Publish", "Walkthrough", "Reset"],
     },
   },
   {

@@ -22,6 +22,7 @@ for (const surface of [
   "evidence-review",
   "outreach-queue",
   "agent-operations",
+  "synthetic-data",
   "conversion-board",
 ]) {
   assert.equal(data.includes(`id: "${surface}"`), true, `data should include ${surface}`);
@@ -35,6 +36,8 @@ for (const hook of [
   "data-fastdas-expanded-record",
   "data-fastdas-provenance",
   "data-fastdas-human-approval-boundary",
+  "data-fastdas-data-management",
+  "data-fastdas-scenario-packs",
 ]) {
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
@@ -45,6 +48,9 @@ for (const phrase of [
   "Source tracking",
   "Human approval",
   "Agent Operations",
+  "Synthetic Data Management",
+  "Golden demo state",
+  "Scenario Packs",
   "Conversion Board",
 ]) {
   assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
@@ -53,4 +59,4 @@ for (const phrase of [
 assert.equal(css.includes("linear-gradient"), false, "demo CSS should avoid gradient-heavy UI surfaces");
 assert.equal(css.includes(".fg-shell"), true, "demo CSS should define the FastDAS shell");
 
-console.log("Verified FastDAS demo identity, routes, provenance hooks, human gates, and GitLab Pages config.");
+console.log("Verified FastDAS demo identity, routes, provenance hooks, synthetic data management, human gates, and GitLab Pages config.");

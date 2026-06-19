@@ -14,7 +14,17 @@ The app is built as an enterprise operations workbench, not a CRM. It covers the
 - Evidence Review
 - Outreach Queue
 - Agent Operations
+- Synthetic Data Management
 - Conversion Board
+
+## Synthetic Demo Data
+
+The `Synthetic Data Management` surface exposes the demo's customer-safe data control plane:
+
+- Golden seed and dataset version controls
+- Scenario packs for closeout, portfolio, hospitality, and maintenance walkthroughs
+- Managed datasets for opportunities, sources, outreach, agents, and conversion learning
+- Quality gates for source safety, technical-claim safety, and repeatable reset/export behavior
 
 ## Local Development
 
