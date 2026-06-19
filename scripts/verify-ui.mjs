@@ -115,6 +115,10 @@ try {
   assert.equal(topbarSearch, 1, "topbar search should use framework search anatomy");
   const accountMenu = await desktop.locator(".if-topbar .if-account-menu .if-avatar").count();
   assert.equal(accountMenu, 1, "topbar identity should use framework account-menu and avatar anatomy");
+  const pageMeta = await desktop.locator("[data-fastdas-page-meta].if-page-header__meta .if-route-status").count();
+  assert.equal(pageMeta, 3, "page header should expose framework route-status metadata");
+  const pageActions = await desktop.locator("[data-fastdas-page-actions].if-toolbar__group .if-btn").count();
+  assert.equal(pageActions, 3, "page header actions should use framework toolbar grouping");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
@@ -146,6 +150,8 @@ try {
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
   const intelligenceDetails = await desktop.locator("[data-fastdas-expanded-record].if-record-detail--intelligence").count();
   assert.ok(intelligenceDetails >= 1, "expanded records should use framework intelligence detail anatomy");
+  const recordDetailSections = await desktop.locator("[data-fastdas-expanded-record] .if-record-detail__section").count();
+  assert.equal(recordDetailSections, 3, "expanded record should expose three framework record-detail sections");
   const statusSteps = await desktop.locator("[data-fastdas-expanded-record] .if-status-timeline .if-status-step").count();
   assert.ok(statusSteps >= 5, "expanded workflow state should use framework status timeline steps");
   const reviewWorkflow = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-workflow].if-review-workflow").count();
@@ -254,6 +260,8 @@ try {
   assert.equal(mobileHeaderRoute, 2, "mobile header should keep route status context");
   const mobileHeaderActions = await mobile.locator("[data-fastdas-header-actions] .if-btn").count();
   assert.equal(mobileHeaderActions, 2, "mobile header should keep grouped actions");
+  const mobilePageMeta = await mobile.locator("[data-fastdas-page-meta] .if-route-status").count();
+  assert.equal(mobilePageMeta, 3, "mobile page header should keep route-status metadata");
   const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();

@@ -417,10 +417,16 @@ button {
 
 .fg-page-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   min-width: 0;
+}
+
+.fg-page-header__copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
 }
 
 .fg-page-header h1 {
@@ -432,10 +438,30 @@ button {
 }
 
 .fg-page-header p {
-  margin: 4px 0 0;
+  margin: 0;
   max-width: 860px;
   color: #53677e;
   font-size: 13px;
+}
+
+.fg-page-meta {
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.fg-page-meta .if-route-status {
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #d6e2ed;
+  border-radius: 999px;
+  background: #fbfdff;
+}
+
+.fg-page-meta .if-route-status span {
+  overflow: hidden;
+  max-width: 190px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fg-eyebrow {
@@ -455,6 +481,10 @@ button {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.fg-page-actions {
+  flex: 0 0 auto;
 }
 
 .fg-btn {
@@ -1346,6 +1376,10 @@ button {
   min-height: 260px;
   padding: 14px;
   border-right: 1px solid #dbe5ef;
+}
+
+.fg-expanded__section.if-record-detail__section {
+  display: block;
 }
 
 .fg-expanded__section:last-child {

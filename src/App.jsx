@@ -275,10 +275,10 @@ function ExpandedRecord({ surface, onRecordAction }) {
     <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
       <td colSpan={surface.table.columns.length}>
         <div className="if-table-detail__content if-record-detail if-record-detail--intelligence fg-expanded" data-fastdas-expanded-record>
-          <section className="fg-expanded__section">
-            <div className="fg-eyebrow">Selected Record</div>
-            <h3>{detail.title}</h3>
-            <p>{detail.description}</p>
+          <section className="if-record-detail__section fg-expanded__section">
+            <div className="if-record-detail__eyebrow fg-eyebrow">Selected Record</div>
+            <h3 className="if-record-detail__title">{detail.title}</h3>
+            <p className="if-record-detail__text">{detail.description}</p>
             <div className="if-status-timeline fg-flow" aria-label="Workflow state">
               {detail.gates.map((gate, index) => {
                 const gateState = index < Math.max(1, detail.gates.length - 3)
@@ -294,8 +294,8 @@ function ExpandedRecord({ surface, onRecordAction }) {
               })}
             </div>
           </section>
-          <section className="fg-expanded__section" data-fastdas-provenance>
-            <div className="fg-eyebrow">Evidence + Provenance</div>
+          <section className="if-record-detail__section fg-expanded__section" data-fastdas-provenance>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Evidence + Provenance</div>
             {detail.evidence.map(([title, badge, text]) => (
               <article className="if-evidence-panel if-provenance-layer fg-evidence" key={title}>
                 <div>
@@ -306,8 +306,8 @@ function ExpandedRecord({ surface, onRecordAction }) {
               </article>
             ))}
           </section>
-          <section className="fg-expanded__section" data-fastdas-human-approval-boundary>
-            <div className="fg-eyebrow">Operator Workbench</div>
+          <section className="if-record-detail__section fg-expanded__section" data-fastdas-human-approval-boundary>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Operator Workbench</div>
             <div className="if-alert if-alert--info fg-callout">
               <strong>First paid step:</strong> Keep the ask bounded to survey, inspection, benchmark, testing engagement, troubleshooting visit, or system review.
             </div>
@@ -1216,13 +1216,18 @@ export default function App() {
           data-if-operations-workspace
           data-if-operations-current={activeMetricSignalId}
         >
-          <header className="if-page-header fg-page-header">
-            <div>
+          <header className="if-page-header fg-page-header" data-fastdas-page-header>
+            <div className="fg-page-header__copy">
               <div className="if-page-header__eyebrow fg-eyebrow">{surface.eyebrow}</div>
               <h1 className="if-page-header__title">{surface.title}</h1>
               <p className="if-panel__subtitle">{surface.summary}</p>
+              <div className="if-page-header__meta if-route-demo-controls fg-page-meta" data-fastdas-page-meta>
+                <span className="if-route-status"><strong>Selected</strong><span>{selectedRows[surface.id]}</span></span>
+                <span className="if-route-status"><strong>Primary action</strong><span>{surface.primaryAction}</span></span>
+                <span className="if-route-status"><strong>Human gate</strong><span>{operationState.approvalCount} approvals due</span></span>
+              </div>
             </div>
-            <div className="if-page-header__actions fg-page-actions">
+            <div className="if-page-header__actions if-toolbar__group fg-page-actions" data-fastdas-page-actions>
               <button
                 className="if-btn if-btn--secondary fg-btn"
                 type="button"
