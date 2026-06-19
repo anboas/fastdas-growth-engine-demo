@@ -1,9 +1,16 @@
 import assert from "node:assert/strict";
-import { mkdirSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { existsSync, mkdirSync } from "node:fs";
 import { chromium } from "playwright-core";
 
-const BASE_URL = process.env.FASTDAS_VERIFY_URL || "http://127.0.0.1:5173/";
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || "/usr/bin/chromium-browser";
+const DEFAULT_BASE_URL = "http://127.0.0.1:5173/";
+const BASE_URL = process.env.FASTDAS_VERIFY_URL || DEFAULT_BASE_URL;
+const SHOULD_START_SERVER = !process.env.FASTDAS_VERIFY_URL;
+const CHROMIUM_PATH = [
+  process.env.CHROMIUM_PATH,
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+].find((candidate) => candidate && existsSync(candidate));
 const OUT_DIR = "test-results";
 const SURFACE_IDS = [
   "command-center",
@@ -17,8 +24,30 @@ const SURFACE_IDS = [
 
 mkdirSync(OUT_DIR, { recursive: true });
 
+async function waitForServer(url, timeoutMs = 20000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return;
+    } catch {
+      // Vite may still be starting.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Timed out waiting for local verification server at ${url}`);
+}
+
+let serverProcess;
+if (SHOULD_START_SERVER) {
+  serverProcess = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173", "--strictPort"], {
+    stdio: "ignore",
+  });
+  await waitForServer(BASE_URL);
+}
+
 const browser = await chromium.launch({
-  executablePath: CHROMIUM_PATH,
+  ...(CHROMIUM_PATH ? { executablePath: CHROMIUM_PATH } : {}),
   headless: true,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });
@@ -74,4 +103,5 @@ try {
   console.log("Verified FastDAS UI desktop/mobile screenshots, seven surfaces, expanded rows, and page overflow.");
 } finally {
   await browser.close();
+  serverProcess?.kill("SIGTERM");
 }

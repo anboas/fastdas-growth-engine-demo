@@ -9,6 +9,9 @@ pages:
     paths:
       - node_modules/
   script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation
+    - export CHROMIUM_PATH="$(command -v chromium || command -v chromium-browser)"
     - npm ci
     - npm run verify:all
     - rm -rf public
