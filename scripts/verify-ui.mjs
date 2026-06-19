@@ -310,16 +310,46 @@ try {
   assert.ok(opportunityDetailText.includes("Capital Ridge Senior Living"), "opened opportunity detail row should match the clicked opportunity");
   assert.ok(opportunityDetailText.includes("Potential closeout risk"), "opened opportunity detail should use opportunity-specific evidence");
 
+  await desktop.goto(`${BASE_URL}#/evidence-review`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-evidence-focus-panel]", { timeout: 5000 });
+  const evidenceWorkbenchColumns = await desktop.locator("[data-fastdas-evidence-review-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(evidenceWorkbenchColumns >= 2, "evidence review should share the packet table with a selected-evidence panel on desktop");
+  const evidenceDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-evidence-review-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(evidenceDrawerOrder, true, "evidence review should put evidence packets before operational controls");
+  const evidenceFocusPanel = desktop.locator("[data-fastdas-evidence-focus-panel]");
+  let evidenceFocusText = await evidenceFocusPanel.textContent();
+  assert.ok(evidenceFocusText.includes("Fire alarm permit pattern"), "evidence review should start with the selected evidence packet");
+  await desktop.locator("[data-fastdas-evidence-review-grid] tr[data-if-table-row]", { hasText: "Partner route" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-evidence-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Partner route");
+  evidenceFocusText = await evidenceFocusPanel.textContent();
+  assert.ok(evidenceFocusText.includes("Partner route"), "clicking an evidence row should move the evidence focus panel");
+  assert.ok(evidenceFocusText.includes("Verify contacts before outreach"), "evidence focus panel should show the selected row's review note");
+  await desktop.locator('[data-fastdas-action="focus-approve-evidence"]').click();
+  await assertAuditContains(desktop, "Evidence packet approved", "evidence approval");
+  const closedEvidenceDetails = await desktop.locator('[data-fastdas-expanded-record-id="Partner route"]').count();
+  assert.equal(closedEvidenceDetails, 0, "evidence row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-evidence-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Partner route"]', { timeout: 5000 });
+  const evidenceDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Partner route"]').textContent();
+  assert.ok(evidenceDetailText.includes("Partner route"), "opened evidence detail row should match the clicked packet");
+  assert.ok(evidenceDetailText.includes("Manual review"), "opened evidence detail should use evidence-specific source context");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
         const openSelector = surfaceId === "signal-intake"
           ? '[data-fastdas-action="open-source-details"]'
           : surfaceId === "opportunity-workbench"
             ? '[data-fastdas-action="open-opportunity-details"]'
-            : '[data-fastdas-action="open-record-details"]';
+            : surfaceId === "evidence-review"
+              ? '[data-fastdas-action="open-evidence-details"]'
+              : '[data-fastdas-action="open-record-details"]';
         await desktop.locator(openSelector).click();
       }
     }

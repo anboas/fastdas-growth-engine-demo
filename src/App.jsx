@@ -73,7 +73,7 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
-const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review"];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -308,9 +308,46 @@ function sourceDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function evidenceDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  if (!row) return surface.expanded;
+
+  const [evidenceCell, sourceType, confidence, freshness, outreachUse, notes] = row.cells;
+  const { primary: evidenceName, secondary: evidenceSummary } = splitCell(evidenceCell);
+  const useTone = toneForValue(outreachUse);
+  const needsVerification = String(freshness).toLowerCase().includes("needs") || String(outreachUse).toLowerCase() === "no";
+
+  return {
+    title: evidenceName,
+    description: evidenceSummary || notes || surface.expanded.description,
+    evidencePacket: {
+      name: evidenceName,
+      summary: evidenceSummary || notes || surface.expanded.description,
+      sourceType,
+      confidence,
+      freshness,
+      outreachUse,
+      notes,
+      needsVerification,
+    },
+    evidence: [
+      [sourceType, `Confidence / ${confidence}`, evidenceSummary || "Evidence packet retained for operator review."],
+      [freshness, needsVerification ? "Needs review" : "Review ready", needsVerification ? "Verify freshness, contact route, or source boundaries before approving outreach use." : "Fresh enough for scoring and operator review."],
+      [outreachUse, useTone === "danger" ? "Do not use" : "Use boundary", notes],
+    ],
+    actions: [
+      needsVerification ? `Verify ${evidenceName.toLowerCase()} before outreach approval.` : `Approve ${evidenceName.toLowerCase()} for the review packet.`,
+      `Keep outreach use bounded to: ${outreachUse}.`,
+      notes,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
 function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
+  if (surface.id === "evidence-review") return evidenceDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
@@ -389,6 +426,79 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
             onClick={() => onRecordAction("run-source", surface, detail)}
           >
             <Icon name="refresh" />Run Source
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  if (surface.id === "evidence-review") {
+    const packet = detail.evidencePacket;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--evidence"
+        data-fastdas-record-focus-panel
+        data-fastdas-evidence-focus-panel
+        data-fastdas-record-focus-id={packet.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Evidence Focus</div>
+            <h3 className="if-record-detail__title">{packet.name}</h3>
+            <p className="if-record-detail__text">{packet.summary}</p>
+          </div>
+          <Chip tone={toneForValue(packet.outreachUse)}>{packet.outreachUse}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Source</dt>
+            <dd className="if-provenance-field__value">{packet.sourceType}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Confidence</dt>
+            <dd className="if-provenance-field__value">{packet.confidence}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Freshness</dt>
+            <dd className="if-provenance-field__value">{packet.freshness}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Use Boundary</dt>
+            <dd className="if-provenance-field__value">{packet.outreachUse}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Review Note</dt>
+            <dd className="if-provenance-field__value">{packet.notes}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="shield" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Evidence-review action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-evidence-details"
+            data-fastdas-open-details={packet.name}
+            onClick={() => onOpenDetails(packet.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Evidence Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-approve-evidence"
+            onClick={() => onRecordAction("approve-evidence", surface, detail)}
+          >
+            <Icon name="check" />Approve Evidence
           </button>
         </div>
       </aside>
@@ -667,6 +777,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       data-fastdas-opportunity-grid
       data-fastdas-signal-intake-grid={surface.id === "signal-intake" ? "true" : undefined}
       data-fastdas-opportunity-workbench-grid={surface.id === "opportunity-workbench" ? "true" : undefined}
+      data-fastdas-evidence-review-grid={surface.id === "evidence-review" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -713,6 +824,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           {isCommandCenter ? <span className="if-badge fg-counter">Decision view</span> : null}
           {surface.id === "signal-intake" ? <span className="if-badge fg-counter">Source health view</span> : null}
           {surface.id === "opportunity-workbench" ? <span className="if-badge fg-counter">Qualification view</span> : null}
+          {surface.id === "evidence-review" ? <span className="if-badge fg-counter">Review view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -749,6 +861,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-command-center-workbench={isCommandCenter ? "true" : undefined}
         data-fastdas-signal-intake-workbench={surface.id === "signal-intake" ? "true" : undefined}
         data-fastdas-opportunity-workbench-workbench={surface.id === "opportunity-workbench" ? "true" : undefined}
+        data-fastdas-evidence-review-workbench={surface.id === "evidence-review" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1487,6 +1600,12 @@ export default function App() {
         title: "Opportunity promoted to review",
         body: `${recordTitle} is staged for human review with scoring, source, and contact gates retained.`,
         tone: "warning",
+        workflowIndex: 3,
+      },
+      "approve-evidence": {
+        title: "Evidence packet approved",
+        body: `${recordTitle} is approved for the human review packet with outreach boundaries retained.`,
+        tone: "success",
         workflowIndex: 3,
       },
     };
