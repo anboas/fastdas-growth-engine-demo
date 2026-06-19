@@ -617,19 +617,24 @@ try {
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
   assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
-  await mobile.locator('[data-fastdas-table-row-id="HarborPoint Garage"]').click();
-  await mobile.waitForSelector('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]');
+  const mobileTableVisible = await mobile.locator("[data-fastdas-command-center-workbench] > .fg-table-wrap:visible").count();
+  assert.equal(mobileTableVisible, 0, "mobile focused workbench should use OIP-style cards instead of the desktop table wrapper");
+  const mobileRecordCards = await mobile.locator("[data-fastdas-mobile-record-card]").count();
+  assert.equal(mobileRecordCards, 4, "mobile command center should render filtered records as compact cards");
+  await mobile.locator('[data-fastdas-mobile-record-card-id="HarborPoint Garage"] [data-fastdas-mobile-record-card-button]').click();
+  await mobile.waitForSelector('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]');
   const mobileFocusPanels = await mobile.locator("[data-fastdas-record-focus-panel]").count();
-  assert.equal(mobileFocusPanels, 1, "mobile should render one selected-record focus panel, not a duplicate bottom panel");
-  const inlineFocusText = await mobile.locator('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]').textContent();
-  assert.ok(inlineFocusText.includes("HarborPoint Garage"), "mobile inline focus panel should use the clicked row record");
+  assert.equal(mobileFocusPanels, 1, "mobile should render one selected-record focus panel inside the selected card");
+  const inlineFocusText = await mobile.locator('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]').textContent();
+  assert.ok(inlineFocusText.includes("HarborPoint Garage"), "mobile card focus panel should use the clicked record");
   const mobileInlinePlacement = await mobile.evaluate(() => {
-    const selectedRow = document.querySelector('[data-fastdas-table-row-id="HarborPoint Garage"]');
-    const focusRow = document.querySelector('[data-fastdas-mobile-focus-row-id="HarborPoint Garage"]');
-    const nextRow = document.querySelector('[data-fastdas-table-row-id="Arlington Medical Pavilion"]');
-    const selectedBox = selectedRow.getBoundingClientRect();
-    const focusBox = focusRow.getBoundingClientRect();
-    const nextBox = nextRow.getBoundingClientRect();
+    const selectedCard = document.querySelector('[data-fastdas-mobile-record-card-id="HarborPoint Garage"]');
+    const selectedSummary = selectedCard?.querySelector("[data-fastdas-mobile-record-card-button]");
+    const focusCard = document.querySelector('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"]');
+    const nextCard = document.querySelector('[data-fastdas-mobile-record-card-id="Arlington Medical Pavilion"]');
+    const selectedBox = selectedSummary.getBoundingClientRect();
+    const focusBox = focusCard.getBoundingClientRect();
+    const nextBox = nextCard.getBoundingClientRect();
     return {
       selectedBottom: selectedBox.bottom,
       focusTop: focusBox.top,
@@ -639,12 +644,16 @@ try {
   });
   assert.ok(
     mobileInlinePlacement.focusTop >= mobileInlinePlacement.selectedBottom - 2,
-    "mobile selected focus panel should start directly after the clicked row",
+    "mobile selected focus panel should start inside the clicked card immediately after the card summary",
   );
   assert.ok(
     mobileInlinePlacement.focusBottom <= mobileInlinePlacement.nextTop + 2,
-    "mobile selected focus panel should appear before the next table row",
+    "mobile selected focus panel should appear before the next record card",
   );
+  await mobile.locator('[data-fastdas-mobile-open-details="HarborPoint Garage"]').click();
+  await mobile.waitForSelector('[data-fastdas-mobile-expanded-card-id="HarborPoint Garage"] [data-fastdas-expanded-record-id="HarborPoint Garage"]');
+  const mobileExpandedText = await mobile.locator('[data-fastdas-mobile-expanded-card-id="HarborPoint Garage"] [data-fastdas-expanded-record]').textContent();
+  assert.ok(mobileExpandedText.includes("below-grade"), "mobile full details should expand inside the selected card with the selected evidence");
   await mobileMore.click();
   await mobile.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item", { hasText: "Conversion Board" }).click();
   await mobile.waitForSelector("[data-fastdas-conversion-focus-panel]");

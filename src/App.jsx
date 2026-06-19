@@ -1192,6 +1192,125 @@ function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
   );
 }
 
+function recordCardFieldIndexes(columns) {
+  const lower = columns.map(column => column.toLowerCase());
+  const titleIndex = lower.findIndex(column => /opportunity|dataset|source|evidence|agent/.test(column));
+  const stateIndex = lower.findIndex(column => /state|status|gate|demo use|quality/.test(column));
+  const leadIndexes = columns
+    .map((column, index) => ({ column, index }))
+    .filter(({ index }) => index !== titleIndex && index !== stateIndex)
+    .slice(0, 4);
+
+  return {
+    titleIndex: titleIndex >= 0 ? titleIndex : 0,
+    stateIndex: stateIndex >= 0 ? stateIndex : Math.min(columns.length - 1, 3),
+    leadIndexes,
+  };
+}
+
+function MobileWorkbenchCards({ surface, rows, selectedRowId, detailOpenRowId, onSelect, onOpenDetails, onRecordAction }) {
+  const columns = surface.table.columns;
+  const { titleIndex, stateIndex, leadIndexes } = recordCardFieldIndexes(columns);
+
+  return (
+    <div className="fg-mobile-record-list" data-fastdas-mobile-record-list>
+      {rows.map(row => {
+        const selected = row.id === selectedRowId;
+        const detailsOpen = selected && detailOpenRowId === row.id;
+        const title = splitCell(row.cells[titleIndex] || row.id);
+        const signal = splitCell(row.cells[0] || row.id);
+        const status = splitCell(row.cells[stateIndex] || "Active");
+        const detail = detailForSurfaceSelection(surface, row.id);
+
+        return (
+          <article
+            className={`fg-mobile-record-card${selected ? " is-selected" : ""}${detailsOpen ? " is-expanded" : ""}`}
+            data-fastdas-mobile-record-card
+            data-fastdas-mobile-record-card-id={row.id}
+            key={`${surface.id}-${row.id}-mobile-card`}
+          >
+            <button
+              type="button"
+              className="fg-mobile-record-card__summary"
+              data-fastdas-mobile-record-card-button
+              aria-expanded={selected}
+              aria-selected={selected}
+              onClick={() => onSelect(row.id)}
+              title={`Inspect ${title.primary}`}
+            >
+              <span className="fg-mobile-record-card__topline">
+                <span className="fg-mobile-record-card__signal">{signal.primary}</span>
+                <span className={`fg-mobile-record-card__status ${toneClass(toneForValue(status.primary))}`}>{status.primary}</span>
+              </span>
+              <strong className="fg-mobile-record-card__title">{title.primary}</strong>
+              {title.secondary ? <span className="fg-mobile-record-card__subtitle">{title.secondary}</span> : null}
+            </button>
+            <div className="fg-mobile-record-card__meta" data-fastdas-mobile-record-fields>
+              {leadIndexes.map(({ column, index }) => {
+                const value = splitCell(row.cells[index] || "");
+                return (
+                  <div className="fg-mobile-record-card__field" data-fastdas-mobile-record-field={column} key={`${row.id}-${column}`}>
+                    <span>{column}</span>
+                    <strong>{value.primary}</strong>
+                    {value.secondary ? <em>{value.secondary}</em> : null}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="fg-mobile-record-card__actions">
+              <button
+                type="button"
+                className={`if-btn fg-btn ${selected ? "if-btn--primary fg-btn--primary" : "if-btn--secondary"}`}
+                data-fastdas-mobile-select-record={row.id}
+                onClick={() => onSelect(row.id)}
+              >
+                {selected ? "Selected" : "Select"}
+              </button>
+              <button
+                type="button"
+                className="if-btn if-btn--secondary fg-btn"
+                data-fastdas-mobile-open-details={row.id}
+                aria-expanded={detailsOpen}
+                onClick={() => {
+                  onSelect(row.id);
+                  onOpenDetails(row.id);
+                }}
+              >
+                {detailsOpen ? "Collapse" : "Details"}
+              </button>
+            </div>
+            {selected && !detailsOpen ? (
+              <div className="fg-mobile-record-card__focus" data-fastdas-mobile-focus-card data-fastdas-mobile-focus-card-id={row.id}>
+                <RecordFocusPanel
+                  surface={surface}
+                  selectedRowId={row.id}
+                  detailsOpen={detailsOpen}
+                  onOpenDetails={onOpenDetails}
+                  onRecordAction={onRecordAction}
+                />
+              </div>
+            ) : null}
+            {detailsOpen ? (
+              <div className="fg-mobile-record-card__detail" data-fastdas-mobile-expanded-card data-fastdas-mobile-expanded-card-id={row.id}>
+                <table className="fg-mobile-expanded-table" aria-label={`${title.primary} detail`}>
+                  <tbody>
+                    <ExpandedRecord
+                      surface={surface}
+                      selectedRowId={row.id}
+                      detail={detail}
+                      onRecordAction={onRecordAction}
+                    />
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuickFilterId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
@@ -1199,7 +1318,6 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   const isMobileWorkbench = useMobileWorkbenchLayout();
   const isCommandCenter = surface.id === "command-center";
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
-  const shouldInlineFocusPanel = isFocusedWorkbench && isMobileWorkbench && !detailsOpen;
   const workbenchConfig = workbenchSurfaceConfig(surface.id);
   const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   const rows = isCommandCenter ? commandCenterRowsForFilter(surface, commandQuickFilterId) : surface.table.rows;
@@ -1337,20 +1455,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                       </td>
                     ))}
                   </tr>
-                  {shouldInlineFocusPanel && row.id === selectedRowId ? (
-                    <tr className="fg-mobile-focus-row" data-fastdas-mobile-focus-row data-fastdas-mobile-focus-row-id={row.id}>
-                      <td colSpan={columns.length}>
-                        <RecordFocusPanel
-                          surface={surface}
-                          selectedRowId={row.id}
-                          detailsOpen={detailsOpen}
-                          onOpenDetails={onOpenDetails}
-                          onRecordAction={onRecordAction}
-                        />
-                      </td>
-                    </tr>
-                  ) : null}
-                  {row.id === selectedRowId && detailOpenRowId === row.id ? (
+                  {!isMobileWorkbench && row.id === selectedRowId && detailOpenRowId === row.id ? (
                     <ExpandedRecord
                       key={`${row.id}-expanded`}
                       surface={surface}
@@ -1364,7 +1469,18 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             </tbody>
           </table>
         </div>
-        {!detailsOpen && !shouldInlineFocusPanel ? (
+        {isFocusedWorkbench && isMobileWorkbench ? (
+          <MobileWorkbenchCards
+            surface={surface}
+            rows={rows}
+            selectedRowId={selectedRowId}
+            detailOpenRowId={detailOpenRowId}
+            onSelect={onSelect}
+            onOpenDetails={onOpenDetails}
+            onRecordAction={onRecordAction}
+          />
+        ) : null}
+        {!detailsOpen && !isMobileWorkbench ? (
           <RecordFocusPanel
             surface={surface}
             selectedRowId={selectedRowId}
