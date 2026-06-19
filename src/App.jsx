@@ -3422,6 +3422,7 @@ export default function App() {
         <section
           className="if-content if-page if-operations-page if-operations-workspace if-operations-workspace--compact fg-content"
           data-if-operations-workspace
+          data-fastdas-simplified-shell
           data-if-operations-current={activeMetricSignalId}
         >
           <div className="if-operations-page__topbar fg-page-topbar">

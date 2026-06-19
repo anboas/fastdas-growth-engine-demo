@@ -58,6 +58,7 @@ for (const surface of [
 for (const hook of [
   "data-fastdas-demo-app",
   "data-fastdas-shell-header",
+  "data-fastdas-simplified-shell",
   "data-fastdas-header-route",
   "data-fastdas-header-surface",
   "data-fastdas-header-secondary-toggle",

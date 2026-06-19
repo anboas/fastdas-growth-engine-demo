@@ -278,17 +278,22 @@ button {
 
 .fg-workspace-rail {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.85fr) minmax(220px, 0.45fr) minmax(260px, 0.7fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr);
+  gap: 8px;
   width: 100%;
   min-width: 0;
   overflow: visible;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid var(--fg-line);
   border-radius: 8px;
   background: #ffffff;
   color: var(--fg-slate-900);
   box-shadow: var(--fg-shadow-soft);
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail__kpis,
+[data-fastdas-simplified-shell] .fg-workspace-rail__note {
+  display: none;
 }
 
 .fg-workspace-rail .fg-sidebar-section {
@@ -323,13 +328,13 @@ button {
 .fg-workspace-rail .fg-nav button {
   width: auto;
   min-width: 0;
-  height: 30px;
-  padding: 0 9px;
+  height: 28px;
+  padding: 0 8px;
   border-color: #d4e0eb;
   border-radius: 6px;
   background: #fbfdff;
   color: #31506a;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 850;
 }
 
@@ -840,9 +845,29 @@ button.fg-product-header__brand {
 .fg-content {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
-  padding: 18px 20px 22px;
+  padding: 12px 16px 18px;
+}
+
+[data-fastdas-simplified-shell] .fg-page-topbar,
+[data-fastdas-simplified-shell] .fg-working-set-ribbon,
+[data-fastdas-simplified-shell] .fg-bottom-grid,
+[data-fastdas-simplified-shell] .fg-footer {
+  display: none;
+}
+
+[data-fastdas-simplified-shell] .fg-page-header {
+  padding: 10px 12px;
+}
+
+[data-fastdas-simplified-shell] .fg-page-header h1 {
+  font-size: 20px;
+}
+
+[data-fastdas-simplified-shell] .fg-page-header p,
+[data-fastdas-simplified-shell] .fg-page-meta {
+  display: none;
 }
 
 .fg-page-topbar {
@@ -1098,7 +1123,7 @@ button.fg-product-header__brand {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  align-items: center;
+  align-items: start;
   min-width: 0;
   padding: 12px 14px;
   border: 1px solid #b9dfe3;
@@ -1166,6 +1191,7 @@ button.fg-product-header__brand {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
+  align-self: start;
   min-width: 0;
   margin: 0;
   padding: 0;

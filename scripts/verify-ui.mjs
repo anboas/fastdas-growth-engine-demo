@@ -156,6 +156,8 @@ try {
   assert.equal(await profileTrigger.getAttribute("aria-expanded"), "false", "Escape should close the profile menu");
   const workingSetRibbon = await desktop.locator("[data-fastdas-working-set-ribbon]").count();
   assert.equal(workingSetRibbon, 1, "main page should expose an OIP-style working-set ribbon");
+  const visibleWorkingSetRibbon = await desktop.locator("[data-fastdas-working-set-ribbon]:visible").count();
+  assert.equal(visibleWorkingSetRibbon, 0, "simplified demo shell should hide duplicate working-set chrome");
   const pageMeta = await desktop.locator("[data-fastdas-page-meta].if-page-header__meta .if-route-status").count();
   assert.equal(pageMeta, 3, "page header should expose framework route-status metadata");
   const operationsPage = await desktop.locator("[data-if-operations-workspace].if-operations-page .if-operations-page__topbar .if-breadcrumbs").count();
@@ -164,6 +166,8 @@ try {
   assert.equal(operationsHero, 1, "page header should use the framework operations-page hero contract");
   const pageActions = await desktop.locator("[data-fastdas-page-actions].if-toolbar__group .if-btn").count();
   assert.equal(pageActions, 3, "page header actions should use framework toolbar grouping");
+  const simplifiedShell = await desktop.locator("[data-fastdas-simplified-shell]").count();
+  assert.equal(simplifiedShell, 1, "demo should use the simplified shell contract");
   const guidedRunner = desktop.locator("[data-fastdas-guided-demo-runner]");
   await guidedRunner.waitFor({ timeout: 5000 });
   const guidedRunnerActions = await desktop.locator("[data-fastdas-guided-demo-runner] [data-fastdas-action]").count();
