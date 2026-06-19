@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { opportunityRecords, sidebarKpis, surfaces, workflowStages } from "./data.js";
 
 function Icon({ name }) {
@@ -1838,39 +1838,84 @@ function BottomPanels({ surface }) {
 
 function HeaderSurfaceNav({ surface, onSelect }) {
   const [secondaryOpen, setSecondaryOpen] = useState(false);
+  const secondaryRef = useRef(null);
   const primarySurfaces = surfaces.slice(0, 4);
   const secondarySurfaces = surfaces.slice(4);
+  const secondaryMenuId = "fastdas-secondary-surfaces-menu";
+
+  useEffect(() => {
+    function handleDocumentClick(event) {
+      if (secondaryRef.current && !secondaryRef.current.contains(event.target)) {
+        setSecondaryOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => document.removeEventListener("mousedown", handleDocumentClick);
+  }, []);
+
+  function handleSecondaryKeyDown(event) {
+    if (event.key === "Escape") {
+      setSecondaryOpen(false);
+      event.currentTarget.querySelector("[data-fastdas-header-secondary-toggle]")?.focus();
+    }
+  }
 
   return (
-    <nav className="if-topbar__nav if-operations-topnav fg-operations-topnav" data-fastdas-header-route aria-label="FastDAS operations surfaces">
+    <nav
+      className="if-topbar__nav if-operations-topnav fg-operations-topnav"
+      data-fastdas-header-route
+      data-fastdas-active-route={surface.id}
+      aria-label="FastDAS operations surfaces"
+    >
       {primarySurfaces.map(item => (
         <button
           type="button"
           className={`if-operations-topnav__link${item.id === surface.id ? " is-active" : ""}`}
           aria-current={item.id === surface.id ? "page" : undefined}
+          data-fastdas-header-surface={item.id}
+          data-fastdas-header-surface-active={item.id === surface.id ? "true" : "false"}
           key={item.id}
-          onClick={() => onSelect(item.id)}
+          onClick={() => {
+            setSecondaryOpen(false);
+            onSelect(item.id);
+          }}
         >
           {item.nav}
         </button>
       ))}
       <span className="if-operations-topnav__divider" aria-hidden="true" />
-      <div className={`if-operations-topnav__secondary${secondaryOpen ? " is-open" : ""}`}>
+      <div
+        className={`if-operations-topnav__secondary${secondaryOpen ? " is-open" : ""}`}
+        ref={secondaryRef}
+        onKeyDown={handleSecondaryKeyDown}
+      >
         <button
           className="if-operations-topnav__secondary-button"
           type="button"
+          aria-controls={secondaryMenuId}
           aria-expanded={secondaryOpen}
+          aria-haspopup="menu"
+          data-fastdas-header-secondary-toggle
           onClick={() => setSecondaryOpen(open => !open)}
         >
           More surfaces
         </button>
-        <div className="if-operations-topnav__menu" role="menu">
+        <div
+          className="if-operations-topnav__menu"
+          id={secondaryMenuId}
+          role="menu"
+          data-fastdas-header-secondary-menu
+        >
           <span className="if-operations-topnav__menu-label">Secondary surfaces</span>
           {secondarySurfaces.map(item => (
             <button
               type="button"
               role="menuitem"
+              aria-current={item.id === surface.id ? "page" : undefined}
               className={`if-operations-topnav__menu-item${item.id === surface.id ? " is-active" : ""}`}
+              data-fastdas-header-secondary-item={item.id}
+              data-fastdas-header-secondary-active={item.id === surface.id ? "true" : "false"}
               key={item.id}
               onClick={() => {
                 setSecondaryOpen(false);
@@ -2206,11 +2251,19 @@ export default function App() {
             <h2 className="if-sidebar__title fg-nav__heading">Workspace</h2>
             <span className="if-sidebar__count">{surfaces.length}</span>
           </div>
-          <nav className="if-sidebar__nav fg-nav" data-control-surface-nav aria-label="Workspace navigation">
+          <nav
+            className="if-sidebar__nav fg-nav"
+            data-control-surface-nav
+            data-fastdas-active-route={surface.id}
+            aria-label="Workspace navigation"
+          >
           {surfaces.map(item => (
             <button
               type="button"
               className={`if-sidebar__link ${item.id === surface.id ? "is-active" : ""}`}
+              aria-current={item.id === surface.id ? "page" : undefined}
+              data-fastdas-nav-surface={item.id}
+              data-fastdas-nav-active={item.id === surface.id ? "true" : "false"}
               key={item.id}
               onClick={() => setSurface(item.id)}
             >

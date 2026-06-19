@@ -109,13 +109,27 @@ try {
   assert.equal(operationsTopnav, 4, "header should expose primary surfaces through framework operations topnav links");
   const secondaryTopnavItems = await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu .if-operations-topnav__menu-item").count();
   assert.equal(secondaryTopnavItems, 4, "header should expose secondary surfaces through the framework operations topnav menu");
-  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__secondary-button").click();
+  const secondaryToggle = desktop.locator("[data-fastdas-header-secondary-toggle]");
+  const secondaryMenu = desktop.locator("[data-fastdas-header-secondary-menu]");
+  assert.equal(await secondaryToggle.getAttribute("aria-expanded"), "false", "secondary topnav menu should start closed");
+  await secondaryToggle.click();
+  assert.equal(await secondaryToggle.getAttribute("aria-expanded"), "true", "secondary topnav toggle should expose open state");
   const visibleSecondaryItems = await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu .if-operations-topnav__menu-item:visible").count();
   assert.equal(visibleSecondaryItems, 4, "secondary operations topnav menu should open from the header control");
-  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu-item", { hasText: "Agent Operations" }).click();
+  assert.equal(await secondaryMenu.getAttribute("role"), "menu", "secondary topnav should expose a menu role");
+  await desktop.keyboard.press("Escape");
+  assert.equal(await secondaryToggle.getAttribute("aria-expanded"), "false", "Escape should close the secondary topnav menu");
+  await secondaryToggle.click();
+  await desktop.locator('[data-fastdas-header-secondary-item="agent-operations"]').click();
   await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Agent Operations"));
+  assert.equal(await secondaryToggle.getAttribute("aria-expanded"), "false", "selecting a secondary surface should close the topnav menu");
+  assert.equal(await desktop.locator("[data-fastdas-header-route]").getAttribute("data-fastdas-active-route"), "agent-operations", "header route should expose the current secondary surface");
+  assert.equal(await desktop.locator('[data-fastdas-header-secondary-item="agent-operations"]').getAttribute("data-fastdas-header-secondary-active"), "true", "secondary menu item should expose active state");
+  assert.equal(await desktop.locator('[data-fastdas-nav-surface="agent-operations"]').getAttribute("data-fastdas-nav-active"), "true", "sidebar nav should mirror secondary header navigation state");
   await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
   await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
+  assert.equal(await desktop.locator("[data-control-surface-nav]").getAttribute("data-fastdas-active-route"), "command-center", "sidebar nav should expose the active route");
+  assert.equal(await desktop.locator('[data-fastdas-header-surface="command-center"]').getAttribute("data-fastdas-header-surface-active"), "true", "primary header nav should expose active route state");
   const headerRouteStatuses = await desktop.locator("[data-fastdas-header-route].if-topbar__nav .if-route-status").count();
   assert.equal(headerRouteStatuses, 2, "header route area should use framework route status chips");
   const headerStatusControls = await desktop.locator("[data-fastdas-header-status].if-route-demo-controls .if-badge").count();
@@ -137,6 +151,8 @@ try {
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
+  const surfaceRouteButtons = await desktop.locator("[data-control-surface-nav] [data-fastdas-nav-surface]").count();
+  assert.equal(surfaceRouteButtons, 8, "desktop nav should expose route-state hooks for every surface");
   const savedViewButtons = await desktop.locator("[data-fastdas-saved-views] [data-fastdas-saved-view]").count();
   assert.equal(savedViewButtons, 4, "sidebar should expose four functional saved views");
   await desktop.locator('[data-fastdas-saved-view="paid-assessment-fit"]').click();

@@ -373,6 +373,12 @@ button {
   background: transparent;
 }
 
+.fg-operations-topnav .if-operations-topnav__menu-item.is-active,
+.fg-operations-topnav .if-operations-topnav__menu-item[aria-current="page"] {
+  background: rgba(18, 54, 95, 0.12);
+  color: var(--fg-navy-900);
+}
+
 .fg-topbar-route {
   display: flex;
   width: 100%;
