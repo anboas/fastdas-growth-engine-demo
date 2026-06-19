@@ -1086,8 +1086,12 @@ export default function App() {
             <span>Control Surface</span>
           </div>
         </div>
-        <nav className="if-sidebar__nav fg-nav" data-control-surface-nav aria-label="Workspace navigation">
-          <div className="if-sidebar__title fg-nav__heading">Workspace</div>
+        <section className="if-sidebar__section fg-sidebar-section">
+          <div className="if-sidebar__group-header">
+            <h2 className="if-sidebar__title fg-nav__heading">Workspace</h2>
+            <span className="if-sidebar__count">{surfaces.length}</span>
+          </div>
+          <nav className="if-sidebar__nav fg-nav" data-control-surface-nav aria-label="Workspace navigation">
           {surfaces.map(item => (
             <button
               type="button"
@@ -1096,16 +1100,22 @@ export default function App() {
               onClick={() => setSurface(item.id)}
             >
               <span />
-              {item.nav}
+              <span className="if-sidebar__link-label">{item.nav}</span>
             </button>
           ))}
-        </nav>
-        <div className="if-sidebar__nav fg-nav fg-nav--saved">
-          <div className="if-sidebar__title fg-nav__heading">Saved Views</div>
+          </nav>
+        </section>
+        <section className="if-sidebar__section fg-sidebar-section">
+          <div className="if-sidebar__group-header">
+            <h2 className="if-sidebar__title fg-nav__heading">Saved Views</h2>
+            <span className="if-sidebar__count">4</span>
+          </div>
+          <div className="if-sidebar__subnav fg-nav fg-nav--saved">
           {["Score 80+ / Review", "Closeout Signals", "Paid Assessment Fit", "Partner Paths"].map(view => (
-            <button className="if-sidebar__link" type="button" key={view}><span />{view}</button>
+            <button className="if-sidebar__link" type="button" key={view}><span /><span className="if-sidebar__link-label">{view}</span></button>
           ))}
-        </div>
+          </div>
+        </section>
         <div className="fg-sidebar-kpis">
           {sidebarKpis.map(([value, label]) => (
             <div key={label}><strong>{value}</strong><span>{label}</span></div>
@@ -1117,29 +1127,38 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="if-main fg-main">
+      <main className="if-main if-main--with-sidebar fg-main">
         <header className="if-topbar fg-topbar">
-          <div className="if-search if-utility-search fg-search"><Icon name="search" />Global search: property, signal, owner, contact, source...</div>
-          <Chip tone="blue">VA / MD / DC</Chip>
-          <Chip tone="success">Source tracking on</Chip>
-          <Chip tone="warning">{operationState.approvalCount} human approvals due</Chip>
-          <span className="fg-topbar__spacer" />
-          <button
-            className="if-btn if-btn--secondary fg-btn"
-            type="button"
-            onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
-          >
-            <Icon name="save" />Save View
-          </button>
-          <button
-            className="if-btn if-btn--primary fg-btn fg-btn--primary"
-            type="button"
-            data-fastdas-action="run-signal-scan"
-            onClick={() => handlePrimaryAction("global-signal-scan")}
-          >
-            <Icon name="refresh" />Run Signal Scan
-          </button>
-          <div className="fg-user"><span>AB</span>Growth Operator</div>
+          <label className="if-search if-autocomplete if-utility-search fg-search">
+            <span className="if-search__icon if-icon-slot" data-if-icon="search" aria-hidden="true"></span>
+            <span className="if-sr-only">Global search</span>
+            <input className="if-input" type="search" placeholder="Search property, signal, owner, contact, source..." />
+          </label>
+          <div className="if-topbar__actions if-utility-cluster fg-topbar-actions">
+            <Chip tone="blue">VA / MD / DC</Chip>
+            <Chip tone="success">Source tracking on</Chip>
+            <Chip tone="warning">{operationState.approvalCount} human approvals due</Chip>
+            <button
+              className="if-btn if-btn--secondary fg-btn"
+              type="button"
+              onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
+            >
+              <Icon name="save" />Save View
+            </button>
+            <button
+              className="if-btn if-btn--primary fg-btn fg-btn--primary"
+              type="button"
+              data-fastdas-action="run-signal-scan"
+              onClick={() => handlePrimaryAction("global-signal-scan")}
+            >
+              <Icon name="refresh" />Run Signal Scan
+            </button>
+            <button className="if-account-menu fg-account-menu" type="button" aria-label="Growth operator account menu">
+              <span className="if-avatar" aria-hidden="true">AB</span>
+              <span className="if-account-menu__name if-desktop-only">Operator</span>
+              <span className="if-icon-slot if-account-menu__chevron" data-if-icon="chevronDown" aria-hidden="true"></span>
+            </button>
+          </div>
         </header>
 
         <section

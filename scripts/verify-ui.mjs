@@ -91,6 +91,19 @@ try {
   await desktop.waitForSelector("[data-fg-icon-rendered]");
   await assertNoPageOverflow(desktop, "desktop");
 
+  const shellMain = await desktop.locator(".if-main.if-main--with-sidebar").count();
+  assert.equal(shellMain, 1, "app shell should use the framework main-with-sidebar contract");
+  const sidebarSections = await desktop.locator(".if-sidebar .if-sidebar__section").count();
+  assert.ok(sidebarSections >= 2, "sidebar should use framework sidebar sections");
+  const sidebarCounts = await desktop.locator(".if-sidebar .if-sidebar__count").count();
+  assert.ok(sidebarCounts >= 2, "sidebar should expose framework count slots");
+  const utilityCluster = await desktop.locator(".if-topbar__actions.if-utility-cluster").count();
+  assert.equal(utilityCluster, 1, "topbar should use the framework utility cluster");
+  const topbarSearch = await desktop.locator(".if-topbar .if-search .if-search__icon + .if-sr-only + input.if-input").count();
+  assert.equal(topbarSearch, 1, "topbar search should use framework search anatomy");
+  const accountMenu = await desktop.locator(".if-topbar .if-account-menu .if-avatar").count();
+  assert.equal(accountMenu, 1, "topbar identity should use framework account-menu and avatar anatomy");
+
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();

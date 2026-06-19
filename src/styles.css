@@ -138,8 +138,17 @@ button {
   gap: 4px;
 }
 
+.fg-sidebar-section {
+  display: grid;
+  gap: 8px;
+}
+
+.fg-sidebar-section .if-sidebar__group-header {
+  align-items: center;
+}
+
 .fg-nav__heading {
-  margin: 4px 8px;
+  margin: 0 8px;
   color: #7fcad2;
   font-size: 10px;
   font-weight: 900;
@@ -163,7 +172,7 @@ button {
   text-align: left;
 }
 
-.fg-nav button > span {
+.fg-nav button > span:first-child {
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
@@ -171,14 +180,23 @@ button {
   background: #54728f;
 }
 
-.fg-nav button.is-active {
+.fg-nav .if-sidebar__link-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-nav button.is-active,
+.fg-nav button[aria-current="page"] {
   border-color: rgba(84, 189, 218, 0.34);
   background: var(--fg-navy-800);
   color: #ffffff;
   box-shadow: inset 3px 0 0 #27d7df;
 }
 
-.fg-nav button.is-active > span {
+.fg-nav button.is-active > span:first-child,
+.fg-nav button[aria-current="page"] > span:first-child {
   background: #27d7df;
 }
 
@@ -252,6 +270,11 @@ button {
   background: #ffffff;
 }
 
+.fg-topbar-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
 .fg-search {
   display: flex;
   width: min(360px, 30vw);
@@ -268,6 +291,19 @@ button {
   font-size: 13px;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.fg-search .if-input {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #334d66;
+  font-size: 13px;
+}
+
+.fg-search .if-input:focus {
+  outline: 0;
 }
 
 .fg-topbar__spacer,
@@ -294,6 +330,10 @@ button {
   background: #e5f4f6;
   color: var(--fg-teal-700);
   font-weight: 900;
+}
+
+.fg-account-menu {
+  min-width: 0;
 }
 
 .fg-content {
