@@ -2721,26 +2721,7 @@ button.fg-product-header__brand {
     border-radius: 0;
   }
 
-  .fg-sidebar {
-    position: static;
-    padding: 12px;
-  }
-
   .fg-workspace-rail {
-    padding: 9px;
-  }
-
-  .fg-workspace-rail .fg-nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .fg-workspace-rail .fg-nav button {
-    flex: 0 0 auto;
-  }
-
-  .fg-workspace-rail__kpis {
     display: none;
   }
 

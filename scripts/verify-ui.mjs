@@ -588,6 +588,10 @@ try {
   await assertNoPageOverflow(mobile, "mobile");
   const mobileWorkingSetRoute = await mobile.locator("[data-fastdas-working-set-ribbon] .if-route-status").count();
   assert.ok(mobileWorkingSetRoute >= 4, "mobile should keep route context in the OIP-style working-set ribbon");
+  const mobileWorkspaceRailVisible = await mobile.locator("[data-fastdas-workspace-rail]:visible").count();
+  assert.equal(mobileWorkspaceRailVisible, 0, "mobile should not render the desktop workspace rail above the page");
+  const mobileWorkspaceRailHeight = await mobile.locator("[data-fastdas-workspace-rail]").evaluate((element) => element.getBoundingClientRect().height);
+  assert.equal(mobileWorkspaceRailHeight, 0, "hidden mobile workspace rail should not consume viewport height");
   const mobileTopnavLinks = await mobile.locator("[data-fastdas-header-route] .if-operations-topnav__link").count();
   assert.equal(mobileTopnavLinks, 3, "mobile header should keep primary framework operations topnav links");
   const mobileMore = mobile.locator("[data-mobile-more-menu-button]");
@@ -613,7 +617,8 @@ try {
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
   assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
-  await mobile.locator("[data-control-surface-nav] button", { hasText: "Conversion Board" }).click();
+  await mobileMore.click();
+  await mobile.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item", { hasText: "Conversion Board" }).click();
   await mobile.waitForSelector("[data-fastdas-conversion-focus-panel]");
   await mobile.locator('[data-fastdas-action="open-conversion-details"]').click();
   await mobile.waitForSelector("[data-fastdas-expanded-record]");
@@ -631,7 +636,8 @@ try {
   );
   const mobileActivePanelText = await mobile.locator(".if-operations-panel-shell .if-operations-panel:visible").textContent();
   assert.ok(mobileActivePanelText.includes(`${mobileSecondSignalLabel.trim()} Drilldown`), "mobile metric signals should drive framework panels");
-  await mobile.locator("[data-control-surface-nav] button", { hasText: "Synthetic Data" }).click();
+  await mobileMore.click();
+  await mobile.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item", { hasText: "Synthetic Data" }).click();
   await mobile.waitForSelector("[data-fastdas-data-management]");
   await mobile.locator('[data-fastdas-action="generate-variant"]').click();
   await assertAuditContains(mobile, "Generated demo variant", "mobile variant generation");
