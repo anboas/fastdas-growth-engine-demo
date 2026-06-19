@@ -71,3 +71,5 @@ After deployment, smoke-check the published site:
 ```bash
 npm run verify:prod-smoke -- --url https://YOUR_NAMESPACE.gitlab.io/fastdas-growth-engine-demo/
 ```
+
+<!-- pages refresh 2026-06-19T16:11:02Z -->
