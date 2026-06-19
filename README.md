@@ -30,6 +30,16 @@ The `Synthetic Data Management` surface exposes the demo's customer-safe data co
 - Managed datasets for opportunities, sources, outreach, agents, and conversion learning
 - Quality gates for source safety, technical-claim safety, and repeatable reset/export behavior
 
+## Operational Workflow
+
+The demo is browser-local but operational. It keeps the golden synthetic dataset immutable and layers a runtime control state over it:
+
+- `Run Signal Scan` advances the lifecycle to Signal Intake, increments run counters, and writes an audit event
+- Page-level primary actions move records across review, outreach, agent, conversion, and learning states
+- Inline expanded-row actions approve, edit, assign, or hold selected records with visible audit feedback
+- Synthetic data actions generate scenario variants, stage export bundles, and reset back to the golden seed
+- The runtime panel shows active workflow stage, seed, scenario, approval count, signal runs, generated variants, exports, and the latest audit trail
+
 ## Local Development
 
 ```bash

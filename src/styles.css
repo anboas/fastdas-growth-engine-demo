@@ -423,6 +423,197 @@ button {
   color: #ffffff;
 }
 
+.fg-ops-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-ops-panel__main {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border-right: 1px solid var(--fg-line);
+}
+
+.fg-ops-panel__summary {
+  min-width: 0;
+}
+
+.fg-ops-panel__summary h2 {
+  margin: 0;
+  color: #071d3b;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.fg-ops-panel__summary p {
+  margin: 4px 0 0;
+  color: #52677d;
+  font-size: 12px;
+}
+
+.fg-toast {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #bdd6e2;
+  border-left: 4px solid var(--fg-teal-600);
+  border-radius: 6px;
+  background: #f8fbfe;
+  color: #294961;
+  font-size: 12px;
+}
+
+.fg-toast.fg-tone-success {
+  border-left-color: var(--fg-green-700);
+  background: #f4fbf7;
+}
+
+.fg-toast.fg-tone-warning {
+  border-left-color: var(--fg-amber-700);
+  background: #fffaf0;
+}
+
+.fg-toast.fg-tone-danger {
+  border-left-color: var(--fg-red-700);
+  background: #fff6f5;
+}
+
+.fg-toast.fg-tone-purple {
+  border-left-color: var(--fg-purple-700);
+  background: #f8f5ff;
+}
+
+.fg-toast span {
+  color: #52677d;
+}
+
+.fg-ops-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.fg-ops-stats div {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #d6e2ed;
+  border-radius: 6px;
+  background: #fbfdff;
+}
+
+.fg-ops-stats span {
+  display: block;
+  color: #63778d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fg-ops-stats strong {
+  display: block;
+  min-width: 0;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: #18334e;
+  font-size: 14px;
+  font-weight: 930;
+}
+
+.fg-audit {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 10px;
+  padding: 14px;
+  background: #f8fbfe;
+}
+
+.fg-audit__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fg-audit__header > strong {
+  color: #142f49;
+  font-size: 13px;
+  font-weight: 930;
+}
+
+.fg-audit ol {
+  display: grid;
+  gap: 8px;
+  max-height: 232px;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.fg-audit li {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #d6e2ed;
+  border-left: 4px solid #a9dce3;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.fg-audit li.fg-tone-success {
+  border-left-color: var(--fg-green-700);
+}
+
+.fg-audit li.fg-tone-warning {
+  border-left-color: var(--fg-amber-700);
+}
+
+.fg-audit li.fg-tone-danger {
+  border-left-color: var(--fg-red-700);
+}
+
+.fg-audit li.fg-tone-purple {
+  border-left-color: var(--fg-purple-700);
+}
+
+.fg-audit time {
+  color: #6b7f93;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.fg-audit li div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.fg-audit li strong {
+  color: #18334e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fg-audit li span {
+  color: #61758a;
+  font-size: 11px;
+}
+
 .fg-metric-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1105,6 +1296,16 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .fg-ops-panel,
+  .fg-ops-panel__main {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-ops-panel__main {
+    border-right: 0;
+    border-bottom: 1px solid var(--fg-line);
+  }
+
   .fg-expanded {
     grid-template-columns: 1fr;
   }
@@ -1189,6 +1390,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .fg-ops-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .fg-panel__header {
     align-items: flex-start;
     flex-direction: column;
@@ -1233,7 +1438,8 @@ button {
   .fg-management__control-grid,
   .fg-management-grid,
   .fg-scenario-grid,
-  .fg-management-card__meta {
+  .fg-management-card__meta,
+  .fg-ops-stats {
     grid-template-columns: 1fr;
   }
 

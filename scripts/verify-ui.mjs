@@ -70,14 +70,30 @@ async function assertNoPageOverflow(page, label) {
   );
 }
 
+async function assertAuditContains(page, text, label) {
+  await page.waitForFunction(
+    ({ selector, expected }) => document.querySelector(selector)?.textContent?.includes(expected),
+    { selector: "[data-fastdas-audit-log]", expected: text },
+    { timeout: 5000 },
+  );
+  const auditText = await page.locator("[data-fastdas-audit-log]").textContent();
+  assert.ok(auditText.includes(text), `${label} should record ${text} in the audit log`);
+}
+
 try {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await desktop.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-demo-app]");
+  await desktop.waitForSelector("[data-fastdas-operational-workflow]");
   await assertNoPageOverflow(desktop, "desktop");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
+
+  await desktop.locator('[data-fastdas-action="run-signal-scan"]').click();
+  await assertAuditContains(desktop, "Signal scan completed", "global scan");
+  await desktop.waitForSelector("h1", { timeout: 5000 });
+  assert.match(await desktop.locator("h1").textContent(), /Signal Intake/, "global scan should move operator to Signal Intake");
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
@@ -90,11 +106,29 @@ try {
 
   await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-data-management]");
+  const initialSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
+  assert.ok(initialSeedText.includes("FD-GE-DEMO-0619"), "synthetic data should start from the golden seed");
+  await desktop.locator('[data-fastdas-action="generate-variant"]').click();
+  await assertAuditContains(desktop, "Generated demo variant", "variant generation");
+  const variantSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
+  assert.ok(variantSeedText.includes("FD-GE-DEMO-0619-V01"), "variant generation should update the active seed");
+  await desktop.locator('[data-fastdas-action="export-bundle"]').click();
+  await assertAuditContains(desktop, "Export bundle prepared", "bundle export");
+  await desktop.locator('[data-fastdas-action="reset-demo"]').click();
+  await assertAuditContains(desktop, "Reset demo state", "demo reset");
+  const resetSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
+  assert.ok(resetSeedText.includes("FD-GE-DEMO-0619"), "reset should restore the golden seed");
+  assert.ok(!resetSeedText.includes("FD-GE-DEMO-0619-V01"), "reset should remove the generated variant seed from the control cards");
   const managementCards = await desktop.locator(".fg-management-card").count();
   assert.equal(managementCards, 6, "synthetic data surface should render six management areas");
   const scenarioPacks = await desktop.locator("[data-fastdas-scenario-packs] .fg-scenario-card").count();
   assert.equal(scenarioPacks, 4, "synthetic data surface should render four scenario packs");
   await assertNoPageOverflow(desktop, "desktop synthetic data");
+
+  await desktop.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
+  await desktop.locator('[data-fastdas-action="approve-record"]').first().click();
+  await assertAuditContains(desktop, "Inline record approved", "inline approval");
 
   await desktop.screenshot({ path: `${OUT_DIR}/fastdas-desktop.png`, fullPage: true });
 
@@ -109,6 +143,8 @@ try {
   assert.equal(mobileMetrics, 6, "mobile surface should keep six metric cards visible");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Synthetic Data" }).click();
   await mobile.waitForSelector("[data-fastdas-data-management]");
+  await mobile.locator('[data-fastdas-action="generate-variant"]').click();
+  await assertAuditContains(mobile, "Generated demo variant", "mobile variant generation");
   await assertNoPageOverflow(mobile, "mobile synthetic data");
   const mobileManagementCards = await mobile.locator(".fg-management-card").count();
   assert.equal(mobileManagementCards, 6, "mobile synthetic data surface should keep six management areas");

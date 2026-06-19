@@ -38,6 +38,10 @@ for (const hook of [
   "data-fastdas-human-approval-boundary",
   "data-fastdas-data-management",
   "data-fastdas-scenario-packs",
+  "data-fastdas-operational-workflow",
+  "data-fastdas-workflow-stage",
+  "data-fastdas-audit-log",
+  "data-fastdas-toast",
 ]) {
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
@@ -73,9 +77,33 @@ for (const phrase of [
   "Synthetic Data Management",
   "Golden demo state",
   "Scenario Packs",
+  "Generated demo variant",
+  "Reset demo state",
+  "Export bundle prepared",
+  "Signal scan completed",
   "Conversion Board",
 ]) {
   assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
+}
+
+for (const handler of [
+  "handlePrimaryAction",
+  "handleSyntheticAction",
+  "handleRecordAction",
+  "appendEvent",
+]) {
+  assert.equal(app.includes(handler), true, `demo should include operational handler ${handler}`);
+}
+
+for (const actionHook of [
+  'data-fastdas-action="run-signal-scan"',
+  'data-fastdas-action="page-primary"',
+  'data-fastdas-action="approve-record"',
+  'data-fastdas-action="generate-variant"',
+  'data-fastdas-action="export-bundle"',
+  'data-fastdas-action="reset-demo"',
+]) {
+  assert.equal(app.includes(actionHook), true, `demo should expose action hook ${actionHook}`);
 }
 
 assert.equal(css.includes("linear-gradient"), false, "demo CSS should avoid gradient-heavy UI surfaces");

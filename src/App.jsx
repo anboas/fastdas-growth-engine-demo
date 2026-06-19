@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { sidebarKpis, surfaces, workflowStages } from "./data.js";
 
 function Icon({ name }) {
@@ -17,6 +17,143 @@ function toneClass(tone = "neutral") {
 function splitCell(value) {
   const [primary, secondary] = String(value).split("|");
   return { primary, secondary };
+}
+
+const BASE_EVENTS = [
+  {
+    id: "evt-golden-load",
+    time: "09:34",
+    tone: "success",
+    title: "Golden demo loaded",
+    body: "Customer-safe synthetic records, source registry, outreach queue, and conversion board are aligned to FD-GE-DEMO-0619.",
+  },
+  {
+    id: "evt-evidence-ready",
+    time: "09:36",
+    tone: "blue",
+    title: "Evidence packets staged",
+    body: "112 evidence packets are linked to scoring, provenance, stakeholder paths, and first-offer recommendations.",
+  },
+  {
+    id: "evt-human-gate",
+    time: "09:39",
+    tone: "warning",
+    title: "Human review gate active",
+    body: "Outbound, pricing, technical claims, and close strategy require operator approval.",
+  },
+];
+
+const INITIAL_OPERATION_STATE = {
+  workflowIndex: 3,
+  activeSeed: "FD-GE-DEMO-0619",
+  scenarioMode: "Balanced pipeline",
+  datasetVersion: "2026.06.19-a",
+  resetTarget: "Golden demo state",
+  variantCount: 0,
+  exportCount: 0,
+  signalRuns: 12,
+  approvalCount: 7,
+  generatedRecords: 485,
+  lastAction: "Ready for operator approval",
+  toast: null,
+  events: BASE_EVENTS,
+};
+
+const SCENARIO_SEQUENCE = [
+  "Closeout Sprint",
+  "Property Portfolio",
+  "Hospitality Coverage",
+  "Maintenance Wedge",
+  "Balanced pipeline",
+];
+
+const PRIMARY_ACTIONS = {
+  "command-center": {
+    title: "Next best action approved",
+    body: "Capital Ridge advanced from Human Review into the human-gated outreach queue.",
+    workflowIndex: 4,
+    tone: "success",
+    surfaceId: "outreach-queue",
+    updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+  },
+  "signal-intake": {
+    title: "Selected source run completed",
+    body: "Arlington permit monitor refreshed, parser warning retained, and 6 records routed to enrichment.",
+    workflowIndex: 1,
+    tone: "blue",
+    updates: state => ({ signalRuns: state.signalRuns + 1, generatedRecords: state.generatedRecords + 6 }),
+  },
+  "opportunity-workbench": {
+    title: "Opportunity promoted to review",
+    body: "HarborPoint Garage moved into Human Review with source notes and contact verification gates attached.",
+    workflowIndex: 3,
+    tone: "warning",
+    surfaceId: "evidence-review",
+  },
+  "evidence-review": {
+    title: "Outreach draft approved",
+    body: "Evidence passed source safety, technical safety, and first-offer fit checks before outreach.",
+    workflowIndex: 4,
+    tone: "success",
+    surfaceId: "outreach-queue",
+    updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+  },
+  "outreach-queue": {
+    title: "Selected outreach approved",
+    body: "PM benchmark draft released to approved-send state and follow-up cadence was scheduled.",
+    workflowIndex: 4,
+    tone: "success",
+    updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+  },
+  "agent-operations": {
+    title: "Agent workflow replayed",
+    body: "Permit Monitor Agent completed a replay run, produced 18 signals, and created 3 offshore verification tasks.",
+    workflowIndex: 1,
+    tone: "blue",
+    updates: state => ({ signalRuns: state.signalRuns + 1, generatedRecords: state.generatedRecords + 18 }),
+  },
+  "synthetic-data": {
+    title: "Generated demo variant",
+    body: "Scenario-safe synthetic variant created with the same evidence, scoring, and workflow contracts.",
+    workflowIndex: 2,
+    tone: "purple",
+  },
+  "conversion-board": {
+    title: "Outcome logged",
+    body: "Assessment candidate outcome captured and learning loop queued for scoring calibration.",
+    workflowIndex: 8,
+    tone: "success",
+  },
+};
+
+function currentTimeLabel() {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+function createEvent(title, body, tone = "blue") {
+  return {
+    id: `${Date.now()}-${title}`,
+    time: currentTimeLabel(),
+    title,
+    body,
+    tone,
+  };
+}
+
+function appendEvent(state, { title, body, tone = "blue", workflowIndex, updates = {} }) {
+  const patch = typeof updates === "function" ? updates(state) : updates;
+  return {
+    ...state,
+    ...patch,
+    workflowIndex: workflowIndex ?? state.workflowIndex,
+    lastAction: title,
+    toast: { title, body, tone },
+    events: [createEvent(title, body, tone), ...state.events].slice(0, 8),
+  };
 }
 
 function MetricCard({ metric }) {
@@ -105,7 +242,7 @@ function SourceCards({ cards = [] }) {
   );
 }
 
-function ExpandedRecord({ surface }) {
+function ExpandedRecord({ surface, onRecordAction }) {
   const detail = surface.expanded;
   return (
     <tr className="fg-expanded-row">
@@ -146,10 +283,38 @@ function ExpandedRecord({ surface }) {
               ))}
             </div>
             <div className="fg-action-row">
-              <button type="button" className="if-btn if-btn--success fg-btn fg-btn--primary"><Icon name="check" />Approve</button>
-              <button type="button" className="if-btn if-btn--secondary fg-btn"><Icon name="edit" />Edit</button>
-              <button type="button" className="if-btn if-btn--secondary fg-btn"><Icon name="users" />Assign</button>
-              <button type="button" className="if-btn if-btn--danger fg-btn fg-btn--danger"><Icon name="x" />Hold</button>
+              <button
+                type="button"
+                className="if-btn if-btn--success fg-btn fg-btn--primary"
+                data-fastdas-action="approve-record"
+                onClick={() => onRecordAction("approve", surface)}
+              >
+                <Icon name="check" />Approve
+              </button>
+              <button
+                type="button"
+                className="if-btn if-btn--secondary fg-btn"
+                data-fastdas-action="edit-record"
+                onClick={() => onRecordAction("edit", surface)}
+              >
+                <Icon name="edit" />Edit
+              </button>
+              <button
+                type="button"
+                className="if-btn if-btn--secondary fg-btn"
+                data-fastdas-action="assign-record"
+                onClick={() => onRecordAction("assign", surface)}
+              >
+                <Icon name="users" />Assign
+              </button>
+              <button
+                type="button"
+                className="if-btn if-btn--danger fg-btn fg-btn--danger"
+                data-fastdas-action="hold-record"
+                onClick={() => onRecordAction("hold", surface)}
+              >
+                <Icon name="x" />Hold
+              </button>
             </div>
           </section>
         </div>
@@ -158,7 +323,7 @@ function ExpandedRecord({ surface }) {
   );
 }
 
-function OpportunityGrid({ surface, selectedRowId, onSelect }) {
+function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
   return (
     <section className="if-panel fg-panel" data-fastdas-opportunity-grid data-if-data-table>
@@ -174,10 +339,32 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
       </div>
       <div className="if-toolbar fg-command-band">
         <span className="fg-counter">{surface.table.count}</span>
-        {surface.filters.map(filter => <button className="if-btn if-btn--secondary if-btn--sm fg-filter" type="button" key={filter}>{filter}</button>)}
+        {surface.filters.map(filter => (
+          <button
+            className="if-btn if-btn--secondary if-btn--sm fg-filter"
+            type="button"
+            key={filter}
+            onClick={() => onUtilityAction("Filter staged", `${filter} is now staged for the customer demo view.`, "blue")}
+          >
+            {filter}
+          </button>
+        ))}
         <span className="fg-command-band__spacer" />
-        <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="columns" />Columns</button>
-        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="arrowUp" />{surface.primaryAction}</button>
+        <button
+          className="if-btn if-btn--secondary fg-btn"
+          type="button"
+          onClick={() => onUtilityAction("Column layout saved", "Decision-view columns are locked for this walkthrough.", "blue")}
+        >
+          <Icon name="columns" />Columns
+        </button>
+        <button
+          className="if-btn if-btn--primary fg-btn fg-btn--primary"
+          type="button"
+          data-fastdas-action="grid-primary"
+          onClick={() => onPrimaryAction(surface.id)}
+        >
+          <Icon name="arrowUp" />{surface.primaryAction}
+        </button>
       </div>
       <div className="if-table-scroll fg-table-wrap">
         <table className="if-table fg-table">
@@ -198,7 +385,7 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
                     </td>
                   ))}
                 </tr>
-                {row.id === selectedRowId ? <ExpandedRecord key={`${row.id}-expanded`} surface={surface} /> : null}
+                {row.id === selectedRowId ? <ExpandedRecord key={`${row.id}-expanded`} surface={surface} onRecordAction={onRecordAction} /> : null}
               </Fragment>
             ))}
           </tbody>
@@ -208,8 +395,15 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
   );
 }
 
-function DataManagement({ management }) {
+function DataManagement({ management, operationState, onSyntheticAction }) {
   if (!management) return null;
+
+  const valueOverrides = {
+    "Active seed": operationState.activeSeed,
+    "Scenario mode": operationState.scenarioMode,
+    "Dataset version": operationState.datasetVersion,
+    "Reset target": operationState.resetTarget,
+  };
 
   return (
     <section className="if-stack fg-management" data-fastdas-data-management>
@@ -220,9 +414,30 @@ function DataManagement({ management }) {
           <p>Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
         </div>
         <div className="fg-management__actions">
-          <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Generate Variant</button>
-          <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="download" />Export Bundle</button>
-          <button className="if-btn if-btn--danger fg-btn fg-btn--danger" type="button"><Icon name="rotate" />Reset Demo</button>
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="generate-variant"
+            onClick={() => onSyntheticAction("variant")}
+          >
+            <Icon name="refresh" />Generate Variant
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="export-bundle"
+            onClick={() => onSyntheticAction("export")}
+          >
+            <Icon name="download" />Export Bundle
+          </button>
+          <button
+            className="if-btn if-btn--danger fg-btn fg-btn--danger"
+            type="button"
+            data-fastdas-action="reset-demo"
+            onClick={() => onSyntheticAction("reset")}
+          >
+            <Icon name="rotate" />Reset Demo
+          </button>
         </div>
       </div>
 
@@ -230,7 +445,7 @@ function DataManagement({ management }) {
         {management.controls.map(([label, value, body]) => (
           <article className="if-card fg-management-control-card" key={label}>
             <span>{label}</span>
-            <strong>{value}</strong>
+            <strong>{valueOverrides[label] || value}</strong>
             <p>{body}</p>
           </article>
         ))}
@@ -279,14 +494,61 @@ function DataManagement({ management }) {
   );
 }
 
-function WorkflowStrip() {
+function WorkflowStrip({ activeIndex }) {
   return (
     <section className="fg-workflow" aria-label="FastDAS lifecycle">
       {workflowStages.map((stage, index) => (
-        <span key={stage} className={index < 4 ? "is-complete" : index === 4 ? "is-active" : ""}>
+        <span key={stage} className={index < activeIndex ? "is-complete" : index === activeIndex ? "is-active" : ""}>
           {stage}
         </span>
       ))}
+    </section>
+  );
+}
+
+function OperationalWorkflow({ state }) {
+  const currentStage = workflowStages[state.workflowIndex] || workflowStages[0];
+  return (
+    <section className="if-panel fg-ops-panel" data-fastdas-operational-workflow>
+      <div className="fg-ops-panel__main">
+        <div className="fg-ops-panel__summary">
+          <div className="fg-eyebrow">Operational Runtime</div>
+          <h2 data-fastdas-workflow-stage>{currentStage}</h2>
+          <p>{state.lastAction}</p>
+          {state.toast ? (
+            <div className={`if-alert fg-toast ${toneClass(state.toast.tone)}`} data-fastdas-toast>
+              <strong>{state.toast.title}</strong>
+              <span>{state.toast.body}</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="fg-ops-stats" aria-label="Operational counters">
+          <div><span>Active seed</span><strong>{state.activeSeed}</strong></div>
+          <div><span>Scenario</span><strong>{state.scenarioMode}</strong></div>
+          <div><span>Signal runs</span><strong>{state.signalRuns}</strong></div>
+          <div><span>Records</span><strong>{state.generatedRecords}</strong></div>
+          <div><span>Approvals due</span><strong>{state.approvalCount}</strong></div>
+          <div><span>Variants</span><strong>{state.variantCount}</strong></div>
+          <div><span>Exports</span><strong>{state.exportCount}</strong></div>
+        </div>
+      </div>
+      <div className="fg-audit" data-fastdas-audit-log>
+        <div className="fg-audit__header">
+          <strong>Audit Trail</strong>
+          <Chip tone="blue">{state.events.length} events</Chip>
+        </div>
+        <ol>
+          {state.events.map(event => (
+            <li key={event.id} className={toneClass(event.tone)}>
+              <time>{event.time}</time>
+              <div>
+                <strong>{event.title}</strong>
+                <span>{event.body}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }
@@ -344,6 +606,7 @@ function BottomPanels({ surface }) {
 export default function App() {
   const [activeSurfaceId, setActiveSurfaceId] = useState(getInitialSurfaceId);
   const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
+  const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
 
   useEffect(() => {
     const onHashChange = () => setActiveSurfaceId(getInitialSurfaceId());
@@ -356,10 +619,129 @@ export default function App() {
     [activeSurfaceId],
   );
 
-  const setSurface = id => {
+  const setSurface = useCallback((id) => {
     setActiveSurfaceId(id);
     window.location.hash = `/${id}`;
-  };
+  }, []);
+
+  const recordOperation = useCallback((event) => {
+    setOperationState(current => appendEvent(current, event));
+  }, []);
+
+  const handleUtilityAction = useCallback((title, body, tone = "blue") => {
+    recordOperation({ title, body, tone });
+  }, [recordOperation]);
+
+  const handlePrimaryAction = useCallback((surfaceId) => {
+    if (surfaceId === "global-signal-scan") {
+      recordOperation({
+        title: "Signal scan completed",
+        body: "37 synthetic signals captured, 11 routed to enrichment, and 3 high-score records surfaced for review.",
+        tone: "blue",
+        workflowIndex: 1,
+        updates: state => ({ signalRuns: state.signalRuns + 1, generatedRecords: state.generatedRecords + 37 }),
+      });
+      setSurface("signal-intake");
+      return;
+    }
+
+    const action = PRIMARY_ACTIONS[surfaceId] || PRIMARY_ACTIONS["command-center"];
+    if (surfaceId === "synthetic-data") {
+      setOperationState(current => {
+        const nextVariant = current.variantCount + 1;
+        const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
+        return appendEvent(current, {
+          ...action,
+          body: `${scenarioMode} variant created with source-safe records and complete workflow provenance.`,
+          updates: {
+            variantCount: nextVariant,
+            activeSeed: `FD-GE-DEMO-0619-V${String(nextVariant).padStart(2, "0")}`,
+            datasetVersion: `2026.06.19-${String.fromCharCode(98 + ((nextVariant - 1) % 24))}`,
+            scenarioMode,
+            generatedRecords: current.generatedRecords + 24,
+          },
+        });
+      });
+      return;
+    }
+    recordOperation(action);
+    if (action.surfaceId) setSurface(action.surfaceId);
+  }, [recordOperation, setSurface]);
+
+  const handleRecordAction = useCallback((kind, activeSurface) => {
+    const labels = {
+      approve: {
+        title: "Inline record approved",
+        body: `${activeSurface.expanded.title} moved through its operator gate and is ready for the next workflow step.`,
+        tone: "success",
+        workflowIndex: Math.min(workflowStages.length - 1, operationState.workflowIndex + 1),
+        updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+      },
+      edit: {
+        title: "Draft opened for edit",
+        body: `${activeSurface.expanded.title} is staged for message, evidence, or scoring edits without changing the golden seed.`,
+        tone: "blue",
+      },
+      assign: {
+        title: "Research task assigned",
+        body: `${activeSurface.expanded.title} now has an offshore verification packet and human owner handoff.`,
+        tone: "purple",
+      },
+      hold: {
+        title: "Record placed on hold",
+        body: `${activeSurface.expanded.title} is blocked from outbound action until source, role, or technical claim risk is resolved.`,
+        tone: "danger",
+      },
+    };
+    recordOperation(labels[kind]);
+  }, [operationState.workflowIndex, recordOperation]);
+
+  const handleSyntheticAction = useCallback((kind) => {
+    if (kind === "reset") {
+      setSelectedRows(Object.fromEntries(surfaces.map(item => [item.id, item.selected])));
+      setOperationState({
+        ...INITIAL_OPERATION_STATE,
+        toast: {
+          title: "Reset demo state",
+          body: "Golden seed, selected rows, scenario mode, counters, and workflow stage were restored.",
+          tone: "success",
+        },
+        events: [
+          createEvent("Reset demo state", "Golden seed, selected rows, scenario mode, counters, and workflow stage were restored.", "success"),
+          ...BASE_EVENTS,
+        ],
+      });
+      return;
+    }
+
+    if (kind === "export") {
+      recordOperation({
+        title: "Export bundle prepared",
+        body: "Customer-safe JSON, evidence summary, scenario manifest, and reset instructions were staged for review.",
+        tone: "blue",
+        updates: state => ({ exportCount: state.exportCount + 1 }),
+      });
+      return;
+    }
+
+    setOperationState(current => {
+      const nextVariant = current.variantCount + 1;
+      const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
+      return appendEvent(current, {
+        title: "Generated demo variant",
+        body: `${scenarioMode} variant created with source-safe records and complete workflow provenance.`,
+        tone: "purple",
+        workflowIndex: 2,
+        updates: {
+          variantCount: nextVariant,
+          activeSeed: `FD-GE-DEMO-0619-V${String(nextVariant).padStart(2, "0")}`,
+          datasetVersion: `2026.06.19-${String.fromCharCode(98 + ((nextVariant - 1) % 24))}`,
+          scenarioMode,
+          generatedRecords: current.generatedRecords + 24,
+        },
+      });
+    });
+  }, [recordOperation]);
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
@@ -407,10 +789,23 @@ export default function App() {
           <div className="if-search if-utility-search fg-search"><Icon name="search" />Global search: property, signal, owner, contact, source...</div>
           <Chip tone="blue">VA / MD / DC</Chip>
           <Chip tone="success">Source tracking on</Chip>
-          <Chip tone="warning">7 human approvals due</Chip>
+          <Chip tone="warning">{operationState.approvalCount} human approvals due</Chip>
           <span className="fg-topbar__spacer" />
-          <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="save" />Save View</button>
-          <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Run Signal Scan</button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
+          >
+            <Icon name="save" />Save View
+          </button>
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="run-signal-scan"
+            onClick={() => handlePrimaryAction("global-signal-scan")}
+          >
+            <Icon name="refresh" />Run Signal Scan
+          </button>
           <div className="fg-user"><span>AB</span>Growth Operator</div>
         </header>
 
@@ -422,13 +817,33 @@ export default function App() {
               <p>{surface.summary}</p>
             </div>
             <div className="fg-page-actions">
-              <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="rotate" />Reset Filters</button>
-              <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="download" />Export</button>
-              <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="check" />{surface.primaryAction}</button>
+              <button
+                className="if-btn if-btn--secondary fg-btn"
+                type="button"
+                onClick={() => handleUtilityAction("Filters reset", `${surface.title} returned to the default demo view.`, "blue")}
+              >
+                <Icon name="rotate" />Reset Filters
+              </button>
+              <button
+                className="if-btn if-btn--secondary fg-btn"
+                type="button"
+                onClick={() => handleUtilityAction("Surface export staged", `${surface.title} export bundle is ready with source-safe synthetic data only.`, "blue")}
+              >
+                <Icon name="download" />Export
+              </button>
+              <button
+                className="if-btn if-btn--primary fg-btn fg-btn--primary"
+                type="button"
+                data-fastdas-action="page-primary"
+                onClick={() => handlePrimaryAction(surface.id)}
+              >
+                <Icon name="check" />{surface.primaryAction}
+              </button>
             </div>
           </header>
 
-          <WorkflowStrip />
+          <WorkflowStrip activeIndex={operationState.workflowIndex} />
+          <OperationalWorkflow state={operationState} />
 
           <section className="if-metric-grid fg-metric-grid" data-fastdas-metric-grid>
             {surface.metrics.map(metric => <MetricCard key={metric[0]} metric={metric} />)}
@@ -436,12 +851,15 @@ export default function App() {
 
           <SourceCards cards={surface.sourceCards} />
 
-          <DataManagement management={surface.management} />
+          <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
 
           <OpportunityGrid
             surface={surface}
             selectedRowId={selectedRows[surface.id]}
             onSelect={rowId => setSelectedRows(current => ({ ...current, [surface.id]: rowId }))}
+            onPrimaryAction={handlePrimaryAction}
+            onUtilityAction={handleUtilityAction}
+            onRecordAction={handleRecordAction}
           />
 
           <BottomPanels surface={surface} />
