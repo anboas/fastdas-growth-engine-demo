@@ -47,6 +47,7 @@ const INITIAL_OPERATION_STATE = {
   workflowIndex: 3,
   activeSeed: "FD-GE-DEMO-0619",
   scenarioMode: "Balanced pipeline",
+  operatorMode: "Live Walkthrough",
   datasetVersion: "2026.06.19-a",
   resetTarget: "Golden demo state",
   variantCount: 0,
@@ -66,6 +67,8 @@ const SCENARIO_SEQUENCE = [
   "Maintenance Wedge",
   "Balanced pipeline",
 ];
+
+const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
 
 const PRIMARY_ACTIONS = {
   "command-center": {
@@ -525,6 +528,7 @@ function OperationalWorkflow({ state }) {
         <div className="fg-ops-stats" aria-label="Operational counters">
           <div><span>Active seed</span><strong>{state.activeSeed}</strong></div>
           <div><span>Scenario</span><strong>{state.scenarioMode}</strong></div>
+          <div><span>Mode</span><strong>{state.operatorMode}</strong></div>
           <div><span>Signal runs</span><strong>{state.signalRuns}</strong></div>
           <div><span>Records</span><strong>{state.generatedRecords}</strong></div>
           <div><span>Approvals due</span><strong>{state.approvalCount}</strong></div>
@@ -548,6 +552,93 @@ function OperationalWorkflow({ state }) {
             </li>
           ))}
         </ol>
+      </div>
+    </section>
+  );
+}
+
+function CommandDock({ state, onCommandAction, onModeChange }) {
+  const commands = [
+    {
+      id: "scan",
+      title: "Signal Scan",
+      body: "Capture source deltas, route matches, and refresh confidence.",
+      meta: `${state.signalRuns} runs`,
+      tone: "blue",
+      icon: "refresh",
+      action: "Run",
+    },
+    {
+      id: "approve",
+      title: "Human Gate",
+      body: "Clear one approval while preserving technical and source boundaries.",
+      meta: `${state.approvalCount} due`,
+      tone: state.approvalCount > 0 ? "warning" : "success",
+      icon: "check",
+      action: "Approve",
+    },
+    {
+      id: "queue",
+      title: "Outreach Cadence",
+      body: "Queue follow-up timing, meeting brief, and reply triage handoff.",
+      meta: "11 due",
+      tone: "purple",
+      icon: "mail",
+      action: "Queue",
+    },
+    {
+      id: "export",
+      title: "Demo Bundle",
+      body: "Prepare the customer-safe dataset, manifest, and evidence summary.",
+      meta: `${state.exportCount} exports`,
+      tone: "success",
+      icon: "download",
+      action: "Export",
+    },
+  ];
+
+  return (
+    <section className="if-panel fg-command-dock" data-fastdas-command-dock>
+      <div className="fg-command-dock__top">
+        <div>
+          <div className="fg-eyebrow">Workflow Command Queue</div>
+          <h2>Operator Control Dock</h2>
+        </div>
+        <div className="fg-segmented" role="group" aria-label="Operator mode" data-fastdas-operator-mode>
+          {OPERATOR_MODES.map(mode => (
+            <button
+              type="button"
+              className={mode === state.operatorMode ? "is-active" : ""}
+              aria-pressed={mode === state.operatorMode}
+              key={mode}
+              onClick={() => onModeChange(mode)}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="fg-command-grid">
+        {commands.map(command => (
+          <article className="if-card fg-command-card" data-fastdas-command-card key={command.id}>
+            <div className="fg-command-card__icon"><Icon name={command.icon} /></div>
+            <div className="fg-command-card__body">
+              <div>
+                <h3>{command.title}</h3>
+                <Chip tone={command.tone}>{command.meta}</Chip>
+              </div>
+              <p>{command.body}</p>
+            </div>
+            <button
+              className="if-btn if-btn--secondary fg-btn"
+              type="button"
+              data-fastdas-action={`command-${command.id}`}
+              onClick={() => onCommandAction(command.id)}
+            >
+              {command.action}
+            </button>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -630,6 +721,47 @@ export default function App() {
 
   const handleUtilityAction = useCallback((title, body, tone = "blue") => {
     recordOperation({ title, body, tone });
+  }, [recordOperation]);
+
+  const handleModeChange = useCallback((mode) => {
+    setOperationState(current => appendEvent(current, {
+      title: "Operator mode changed",
+      body: `${mode} mode is active for the walkthrough control dock.`,
+      tone: mode === "Customer Review" ? "success" : mode === "Synthetic Variant" ? "purple" : "blue",
+      updates: { operatorMode: mode },
+    }));
+  }, []);
+
+  const handleCommandAction = useCallback((commandId) => {
+    const commandEvents = {
+      scan: {
+        title: "Command scan run",
+        body: "Control dock scan captured 37 synthetic signals and routed high-fit records to enrichment.",
+        tone: "blue",
+        workflowIndex: 1,
+        updates: state => ({ signalRuns: state.signalRuns + 1, generatedRecords: state.generatedRecords + 37 }),
+      },
+      approve: {
+        title: "Command approval cleared",
+        body: "One human-gated record advanced with source-safe and technical-safe checks retained.",
+        tone: "success",
+        workflowIndex: 4,
+        updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+      },
+      queue: {
+        title: "Command cadence queued",
+        body: "Follow-up timing, meeting brief, and reply triage handoff were queued for the selected opportunity.",
+        tone: "purple",
+        workflowIndex: 4,
+      },
+      export: {
+        title: "Command export staged",
+        body: "Customer-safe demo bundle, scenario manifest, and evidence summary are ready for review.",
+        tone: "blue",
+        updates: state => ({ exportCount: state.exportCount + 1 }),
+      },
+    };
+    recordOperation(commandEvents[commandId]);
   }, [recordOperation]);
 
   const handlePrimaryAction = useCallback((surfaceId) => {
@@ -844,6 +976,7 @@ export default function App() {
 
           <WorkflowStrip activeIndex={operationState.workflowIndex} />
           <OperationalWorkflow state={operationState} />
+          <CommandDock state={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
 
           <section className="if-metric-grid fg-metric-grid" data-fastdas-metric-grid>
             {surface.metrics.map(metric => <MetricCard key={metric[0]} metric={metric} />)}

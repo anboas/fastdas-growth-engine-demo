@@ -85,10 +85,20 @@ try {
   await desktop.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-demo-app]");
   await desktop.waitForSelector("[data-fastdas-operational-workflow]");
+  await desktop.waitForSelector("[data-fastdas-command-dock]");
   await assertNoPageOverflow(desktop, "desktop");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
+  const commandCards = await desktop.locator("[data-fastdas-command-card]").count();
+  assert.equal(commandCards, 4, "desktop command dock should expose four operator commands");
+
+  await desktop.locator("[data-fastdas-operator-mode] button", { hasText: "Customer Review" }).click();
+  await assertAuditContains(desktop, "Operator mode changed", "operator mode selector");
+  const activeMode = await desktop.locator("[data-fastdas-operator-mode] button.is-active").textContent();
+  assert.equal(activeMode.trim(), "Customer Review", "operator mode segmented control should show the selected mode");
+  await desktop.locator('[data-fastdas-action="command-export"]').click();
+  await assertAuditContains(desktop, "Command export staged", "command dock export");
 
   await desktop.locator('[data-fastdas-action="run-signal-scan"]').click();
   await assertAuditContains(desktop, "Signal scan completed", "global scan");
@@ -135,7 +145,10 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 920 }, isMobile: true });
   await mobile.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
   await mobile.waitForSelector("[data-fastdas-demo-app]");
+  await mobile.waitForSelector("[data-fastdas-command-dock]");
   await assertNoPageOverflow(mobile, "mobile");
+  const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
+  assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Conversion Board" }).click();
   await mobile.waitForSelector("[data-fastdas-expanded-record]");
   await assertNoPageOverflow(mobile, "mobile conversion board");

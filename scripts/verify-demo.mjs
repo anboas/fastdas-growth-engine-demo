@@ -42,6 +42,9 @@ for (const hook of [
   "data-fastdas-workflow-stage",
   "data-fastdas-audit-log",
   "data-fastdas-toast",
+  "data-fastdas-command-dock",
+  "data-fastdas-operator-mode",
+  "data-fastdas-command-card",
 ]) {
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
@@ -81,6 +84,9 @@ for (const phrase of [
   "Reset demo state",
   "Export bundle prepared",
   "Signal scan completed",
+  "Operator Control Dock",
+  "Command export staged",
+  "Operator mode changed",
   "Conversion Board",
 ]) {
   assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
@@ -102,6 +108,7 @@ for (const actionHook of [
   'data-fastdas-action="generate-variant"',
   'data-fastdas-action="export-bundle"',
   'data-fastdas-action="reset-demo"',
+  'data-fastdas-action={`command-${command.id}`}',
 ]) {
   assert.equal(app.includes(actionHook), true, `demo should expose action hook ${actionHook}`);
 }
