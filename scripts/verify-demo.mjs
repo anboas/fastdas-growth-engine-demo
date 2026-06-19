@@ -5,6 +5,7 @@ const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 const html = readFileSync("index.html", "utf8");
 const app = readFileSync("src/App.jsx", "utf8");
 const data = readFileSync("src/data.js", "utf8");
+const workbenchModel = readFileSync("src/workbenchModel.js", "utf8");
 const css = readFileSync("src/styles.css", "utf8");
 const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
 const viteConfig = readFileSync("vite.config.js", "utf8");
@@ -28,6 +29,12 @@ assert.equal(legacyAssets.includes("assets/control-surface-ui-B0ozY_LW.css"), tr
 assert.equal(legacyAssets.includes("assets/react-vendor-DLXOKURV.js"), true, "legacy patch should bridge stale vendor modulepreload assets");
 assert.equal(viteConfig.includes('entryFileNames: "assets/[name].js"'), true, "Vite should use stable entry asset names for GitLab Pages");
 assert.equal(viteConfig.includes('chunkFileNames: "assets/[name].js"'), true, "Vite should use stable chunk asset names for GitLab Pages");
+assert.equal(app.includes('from "./workbenchModel.js"'), true, "App should consume workbench state through the workbench model module");
+assert.equal(app.includes("opportunityRecords"), false, "App should not own raw opportunity record lookup logic");
+assert.equal(workbenchModel.includes("export const FOCUSED_WORKBENCH_SURFACES"), true, "workbench model should own focused surface config");
+assert.equal(workbenchModel.includes("export const SAVED_VIEWS"), true, "workbench model should own saved-view config");
+assert.equal(workbenchModel.includes("export function detailForSurfaceSelection"), true, "workbench model should own selected-record detail builders");
+assert.equal(workbenchModel.includes("const detailBuilders"), true, "workbench model should route surface detail builders through a registry");
 
 for (const surface of [
   "command-center",
