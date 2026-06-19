@@ -63,8 +63,11 @@ for (const frameworkClass of [
   "if-operations-signal-grid",
   "if-operations-metric-grid",
   "if-operations-signal",
+  "if-operations-panel-shell",
   "if-operations-section",
   "if-operations-panel",
+  "if-operations-summary-grid",
+  "if-operations-insight",
   "if-balanced-grid",
   "if-card",
   "if-card__title",
@@ -100,6 +103,10 @@ for (const frameworkClass of [
 assert.equal(app.includes("data-if-data-table"), true, "tables should expose Control Surface UI data-table behavior hooks");
 assert.equal(app.includes("data-if-operations-workspace"), true, "app content should expose the operations workspace contract");
 assert.equal(app.includes("data-if-operations-signal"), true, "metrics should expose operations signal contracts");
+assert.equal(app.includes("data-if-operations-focus-panel"), true, "metrics should target operations drilldown panels");
+assert.equal(app.includes("data-if-operations-panel"), true, "operations signals should have matching framework panels");
+assert.equal(app.includes("data-if-operations-current-label"), true, "operations panels should expose current-label slots");
+assert.equal(app.includes("data-if-operations-reset"), true, "operations panels should expose reset controls");
 assert.equal(app.includes("data-if-balanced-grid"), true, "metric grids should expose balanced-grid behavior hooks");
 assert.equal(app.includes("data-if-table-detail"), true, "expanded rows should expose framework table-detail hooks");
 assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");

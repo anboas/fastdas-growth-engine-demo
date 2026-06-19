@@ -19,6 +19,10 @@ function splitCell(value) {
   return { primary, secondary };
 }
 
+function signalIdForLabel(label) {
+  return String(label || "signal").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 const BASE_EVENTS = [
   {
     id: "evt-golden-load",
@@ -159,14 +163,17 @@ function appendEvent(state, { title, body, tone = "blue", workflowIndex, updates
   };
 }
 
-function MetricCard({ metric }) {
+function MetricCard({ metric, selected = false }) {
   const [label, value, change, meta, tone, icon] = metric;
-  const signalId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const signalId = signalIdForLabel(label);
   return (
-    <article
-      className={`if-card if-metric if-operations-signal fg-card fg-metric ${toneClass(tone)}`}
+    <button
+      type="button"
+      className={`if-card if-metric if-operations-signal fg-card fg-metric ${selected ? "is-selected" : ""} ${toneClass(tone)}`}
       data-if-operations-signal={signalId}
       data-if-operations-label={label}
+      data-if-operations-focus-panel={signalId}
+      aria-pressed={selected}
     >
       <div className="if-metric__top fg-metric__top">
         <span className="if-metric__icon fg-metric__icon"><Icon name={icon} /></span>
@@ -177,7 +184,7 @@ function MetricCard({ metric }) {
       </div>
       <span className="if-metric__change fg-metric__change">{change}</span>
       <div className="if-metric__meta fg-metric__meta"><span>{meta}</span></div>
-    </article>
+    </button>
   );
 }
 
@@ -504,6 +511,41 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
   );
 }
 
+function OperationsSignalPanels({ metrics = [] }) {
+  if (!metrics.length) return null;
+  return (
+    <section className="if-operations-panel-shell fg-signal-panels" aria-label="Metric drilldown panels">
+      {metrics.map(([label, value, change, meta, tone], index) => {
+        const signalId = signalIdForLabel(label);
+        return (
+          <article
+            className="if-operations-panel fg-signal-panel"
+            data-if-operations-panel={signalId}
+            key={label}
+            hidden={index !== 0}
+          >
+            <div className="if-operations-panel__header">
+              <div>
+                <h2 className="if-panel__title">{label} Drilldown</h2>
+                <p className="if-panel__subtitle">Current selected signal: <strong data-if-operations-current-label>{metrics[0][0]}</strong>.</p>
+              </div>
+              <button className="if-btn if-btn--secondary if-btn--sm fg-btn" type="button" data-if-operations-reset>
+                Clear signal
+              </button>
+            </div>
+            <div className="if-operations-summary-grid fg-signal-panel__summary">
+              <div className="if-operations-insight"><span>Value</span><strong>{value}</strong></div>
+              <div className="if-operations-insight"><span>Movement</span><strong>{change}</strong></div>
+              <div className="if-operations-insight"><span>Operator Meaning</span><strong>{meta}</strong></div>
+              <div className="if-operations-insight"><span>Review Lane</span><strong>{tone === "danger" ? "High attention" : tone === "warning" ? "Operator review" : "Normal flow"}</strong></div>
+            </div>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 function WorkflowStrip({ activeIndex }) {
   return (
     <section className="fg-workflow" aria-label="FastDAS lifecycle">
@@ -723,6 +765,7 @@ export default function App() {
     () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
     [activeSurfaceId],
   );
+  const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
     setActiveSurfaceId(id);
@@ -958,7 +1001,7 @@ export default function App() {
         <section
           className="if-content if-page if-operations-workspace if-operations-workspace--compact fg-content"
           data-if-operations-workspace
-          data-if-operations-current={surface.id}
+          data-if-operations-current={activeMetricSignalId}
         >
           <header className="if-page-header fg-page-header">
             <div>
@@ -1002,8 +1045,9 @@ export default function App() {
             data-if-balanced-grid
             data-if-balanced-grid-min="168"
           >
-            {surface.metrics.map(metric => <MetricCard key={metric[0]} metric={metric} />)}
+            {surface.metrics.map((metric, index) => <MetricCard key={metric[0]} metric={metric} selected={index === 0} />)}
           </section>
+          <OperationsSignalPanels metrics={surface.metrics} />
 
           <SourceCards cards={surface.sourceCards} />
 

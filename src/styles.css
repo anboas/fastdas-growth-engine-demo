@@ -747,12 +747,27 @@ button {
 }
 
 .fg-metric {
+  appearance: none;
   display: grid;
   min-width: 0;
   min-height: 104px;
   gap: 5px;
   align-items: flex-start;
   padding: 12px;
+  text-align: left;
+}
+
+.fg-signal-panels {
+  display: grid;
+  gap: 10px;
+}
+
+.fg-signal-panel {
+  border-radius: 8px;
+}
+
+.fg-signal-panel__summary {
+  padding-top: 10px;
 }
 
 .fg-metric__top {

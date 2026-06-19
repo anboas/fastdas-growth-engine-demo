@@ -37,8 +37,12 @@ function iconSlotsFor(root = document) {
   return slots;
 }
 
-async function hydrateAppIcons(root = document) {
-  const { hydrateIcons } = await loadControlSurfaceApi();
+async function hydrateFrameworkDom(root = document) {
+  const {
+    hydrateIcons,
+    hydrateOperationsWorkspaces,
+    refreshBalancedGrids,
+  } = await loadControlSurfaceApi();
   const slots = iconSlotsFor(root);
   slots.forEach(slot => {
     const iconName = normalizeIconName(slot.dataset.ifIcon);
@@ -52,6 +56,8 @@ async function hydrateAppIcons(root = document) {
   slots.forEach(slot => {
     if (slot.querySelector("svg.if-icon")) slot.dataset.fgIconRendered = slot.dataset.ifIcon;
   });
+  hydrateOperationsWorkspaces(root);
+  refreshBalancedGrids(root);
 }
 
 function ControlSurfaceApp() {
@@ -65,15 +71,26 @@ function ControlSurfaceApp() {
       init(document);
       setTheme("light");
       destroyApp = () => destroy(document);
-      const observer = new MutationObserver(() => hydrateAppIcons(document));
+      let pendingHydration = 0;
+      const scheduleHydration = () => {
+        if (pendingHydration) return;
+        pendingHydration = window.requestAnimationFrame(() => {
+          pendingHydration = 0;
+          hydrateFrameworkDom(document);
+        });
+      };
+      const observer = new MutationObserver(scheduleHydration);
       observer.observe(document.documentElement, {
         subtree: true,
         childList: true,
         attributes: true,
         attributeFilter: ["data-if-icon"],
       });
-      hydrateAppIcons(document);
-      stopIconWatcher = () => observer.disconnect();
+      hydrateFrameworkDom(document);
+      stopIconWatcher = () => {
+        observer.disconnect();
+        if (pendingHydration) window.cancelAnimationFrame(pendingHydration);
+      };
     });
 
     return () => {

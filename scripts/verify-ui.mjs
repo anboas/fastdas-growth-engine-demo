@@ -94,6 +94,16 @@ try {
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
   assert.equal(frameworkSignals, 6, "desktop metric strip should use framework operations signal cards");
+  const frameworkSignalButtons = await desktop.locator(".if-operations-signal-grid button.if-operations-signal").count();
+  assert.equal(frameworkSignalButtons, 6, "desktop metric signals should be native framework signal buttons");
+  const visibleSignalPanels = await desktop.locator(".if-operations-panel-shell .if-operations-panel:visible").count();
+  assert.equal(visibleSignalPanels, 1, "operations workspace should show one framework drilldown panel");
+  await desktop.locator(".if-operations-signal-grid button.if-operations-signal").nth(1).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-if-operations-workspace]")?.dataset.ifOperationsCurrent === "paid-assessment-fit");
+  const selectedSignal = await desktop.locator(".if-operations-signal-grid .if-operations-signal.is-selected").textContent();
+  assert.ok(selectedSignal.includes("Paid Assessment"), "clicking a metric should move framework operations selection");
+  const activePanelText = await desktop.locator(".if-operations-panel-shell .if-operations-panel:visible").textContent();
+  assert.ok(activePanelText.includes("Paid Assessment Fit Drilldown"), "metric click should show the matching operations panel");
   const segmentedOptions = await desktop.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
   assert.equal(segmentedOptions, 3, "operator mode should use framework segmented-control options");
   const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
@@ -175,6 +185,15 @@ try {
   assert.equal(mobileMetrics, 6, "mobile surface should keep six metric cards visible");
   const mobileFrameworkSignals = await mobile.locator("[data-fastdas-metric-grid] .if-operations-signal").count();
   assert.equal(mobileFrameworkSignals, 6, "mobile metric cards should keep framework operations signal contracts");
+  const mobileSecondSignal = await mobile.locator("[data-fastdas-metric-grid] button.if-operations-signal").nth(1).getAttribute("data-if-operations-signal");
+  const mobileSecondSignalLabel = await mobile.locator("[data-fastdas-metric-grid] button.if-operations-signal .if-metric__label").nth(1).textContent();
+  await mobile.locator("[data-fastdas-metric-grid] button.if-operations-signal").nth(1).click();
+  await mobile.waitForFunction(
+    signal => document.querySelector("[data-if-operations-workspace]")?.dataset.ifOperationsCurrent === signal,
+    mobileSecondSignal,
+  );
+  const mobileActivePanelText = await mobile.locator(".if-operations-panel-shell .if-operations-panel:visible").textContent();
+  assert.ok(mobileActivePanelText.includes(`${mobileSecondSignalLabel.trim()} Drilldown`), "mobile metric signals should drive framework panels");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Synthetic Data" }).click();
   await mobile.waitForSelector("[data-fastdas-data-management]");
   await mobile.locator('[data-fastdas-action="generate-variant"]').click();
