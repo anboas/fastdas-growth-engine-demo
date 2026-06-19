@@ -1096,7 +1096,7 @@ button.fg-product-header__brand {
 
 .fg-guided-demo {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.82fr) minmax(280px, 0.9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -1136,6 +1136,30 @@ button.fg-product-header__brand {
 
 .fg-guided-demo__status .if-route-status {
   background: #ffffff;
+}
+
+.fg-guided-demo__scenarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.fg-guided-demo__scenarios .fg-btn {
+  min-width: 0;
+  min-height: 32px;
+  height: auto;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.fg-guided-demo__scenarios .fg-btn.is-active,
+.fg-guided-demo__scenarios .fg-btn[aria-pressed="true"] {
+  border-color: var(--fg-teal-700);
+  background: #e9f7f8;
+  color: #075f65;
 }
 
 .fg-guided-demo__steps {
@@ -1243,6 +1267,16 @@ button.fg-product-header__brand {
   color: #38536d;
   font-size: 10px;
   font-weight: 820;
+}
+
+.fg-guided-demo__brief {
+  width: 100%;
+  min-height: 96px;
+  margin-top: 5px;
+  resize: vertical;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.36;
 }
 
 .fg-guided-demo__actions {
@@ -3570,6 +3604,7 @@ button.fg-product-header__brand {
   .fg-management-grid,
   .fg-scenario-grid,
   .fg-management-card__meta,
+  .fg-guided-demo__scenarios,
   .fg-guided-demo__steps,
   .fg-synthetic-entry-form,
   .fg-synthetic-pipeline-actions,

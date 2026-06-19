@@ -169,6 +169,14 @@ try {
   const guidedRunnerActions = await desktop.locator("[data-fastdas-guided-demo-runner] [data-fastdas-action]").count();
   assert.ok(guidedRunnerActions >= 6, "working demo runner should expose create, walkthrough, advance, input, export, and reset actions");
   await desktop.locator("[data-fastdas-stage-artifacts]").waitFor({ timeout: 5000 });
+  const scenarioPresetButtons = await desktop.locator("[data-fastdas-scenario-presets] [data-fastdas-action='select-scenario-preset']").count();
+  assert.equal(scenarioPresetButtons, 4, "working demo runner should expose the four concrete scenario presets");
+  await desktop.locator('[data-fastdas-scenario-preset="Hospitality Coverage"]').click();
+  await assertAuditContains(desktop, "Demo scenario selected", "guided scenario preset");
+  const selectedScenarioSession = await desktop.evaluate(() => JSON.parse(window.localStorage.getItem("fastdas.demo.operatorSession.v1") || "{}"));
+  assert.equal(selectedScenarioSession.operationState?.scenarioMode, "Hospitality Coverage", "scenario preset should persist into the operator session");
+  const outputBrief = await desktop.locator("[data-fastdas-output-brief]").inputValue();
+  assert.ok(outputBrief.includes("Scenario: Hospitality Coverage"), "guided runner should generate a readable output brief for the selected scenario");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");

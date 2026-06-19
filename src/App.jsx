@@ -2130,13 +2130,32 @@ function demoArtifactForStage(record, workflowIndex) {
   };
 }
 
+function demoBriefForStage(record, workflowIndex, scenarioMode) {
+  if (!record) {
+    return `Scenario: ${scenarioMode}\nStatus: No active lead yet\nNext: create a synthetic opportunity, qualify it, approve outreach, and convert it into a paid assessment candidate.`;
+  }
+  const stage = workflowStages[workflowIndex] || workflowStages[0];
+  return [
+    `Scenario: ${scenarioMode}`,
+    `Opportunity: ${record.name}`,
+    `Market: ${record.market}`,
+    `Stage: ${stage}`,
+    `Signal: ${record.signal}`,
+    `First paid step: ${record.firstOffer}`,
+    `Stakeholder path: ${record.stakeholderPath}`,
+    `Decision: ${workflowIndex >= 6 ? "Ready to pitch a bounded paid assessment." : workflowIndex >= 4 ? "Approved for outreach with human gate retained." : "Continue qualification before outreach."}`,
+  ].join("\n");
+}
+
 function GuidedDemoRunner({
   activeRecord,
   workflowIndex,
   syntheticRecordCount,
+  scenarioMode,
   onCreateRecord,
   onAdvance,
   onRunWalkthrough,
+  onScenarioSelect,
   onOpenInput,
   onExport,
   onReset,
@@ -2144,6 +2163,8 @@ function GuidedDemoRunner({
   const currentStage = workflowStages[workflowIndex] || workflowStages[0];
   const nextStage = workflowStages[Math.min(workflowStages.length - 1, workflowIndex + 1)] || currentStage;
   const artifact = demoArtifactForStage(activeRecord, workflowIndex);
+  const brief = demoBriefForStage(activeRecord, workflowIndex, scenarioMode);
+  const scenarioPresets = SCENARIO_SEQUENCE.filter(scenario => scenario !== "Balanced pipeline");
   const runnerSteps = [
     ["Create", syntheticRecordCount > 0],
     ["Qualify", workflowIndex >= 2],
@@ -2170,9 +2191,25 @@ function GuidedDemoRunner({
         </div>
         <div className="if-route-demo-controls fg-guided-demo__status">
           <span className="if-route-status"><strong>Records</strong><span>{syntheticRecordCount}</span></span>
+          <span className="if-route-status"><strong>Scenario</strong><span>{scenarioMode}</span></span>
           <span className="if-route-status"><strong>Stage</strong><span>{currentStage}</span></span>
           <span className="if-route-status"><strong>Next</strong><span>{activeRecord ? nextStage : "Create"}</span></span>
         </div>
+      </div>
+      <div className="fg-guided-demo__scenarios" data-fastdas-scenario-presets>
+        {scenarioPresets.map(scenario => (
+          <button
+            className={`if-btn if-btn--secondary if-btn--sm fg-btn ${scenarioMode === scenario ? "is-active" : ""}`}
+            type="button"
+            data-fastdas-action="select-scenario-preset"
+            data-fastdas-scenario-preset={scenario}
+            aria-pressed={scenarioMode === scenario}
+            key={scenario}
+            onClick={() => onScenarioSelect(scenario)}
+          >
+            {scenario}
+          </button>
+        ))}
       </div>
       <ol className="fg-guided-demo__steps" aria-label="Working demo milestones">
         {runnerSteps.map(([label, complete], index) => (
@@ -2189,6 +2226,7 @@ function GuidedDemoRunner({
         <ul>
           {artifact.items.map(item => <li key={item}>{item}</li>)}
         </ul>
+        <textarea className="if-textarea fg-guided-demo__brief" data-fastdas-output-brief readOnly value={brief} aria-label="Generated demo brief" />
       </div>
       <div className="if-toolbar__group fg-guided-demo__actions">
         <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button" data-fastdas-action="guided-create-record" onClick={onCreateRecord}>
@@ -3271,6 +3309,19 @@ export default function App() {
     addSyntheticRecord(record, "Working demo lead created", { routeToCommand: true, workflowIndex: 1 });
   }, [addSyntheticRecord, operationState.scenarioMode, syntheticRecords.length]);
 
+  const handleScenarioPreset = useCallback((scenarioMode) => {
+    setOperationState(current => appendEvent(current, {
+      title: "Demo scenario selected",
+      body: `${scenarioMode} is now the active guided-demo scenario for new synthetic leads and exports.`,
+      tone: "purple",
+      updates: {
+        scenarioMode,
+        operatorMode: "Synthetic Variant",
+        activeSeed: `FD-GE-DEMO-0619-${signalIdForLabel(scenarioMode).toUpperCase()}`,
+      },
+    }));
+  }, []);
+
   const handleGuidedAdvance = useCallback(() => {
     const record = activeDemoRecord || addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode), "Working demo lead created", { routeToCommand: true, workflowIndex: 1 });
     const currentIndex = pipelineOverrides[record.name]?.workflowIndex ?? 0;
@@ -3456,9 +3507,11 @@ export default function App() {
             activeRecord={activeDemoRecord}
             workflowIndex={activeDemoWorkflowIndex}
             syntheticRecordCount={syntheticRecords.length}
+            scenarioMode={operationState.scenarioMode}
             onCreateRecord={handleGuidedCreateRecord}
             onAdvance={handleGuidedAdvance}
             onRunWalkthrough={handleGuidedWalkthrough}
+            onScenarioSelect={handleScenarioPreset}
             onOpenInput={() => setSurface("synthetic-data")}
             onExport={() => handleSyntheticAction("export")}
             onReset={() => handleSyntheticAction("reset")}
