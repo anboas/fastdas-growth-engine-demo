@@ -161,8 +161,13 @@ function appendEvent(state, { title, body, tone = "blue", workflowIndex, updates
 
 function MetricCard({ metric }) {
   const [label, value, change, meta, tone, icon] = metric;
+  const signalId = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   return (
-    <article className={`if-card if-metric fg-card fg-metric ${toneClass(tone)}`}>
+    <article
+      className={`if-card if-metric if-operations-signal fg-card fg-metric ${toneClass(tone)}`}
+      data-if-operations-signal={signalId}
+      data-if-operations-label={label}
+    >
       <div className="if-metric__top fg-metric__top">
         <span className="if-metric__icon fg-metric__icon"><Icon name={icon} /></span>
         <p className="if-metric__label fg-metric__label">{label}</p>
@@ -202,9 +207,9 @@ function ScoreCell({ value }) {
   const score = Number(value);
   if (!Number.isFinite(score)) return <span>{value}</span>;
   return (
-    <div className="fg-score">
+    <div className="if-table-progress if-table-progress--success fg-score">
       <span>{score}</span>
-      <div className="if-source-signal__bar fg-scorebar" aria-hidden="true"><i style={{ width: `${Math.min(100, score)}%` }} /></div>
+      <div className="if-table-progress__track if-source-signal__bar fg-scorebar" aria-hidden="true"><span style={{ width: `${Math.min(100, score)}%` }} /></div>
     </div>
   );
 }
@@ -218,9 +223,9 @@ function TableCell({ value, column }) {
     return <Chip tone={toneForValue(primary)}>{primary}</Chip>;
   }
   return (
-    <span className="fg-cell-text">
+    <span className="if-table-cell-main fg-cell-text">
       <strong>{primary}</strong>
-      {secondary ? <small>{secondary}</small> : null}
+      {secondary ? <small className="if-table-cell-meta">{secondary}</small> : null}
     </span>
   );
 }
@@ -228,13 +233,13 @@ function TableCell({ value, column }) {
 function SourceCards({ cards = [] }) {
   if (!cards.length) return null;
   return (
-    <section className="fg-source-grid" aria-label="Signal source lanes">
+    <section className="if-operations-section-grid fg-source-grid" aria-label="Signal source lanes">
       {cards.map(([title, status, body]) => (
-        <article className="if-card if-source-card fg-source-card" key={title}>
+        <article className="if-card if-source-card if-operations-section fg-source-card" key={title}>
           <div className="fg-source-card__top">
             <span className="if-source-card__icon fg-source-card__mark">{title.slice(0, 1)}</span>
             <div>
-              <h3>{title}</h3>
+              <h3 className="if-card__title">{title}</h3>
               <Chip tone={toneForValue(status)}>{status}</Chip>
             </div>
           </div>
@@ -248,9 +253,9 @@ function SourceCards({ cards = [] }) {
 function ExpandedRecord({ surface, onRecordAction }) {
   const detail = surface.expanded;
   return (
-    <tr className="fg-expanded-row">
+    <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
       <td colSpan={surface.table.columns.length}>
-        <div className="fg-expanded" data-fastdas-expanded-record>
+        <div className="if-table-detail__content fg-expanded" data-fastdas-expanded-record>
           <section className="fg-expanded__section">
             <div className="fg-eyebrow">Selected Record</div>
             <h3>{detail.title}</h3>
@@ -266,10 +271,10 @@ function ExpandedRecord({ surface, onRecordAction }) {
           <section className="fg-expanded__section" data-fastdas-provenance>
             <div className="fg-eyebrow">Evidence + Provenance</div>
             {detail.evidence.map(([title, badge, text]) => (
-              <article className="if-evidence-panel fg-evidence" key={title}>
+              <article className="if-evidence-panel if-provenance-layer fg-evidence" key={title}>
                 <div>
                   <strong>{title}</strong>
-                  <Chip tone={toneForValue(badge)}>{badge}</Chip>
+                  <span className={`if-source-badge if-source-badge--${toneForValue(badge) === "success" ? "system" : toneForValue(badge) === "blue" ? "derived" : toneForValue(badge) === "warning" ? "manual" : "compact"} fg-chip ${toneClass(toneForValue(badge))}`}>{badge}</span>
                 </div>
                 <p>{text}</p>
               </article>
@@ -329,18 +334,18 @@ function ExpandedRecord({ surface, onRecordAction }) {
 function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
   return (
-    <section className="if-panel fg-panel" data-fastdas-opportunity-grid data-if-data-table>
+    <section className="if-panel if-data-table if-table-shell fg-panel" data-fastdas-opportunity-grid data-if-data-table data-if-table-density="compact">
       <div className="if-panel__header fg-panel__header">
         <div>
-          <h2>{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
-          <p>{surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.</p>
+          <h2 className="if-panel__title">{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
+          <p className="if-panel__subtitle">{surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.</p>
         </div>
         <div className="fg-panel__header-actions">
           <Chip tone="blue">Selected: {surface.selected}</Chip>
           <Chip tone="warning">Human approval</Chip>
         </div>
       </div>
-      <div className="if-toolbar fg-command-band">
+      <div className="if-table-command-band if-toolbar fg-command-band">
         <span className="fg-counter">{surface.table.count}</span>
         {surface.filters.map(filter => (
           <button
@@ -352,7 +357,7 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
             {filter}
           </button>
         ))}
-        <span className="fg-command-band__spacer" />
+        <span className="if-toolbar__group fg-command-band__spacer" />
         <button
           className="if-btn if-btn--secondary fg-btn"
           type="button"
@@ -369,8 +374,8 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
           <Icon name="arrowUp" />{surface.primaryAction}
         </button>
       </div>
-      <div className="if-table-scroll fg-table-wrap">
-        <table className="if-table fg-table">
+      <div className="if-table-wrap if-table-scroll fg-table-wrap">
+        <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
           <thead>
             <tr>{columns.map(column => <th key={column}>{column}</th>)}</tr>
           </thead>
@@ -380,10 +385,12 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
                 <tr
                   className={row.id === selectedRowId ? "is-selected" : ""}
                   data-if-table-row
+                  data-if-table-expanded={row.id === selectedRowId ? "true" : "false"}
+                  data-if-table-search={row.cells.join(" ")}
                   onClick={() => onSelect(row.id)}
                 >
                   {row.cells.map((cell, index) => (
-                    <td key={`${row.id}-${columns[index]}`}>
+                    <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
                       <TableCell value={cell} column={columns[index]} />
                     </td>
                   ))}
@@ -410,11 +417,11 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
 
   return (
     <section className="if-stack fg-management" data-fastdas-data-management>
-      <div className="if-panel fg-management__control">
+      <div className="if-panel if-operations-section fg-management__control">
         <div>
           <div className="fg-eyebrow">Demo Data Control Plane</div>
-          <h2>Synthetic Dataset Operations</h2>
-          <p>Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
+          <h2 className="if-panel__title">Synthetic Dataset Operations</h2>
+          <p className="if-panel__subtitle">Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
         </div>
         <div className="fg-management__actions">
           <button
@@ -456,17 +463,17 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
 
       <div className="fg-management-grid">
         {management.areas.map(area => (
-          <article className="if-card fg-management-card" key={area.title}>
+          <article className="if-card if-operations-section fg-management-card" key={area.title}>
             <div className="fg-management-card__top">
               <div>
-                <h3>{area.title}</h3>
-                <p>{area.body}</p>
+                <h3 className="if-card__title">{area.title}</h3>
+                <p className="if-panel__subtitle">{area.body}</p>
               </div>
               <Chip tone={toneForValue(area.status)}>{area.status}</Chip>
             </div>
-            <div className="fg-management-card__meta">
-              <span><strong>{area.count}</strong> Records / gates</span>
-              <span><strong>{area.owner}</strong> Owner</span>
+            <div className="if-provenance-grid fg-management-card__meta">
+              <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.count}</strong> Records / gates</span>
+              <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.owner}</strong> Owner</span>
             </div>
             <ul>
               {area.checks.map(check => <li key={check}>{check}</li>)}
@@ -478,15 +485,15 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
       <section className="if-panel fg-scenario-panel" data-fastdas-scenario-packs>
         <div className="if-panel__header fg-panel__header">
           <div>
-            <h2>Scenario Packs</h2>
-            <p>Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
+            <h2 className="if-panel__title">Scenario Packs</h2>
+            <p className="if-panel__subtitle">Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
           </div>
           <Chip tone="blue">4 packs ready</Chip>
         </div>
         <div className="fg-scenario-grid">
           {management.scenarioPacks.map(([title, body, count]) => (
             <article className="if-card fg-scenario-card" key={title}>
-              <strong>{title}</strong>
+              <strong className="if-card__title">{title}</strong>
               <p>{body}</p>
               <Chip tone={toneForValue(count)}>{count}</Chip>
             </article>
@@ -512,11 +519,11 @@ function WorkflowStrip({ activeIndex }) {
 function OperationalWorkflow({ state }) {
   const currentStage = workflowStages[state.workflowIndex] || workflowStages[0];
   return (
-    <section className="if-panel fg-ops-panel" data-fastdas-operational-workflow>
+    <section className="if-panel if-operations-panel fg-ops-panel" data-fastdas-operational-workflow>
       <div className="fg-ops-panel__main">
         <div className="fg-ops-panel__summary">
           <div className="fg-eyebrow">Operational Runtime</div>
-          <h2 data-fastdas-workflow-stage>{currentStage}</h2>
+          <h2 className="if-panel__title" data-fastdas-workflow-stage>{currentStage}</h2>
           <p>{state.lastAction}</p>
           {state.toast ? (
             <div className={`if-alert fg-toast ${toneClass(state.toast.tone)}`} data-fastdas-toast>
@@ -598,18 +605,25 @@ function CommandDock({ state, onCommandAction, onModeChange }) {
   ];
 
   return (
-    <section className="if-panel fg-command-dock" data-fastdas-command-dock>
+    <section className="if-panel if-operations-panel fg-command-dock" data-fastdas-command-dock>
       <div className="fg-command-dock__top">
         <div>
           <div className="fg-eyebrow">Workflow Command Queue</div>
-          <h2>Operator Control Dock</h2>
+          <h2 className="if-panel__title">Operator Control Dock</h2>
         </div>
-        <div className="fg-segmented" role="group" aria-label="Operator mode" data-fastdas-operator-mode>
+        <div
+          className="if-segmented-control if-segmented-control--stretch fg-segmented"
+          role="group"
+          aria-label="Operator mode"
+          data-fastdas-operator-mode
+          data-control-segmented="fastdas-operator-mode"
+        >
           {OPERATOR_MODES.map(mode => (
             <button
               type="button"
-              className={mode === state.operatorMode ? "is-active" : ""}
+              className={`if-segmented-control__item${mode === state.operatorMode ? " is-active" : ""}`}
               aria-pressed={mode === state.operatorMode}
+              data-control-segmented-option={mode}
               key={mode}
               onClick={() => onModeChange(mode)}
             >
@@ -620,11 +634,11 @@ function CommandDock({ state, onCommandAction, onModeChange }) {
       </div>
       <div className="fg-command-grid">
         {commands.map(command => (
-          <article className="if-card fg-command-card" data-fastdas-command-card key={command.id}>
+          <article className="if-card if-operations-section fg-command-card" data-fastdas-command-card key={command.id}>
             <div className="fg-command-card__icon"><Icon name={command.icon} /></div>
             <div className="fg-command-card__body">
               <div>
-                <h3>{command.title}</h3>
+                <h3 className="if-card__title">{command.title}</h3>
                 <Chip tone={command.tone}>{command.meta}</Chip>
               </div>
               <p>{command.body}</p>
@@ -679,10 +693,10 @@ function BottomPanels({ surface }) {
   ];
 
   return (
-    <section className="fg-bottom-grid">
+    <section className="if-operations-section-grid fg-bottom-grid">
       {activePanels.map(([title, items]) => (
-        <article className="if-panel fg-panel fg-panel--compact" key={title}>
-          <div className="if-panel__header fg-panel__header"><h2>{title}</h2></div>
+        <article className="if-panel if-operations-section fg-panel fg-panel--compact" key={title}>
+          <div className="if-panel__header fg-panel__header"><h2 className="if-panel__title">{title}</h2></div>
           <div className="if-panel__body fg-panel__body">
             <ul>
               {items.map(item => <li key={item}>{item}</li>)}
@@ -941,14 +955,18 @@ export default function App() {
           <div className="fg-user"><span>AB</span>Growth Operator</div>
         </header>
 
-        <section className="if-content if-page fg-content">
+        <section
+          className="if-content if-page if-operations-workspace if-operations-workspace--compact fg-content"
+          data-if-operations-workspace
+          data-if-operations-current={surface.id}
+        >
           <header className="if-page-header fg-page-header">
             <div>
-              <div className="fg-eyebrow">{surface.eyebrow}</div>
-              <h1>{surface.title}</h1>
-              <p>{surface.summary}</p>
+              <div className="if-page-header__eyebrow fg-eyebrow">{surface.eyebrow}</div>
+              <h1 className="if-page-header__title">{surface.title}</h1>
+              <p className="if-panel__subtitle">{surface.summary}</p>
             </div>
-            <div className="fg-page-actions">
+            <div className="if-page-header__actions fg-page-actions">
               <button
                 className="if-btn if-btn--secondary fg-btn"
                 type="button"
@@ -978,7 +996,12 @@ export default function App() {
           <OperationalWorkflow state={operationState} />
           <CommandDock state={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
 
-          <section className="if-metric-grid fg-metric-grid" data-fastdas-metric-grid>
+          <section
+            className="if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid"
+            data-fastdas-metric-grid
+            data-if-balanced-grid
+            data-if-balanced-grid-min="168"
+          >
             {surface.metrics.map(metric => <MetricCard key={metric[0]} metric={metric} />)}
           </section>
 

@@ -55,12 +55,41 @@ for (const frameworkClass of [
   "if-topbar",
   "if-content",
   "if-page-header",
+  "if-page-header__eyebrow",
+  "if-page-header__title",
+  "if-page-header__actions",
   "if-metric-grid",
+  "if-operations-workspace",
+  "if-operations-signal-grid",
+  "if-operations-metric-grid",
+  "if-operations-signal",
+  "if-operations-section",
+  "if-operations-panel",
+  "if-balanced-grid",
   "if-card",
+  "if-card__title",
   "if-metric",
   "if-panel",
+  "if-panel__title",
+  "if-panel__subtitle",
   "if-toolbar",
+  "if-toolbar__group",
+  "if-table-shell",
+  "if-table-wrap",
   "if-table",
+  "if-data-table",
+  "if-table-detail",
+  "if-table-detail__content",
+  "if-table-cell-main",
+  "if-table-cell-meta",
+  "if-table-progress",
+  "if-table-progress__track",
+  "if-provenance-grid",
+  "if-provenance-field",
+  "if-provenance-field__value",
+  "if-source-badge",
+  "if-segmented-control",
+  "if-segmented-control__item",
   "if-btn",
   "if-badge",
   "if-icon-slot",
@@ -69,6 +98,12 @@ for (const frameworkClass of [
 }
 
 assert.equal(app.includes("data-if-data-table"), true, "tables should expose Control Surface UI data-table behavior hooks");
+assert.equal(app.includes("data-if-operations-workspace"), true, "app content should expose the operations workspace contract");
+assert.equal(app.includes("data-if-operations-signal"), true, "metrics should expose operations signal contracts");
+assert.equal(app.includes("data-if-balanced-grid"), true, "metric grids should expose balanced-grid behavior hooks");
+assert.equal(app.includes("data-if-table-detail"), true, "expanded rows should expose framework table-detail hooks");
+assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");
+assert.equal(app.includes("data-control-segmented-option"), true, "segmented options should be identified by framework hooks");
 assert.equal(app.includes("fg-root fg-shell"), true, "FastDAS customization should layer on top of the framework shell");
 
 for (const phrase of [

@@ -1088,7 +1088,7 @@ button {
   background: #e2ebf4;
 }
 
-.fg-scorebar i {
+.fg-scorebar span {
   display: block;
   height: 100%;
   border-radius: inherit;

@@ -86,16 +86,30 @@ try {
   await desktop.waitForSelector("[data-fastdas-demo-app]");
   await desktop.waitForSelector("[data-fastdas-operational-workflow]");
   await desktop.waitForSelector("[data-fastdas-command-dock]");
+  await desktop.waitForSelector("[data-if-operations-workspace]");
+  await desktop.waitForSelector('[data-control-segmented="fastdas-operator-mode"]');
   await assertNoPageOverflow(desktop, "desktop");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
+  const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
+  assert.equal(frameworkSignals, 6, "desktop metric strip should use framework operations signal cards");
+  const segmentedOptions = await desktop.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
+  assert.equal(segmentedOptions, 3, "operator mode should use framework segmented-control options");
+  const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
+  assert.ok(dataTableShells >= 1, "workspace grid should use the framework data-table shell contract");
+  const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
+  assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
+  const tableCellMain = await desktop.locator(".if-table-cell-main .if-table-cell-meta").count();
+  assert.ok(tableCellMain >= 1, "table cells should use framework primary/meta anatomy");
+  const progressBars = await desktop.locator(".if-table-progress .if-table-progress__track span").count();
+  assert.ok(progressBars >= 1, "score cells should use framework progress anatomy");
   const commandCards = await desktop.locator("[data-fastdas-command-card]").count();
   assert.equal(commandCards, 4, "desktop command dock should expose four operator commands");
 
-  await desktop.locator("[data-fastdas-operator-mode] button", { hasText: "Customer Review" }).click();
+  await desktop.locator('[data-control-segmented="fastdas-operator-mode"] [data-control-segmented-option="Customer Review"]').click();
   await assertAuditContains(desktop, "Operator mode changed", "operator mode selector");
-  const activeMode = await desktop.locator("[data-fastdas-operator-mode] button.is-active").textContent();
+  const activeMode = await desktop.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item.is-active').textContent();
   assert.equal(activeMode.trim(), "Customer Review", "operator mode segmented control should show the selected mode");
   await desktop.locator('[data-fastdas-action="command-export"]').click();
   await assertAuditContains(desktop, "Command export staged", "command dock export");
@@ -131,6 +145,8 @@ try {
   assert.ok(!resetSeedText.includes("FD-GE-DEMO-0619-V01"), "reset should remove the generated variant seed from the control cards");
   const managementCards = await desktop.locator(".fg-management-card").count();
   assert.equal(managementCards, 6, "synthetic data surface should render six management areas");
+  const provenanceFields = await desktop.locator("[data-fastdas-data-management] .if-provenance-grid .if-provenance-field").count();
+  assert.ok(provenanceFields >= 12, "synthetic data management cards should use framework provenance fields");
   const scenarioPacks = await desktop.locator("[data-fastdas-scenario-packs] .fg-scenario-card").count();
   assert.equal(scenarioPacks, 4, "synthetic data surface should render four scenario packs");
   await assertNoPageOverflow(desktop, "desktop synthetic data");
@@ -146,7 +162,10 @@ try {
   await mobile.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
   await mobile.waitForSelector("[data-fastdas-demo-app]");
   await mobile.waitForSelector("[data-fastdas-command-dock]");
+  await mobile.waitForSelector("[data-if-operations-workspace]");
   await assertNoPageOverflow(mobile, "mobile");
+  const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
+  assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
   assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Conversion Board" }).click();
@@ -154,6 +173,8 @@ try {
   await assertNoPageOverflow(mobile, "mobile conversion board");
   const mobileMetrics = await mobile.locator("[data-fastdas-metric-grid] .fg-metric").count();
   assert.equal(mobileMetrics, 6, "mobile surface should keep six metric cards visible");
+  const mobileFrameworkSignals = await mobile.locator("[data-fastdas-metric-grid] .if-operations-signal").count();
+  assert.equal(mobileFrameworkSignals, 6, "mobile metric cards should keep framework operations signal contracts");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Synthetic Data" }).click();
   await mobile.waitForSelector("[data-fastdas-data-management]");
   await mobile.locator('[data-fastdas-action="generate-variant"]').click();
