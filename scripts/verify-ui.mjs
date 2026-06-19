@@ -551,8 +551,11 @@ try {
   await assertAuditContains(desktop, "Generated demo variant", "variant generation");
   const variantSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
   assert.ok(variantSeedText.includes("FD-GE-DEMO-0619-V01"), "variant generation should update the active seed");
+  const exportDownload = desktop.waitForEvent("download");
   await desktop.locator('[data-fastdas-action="export-bundle"]').click();
-  await assertAuditContains(desktop, "Export bundle prepared", "bundle export");
+  const bundleDownload = await exportDownload;
+  assert.ok(bundleDownload.suggestedFilename().includes("fastdas-synthetic-runtime"), "bundle export should download the runtime JSON");
+  await assertAuditContains(desktop, "Export bundle downloaded", "bundle export");
   await desktop.locator('[data-fastdas-action="reset-demo"]').click();
   await assertAuditContains(desktop, "Reset demo state", "demo reset");
   const resetSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
@@ -582,6 +585,9 @@ try {
   await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector('[data-fastdas-synthetic-runtime-record="Metro Center Garage"]');
   assert.equal(await desktop.locator("[data-fastdas-synthetic-record-count]").textContent(), "1", "runtime synthetic record count should update after manual entry");
+  await desktop.reload({ waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector('[data-fastdas-synthetic-runtime-record="Metro Center Garage"]');
+  assert.equal(await desktop.locator("[data-fastdas-synthetic-record-count]").textContent(), "1", "runtime synthetic records should survive a browser reload");
   await desktop.locator('[data-fastdas-pipeline-record="Metro Center Garage"][data-fastdas-pipeline-step="Outreach"]').click();
   await desktop.waitForSelector("[data-fastdas-outreach-queue-grid]");
   await desktop.waitForSelector('[data-fastdas-table-row-id="Metro Center Garage"]');

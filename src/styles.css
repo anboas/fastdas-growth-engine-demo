@@ -2568,6 +2568,63 @@ button.fg-product-header__brand {
   padding: 14px;
 }
 
+.fg-management-details {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-management-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fg-management-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fg-management-details > summary span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.fg-management-details > summary strong {
+  color: #142f49;
+  font-size: 13px;
+  font-weight: 930;
+}
+
+.fg-management-details > summary em {
+  color: #64788d;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 760;
+}
+
+.fg-management-details[open] > summary {
+  border-bottom: 1px solid var(--fg-line);
+}
+
+.fg-management-details .fg-management-grid {
+  padding: 12px 14px;
+}
+
+.fg-management-details .fg-scenario-panel {
+  border: 0;
+  border-top: 1px solid var(--fg-line);
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .fg-management__control h2 {
   margin: 0;
   color: #142f49;

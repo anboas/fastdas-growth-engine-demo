@@ -336,6 +336,8 @@ const EMPTY_SYNTHETIC_DRAFT = {
   score: "86",
 };
 
+const RUNTIME_STORAGE_KEY = "fastdas.demo.runtimePipeline.v1";
+
 const PIPELINE_STATE_BY_INDEX = [
   "Signal",
   "Enriching",
@@ -348,6 +350,42 @@ const PIPELINE_STATE_BY_INDEX = [
   "Follow-On Opportunity",
   "Closed Won",
 ];
+
+function readRuntimePipelineState() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RUNTIME_STORAGE_KEY) || "{}");
+    return {
+      syntheticRecords: Array.isArray(parsed.syntheticRecords) ? parsed.syntheticRecords : [],
+      pipelineOverrides: parsed.pipelineOverrides && typeof parsed.pipelineOverrides === "object" ? parsed.pipelineOverrides : {},
+    };
+  } catch {
+    return { syntheticRecords: [], pipelineOverrides: {} };
+  }
+}
+
+function writeRuntimePipelineState(syntheticRecords, pipelineOverrides) {
+  window.localStorage.setItem(RUNTIME_STORAGE_KEY, JSON.stringify({
+    syntheticRecords,
+    pipelineOverrides,
+    savedAt: new Date().toISOString(),
+  }));
+}
+
+function clearRuntimePipelineState() {
+  window.localStorage.removeItem(RUNTIME_STORAGE_KEY);
+}
+
+function downloadJson(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 const PRIMARY_ROUTE_IDS = ["command-center", "signal-intake", "opportunity-workbench"];
 const EXECUTION_ROUTE_IDS = ["evidence-review", "outreach-queue", "agent-operations"];
@@ -1758,8 +1796,8 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
       <div className="if-panel if-operations-section fg-management__control">
         <div>
           <div className="fg-eyebrow">Demo Data Control Plane</div>
-          <h2 className="if-panel__title">Synthetic Dataset Operations</h2>
-          <p className="if-panel__subtitle">Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
+          <h2 className="if-panel__title">Seed + Dataset Controls</h2>
+          <p className="if-panel__subtitle">Keep the walkthrough repeatable: generate a scenario, export the browser-local runtime bundle, or reset to the golden seed.</p>
         </div>
         <div className="fg-management__actions">
           <button
@@ -1799,59 +1837,68 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
         ))}
       </div>
 
-      <div className="if-pattern-grid if-pattern-grid--ops fg-management-grid">
-        {management.areas.map(area => (
-          <article className="if-pattern-card if-operations-section fg-management-card" data-fastdas-management-area key={area.title}>
-            <div className="if-pattern-card__header fg-management-card__top">
-              <div>
-                <h3 className="if-card__title">{area.title}</h3>
-                <p className="if-panel__subtitle">{area.body}</p>
-              </div>
-              <Chip tone={toneForValue(area.status)}>{area.status}</Chip>
-            </div>
-            <div className="if-provenance-grid fg-management-card__meta">
-              <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.count}</strong> Records / gates</span>
-              <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.owner}</strong> Owner</span>
-            </div>
-            <ul className="if-check-list">
-              {area.checks.map(check => <li key={check}>{check}</li>)}
-            </ul>
-          </article>
-        ))}
-      </div>
-
-      <section className="if-panel fg-scenario-panel" data-fastdas-scenario-packs>
-        <div className="if-panel__header fg-panel__header">
-          <div>
-            <h2 className="if-panel__title">Scenario Packs</h2>
-            <p className="if-panel__subtitle">Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
-          </div>
-          <Chip tone="blue">4 packs ready</Chip>
-        </div>
-        <div className="if-pattern-grid fg-scenario-grid">
-          {management.scenarioPacks.map(([title, body, count]) => (
-            <article className="if-pattern-card if-operations-section fg-scenario-card" data-fastdas-scenario-pack key={title}>
-              <div className="if-pattern-card__header fg-scenario-card__header">
-                <Icon name="layers" />
+      <details className="if-panel fg-management-details" data-fastdas-synthetic-management-details>
+        <summary>
+          <span>
+            <strong>Dataset inventory and scenario packs</strong>
+            <em>Quality gates, scenario coverage, and demo safety contracts</em>
+          </span>
+          <Chip tone="blue">Open details</Chip>
+        </summary>
+        <div className="if-pattern-grid if-pattern-grid--ops fg-management-grid">
+          {management.areas.map(area => (
+            <article className="if-pattern-card if-operations-section fg-management-card" data-fastdas-management-area key={area.title}>
+              <div className="if-pattern-card__header fg-management-card__top">
                 <div>
-                  <h3 className="if-card__title">{title}</h3>
-                  <p className="if-panel__subtitle">{body}</p>
+                  <h3 className="if-card__title">{area.title}</h3>
+                  <p className="if-panel__subtitle">{area.body}</p>
                 </div>
+                <Chip tone={toneForValue(area.status)}>{area.status}</Chip>
               </div>
-              <div className="if-rule-builder-mini">
-                <div className="if-rule-line">
-                  <span>Scenario range</span>
-                  <Chip tone={toneForValue(count)}>{count}</Chip>
-                </div>
-                <div className="if-rule-line">
-                  <span>Synthetic guardrail</span>
-                  <strong>Customer safe</strong>
-                </div>
+              <div className="if-provenance-grid fg-management-card__meta">
+                <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.count}</strong> Records / gates</span>
+                <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.owner}</strong> Owner</span>
               </div>
+              <ul className="if-check-list">
+                {area.checks.map(check => <li key={check}>{check}</li>)}
+              </ul>
             </article>
           ))}
         </div>
-      </section>
+
+        <section className="fg-scenario-panel" data-fastdas-scenario-packs>
+          <div className="if-panel__header fg-panel__header">
+            <div>
+              <h2 className="if-panel__title">Scenario Packs</h2>
+              <p className="if-panel__subtitle">Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
+            </div>
+            <Chip tone="blue">4 packs ready</Chip>
+          </div>
+          <div className="if-pattern-grid fg-scenario-grid">
+            {management.scenarioPacks.map(([title, body, count]) => (
+              <article className="if-pattern-card if-operations-section fg-scenario-card" data-fastdas-scenario-pack key={title}>
+                <div className="if-pattern-card__header fg-scenario-card__header">
+                  <Icon name="layers" />
+                  <div>
+                    <h3 className="if-card__title">{title}</h3>
+                    <p className="if-panel__subtitle">{body}</p>
+                  </div>
+                </div>
+                <div className="if-rule-builder-mini">
+                  <div className="if-rule-line">
+                    <span>Scenario range</span>
+                    <Chip tone={toneForValue(count)}>{count}</Chip>
+                  </div>
+                  <div className="if-rule-line">
+                    <span>Synthetic guardrail</span>
+                    <strong>Customer safe</strong>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </details>
     </section>
   );
 }
@@ -2613,14 +2660,15 @@ function ReleaseRail({ surface, operationState }) {
 }
 
 export default function App() {
+  const runtimePipelineState = useMemo(() => readRuntimePipelineState(), []);
   const [activeSurfaceId, setActiveSurfaceId] = useState(getInitialSurfaceId);
   const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
   const [detailOpenRows, setDetailOpenRows] = useState(defaultDetailOpenRows);
   const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
   const [activeSavedViewId, setActiveSavedViewId] = useState("");
   const [activeCommandFilterId, setActiveCommandFilterId] = useState(COMMAND_CENTER_DEFAULT_FILTER_ID);
-  const [syntheticRecords, setSyntheticRecords] = useState([]);
-  const [pipelineOverrides, setPipelineOverrides] = useState({});
+  const [syntheticRecords, setSyntheticRecords] = useState(runtimePipelineState.syntheticRecords);
+  const [pipelineOverrides, setPipelineOverrides] = useState(runtimePipelineState.pipelineOverrides);
   const [syntheticDraft, setSyntheticDraft] = useState(EMPTY_SYNTHETIC_DRAFT);
 
   useEffect(() => {
@@ -2628,6 +2676,10 @@ export default function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  useEffect(() => {
+    writeRuntimePipelineState(syntheticRecords, pipelineOverrides);
+  }, [pipelineOverrides, syntheticRecords]);
 
   const runtimeSurfaces = useMemo(
     () => buildRuntimeSurfaces(syntheticRecords, pipelineOverrides),
@@ -2923,6 +2975,7 @@ export default function App() {
 
   const handleSyntheticAction = useCallback((kind) => {
     if (kind === "reset") {
+      clearRuntimePipelineState();
       setSyntheticRecords([]);
       setPipelineOverrides({});
       setSyntheticDraft(EMPTY_SYNTHETIC_DRAFT);
@@ -2944,9 +2997,16 @@ export default function App() {
     }
 
     if (kind === "export") {
+      downloadJson(`fastdas-synthetic-runtime-${operationState.activeSeed}.json`, {
+        activeSeed: operationState.activeSeed,
+        scenarioMode: operationState.scenarioMode,
+        datasetVersion: operationState.datasetVersion,
+        syntheticRecords,
+        pipelineOverrides,
+      });
       recordOperation({
-        title: "Export bundle prepared",
-        body: "Customer-safe JSON, evidence summary, scenario manifest, and reset instructions were staged for review.",
+        title: "Export bundle downloaded",
+        body: "Customer-safe JSON runtime bundle downloaded with entered records, pipeline state, scenario manifest, and seed metadata.",
         tone: "blue",
         updates: state => ({ exportCount: state.exportCount + 1 }),
       });
@@ -2971,7 +3031,7 @@ export default function App() {
         },
       })
     ));
-  }, [addSyntheticRecord, operationState.variantCount, recordOperation, syntheticRecords.length]);
+  }, [addSyntheticRecord, operationState.activeSeed, operationState.datasetVersion, operationState.scenarioMode, operationState.variantCount, pipelineOverrides, recordOperation, syntheticRecords]);
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
