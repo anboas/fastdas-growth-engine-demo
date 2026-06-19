@@ -600,6 +600,10 @@ try {
   await desktop.reload({ waitUntil: "domcontentloaded" });
   await desktop.waitForSelector('[data-fastdas-synthetic-runtime-record="Metro Center Garage"]');
   assert.equal(await desktop.locator("[data-fastdas-synthetic-record-count]").textContent(), "1", "runtime synthetic records should survive a browser reload");
+  const persistedSession = await desktop.evaluate(() => JSON.parse(window.localStorage.getItem("fastdas.demo.operatorSession.v1") || "{}"));
+  assert.equal(persistedSession.selectedRows?.["command-center"], "Metro Center Garage", "operator session should persist selected runtime records");
+  assert.equal(await desktop.locator('[data-fastdas-action="open-runtime-record"][data-fastdas-runtime-record="Metro Center Garage"]').count(), 1, "runtime records should expose an open control");
+  assert.equal(await desktop.locator('[data-fastdas-action="remove-runtime-record"][data-fastdas-runtime-record="Metro Center Garage"]').count(), 1, "runtime records should expose a remove control");
   await desktop.locator('[data-fastdas-pipeline-record="Metro Center Garage"][data-fastdas-pipeline-step="Outreach"]').click();
   await desktop.waitForSelector("[data-fastdas-outreach-queue-grid]");
   await desktop.waitForSelector('[data-fastdas-table-row-id="Metro Center Garage"]');
@@ -607,6 +611,9 @@ try {
   assert.ok(syntheticOutreachText.includes("Approved"), "pipeline advancement should move the entered record into the outreach workflow state");
   await assertAuditContains(desktop, "Pipeline stage advanced", "manual pipeline advancement");
   await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
+  await desktop.locator('[data-fastdas-action="remove-runtime-record"][data-fastdas-runtime-record="Metro Center Garage"]').click();
+  await assertAuditContains(desktop, "Runtime record removed", "runtime record removal");
+  assert.equal(await desktop.locator("[data-fastdas-synthetic-record-count]").textContent(), "0", "remove should clear the selected runtime record");
   await desktop.locator('[data-fastdas-action="reset-demo"]').click();
   await assertAuditContains(desktop, "Reset demo state", "runtime synthetic reset");
   assert.equal(await desktop.locator("[data-fastdas-synthetic-record-count]").textContent(), "0", "reset should clear runtime synthetic records");

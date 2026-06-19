@@ -3050,6 +3050,11 @@ button.fg-product-header__brand {
   color: #075f65;
 }
 
+.fg-synthetic-record__actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
 .fg-synthetic-empty {
   padding: 18px;
   border: 1px dashed #b8c9d9;

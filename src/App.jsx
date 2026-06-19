@@ -337,6 +337,7 @@ const EMPTY_SYNTHETIC_DRAFT = {
 };
 
 const RUNTIME_STORAGE_KEY = "fastdas.demo.runtimePipeline.v1";
+const DEMO_SESSION_STORAGE_KEY = "fastdas.demo.operatorSession.v1";
 const SAVED_VIEW_STORAGE_KEY = "fastdas.demo.savedView.v1";
 
 const PIPELINE_STATE_BY_INDEX = [
@@ -374,6 +375,49 @@ function writeRuntimePipelineState(syntheticRecords, pipelineOverrides) {
 
 function clearRuntimePipelineState() {
   window.localStorage.removeItem(RUNTIME_STORAGE_KEY);
+}
+
+function defaultSelectedRows() {
+  return Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected]));
+}
+
+function readDemoSessionState() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(DEMO_SESSION_STORAGE_KEY) || "{}");
+    return {
+      operationState: parsed.operationState && typeof parsed.operationState === "object"
+        ? {
+            ...INITIAL_OPERATION_STATE,
+            ...parsed.operationState,
+            events: Array.isArray(parsed.operationState.events) ? parsed.operationState.events : INITIAL_OPERATION_STATE.events,
+          }
+        : INITIAL_OPERATION_STATE,
+      selectedRows: parsed.selectedRows && typeof parsed.selectedRows === "object" ? { ...defaultSelectedRows(), ...parsed.selectedRows } : defaultSelectedRows(),
+      detailOpenRows: parsed.detailOpenRows && typeof parsed.detailOpenRows === "object" ? { ...defaultDetailOpenRows(), ...parsed.detailOpenRows } : defaultDetailOpenRows(),
+      activeCommandFilterId: parsed.activeCommandFilterId || COMMAND_CENTER_DEFAULT_FILTER_ID,
+    };
+  } catch {
+    return {
+      operationState: INITIAL_OPERATION_STATE,
+      selectedRows: defaultSelectedRows(),
+      detailOpenRows: defaultDetailOpenRows(),
+      activeCommandFilterId: COMMAND_CENTER_DEFAULT_FILTER_ID,
+    };
+  }
+}
+
+function writeDemoSessionState(operationState, selectedRows, detailOpenRows, activeCommandFilterId) {
+  window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify({
+    operationState,
+    selectedRows,
+    detailOpenRows,
+    activeCommandFilterId,
+    savedAt: new Date().toISOString(),
+  }));
+}
+
+function clearDemoSessionState() {
+  window.localStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
 }
 
 function downloadJson(filename, payload) {
@@ -1927,6 +1971,8 @@ function SyntheticPipelineConsole({
   onSubmit,
   onGenerateRecord,
   onPipelineStep,
+  onOpenRecord,
+  onRemoveRecord,
 }) {
   if (!visible) return null;
 
@@ -2018,6 +2064,14 @@ function SyntheticPipelineConsole({
                         {stageLabel}
                       </button>
                     ))}
+                  </div>
+                  <div className="if-toolbar__group fg-synthetic-record__actions">
+                    <button className="if-btn if-btn--secondary if-btn--sm fg-btn" type="button" data-fastdas-action="open-runtime-record" data-fastdas-runtime-record={record.name} onClick={() => onOpenRecord(record.name)}>
+                      <Icon name="arrowUp" />Open
+                    </button>
+                    <button className="if-btn if-btn--danger if-btn--sm fg-btn fg-btn--danger" type="button" data-fastdas-action="remove-runtime-record" data-fastdas-runtime-record={record.name} onClick={() => onRemoveRecord(record.name)}>
+                      <Icon name="x" />Remove
+                    </button>
                   </div>
                 </article>
               );
@@ -2747,12 +2801,13 @@ function ReleaseRail({ surface, operationState }) {
 
 export default function App() {
   const runtimePipelineState = useMemo(() => readRuntimePipelineState(), []);
+  const demoSessionState = useMemo(() => readDemoSessionState(), []);
   const [activeSurfaceId, setActiveSurfaceId] = useState(getInitialSurfaceId);
-  const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
-  const [detailOpenRows, setDetailOpenRows] = useState(defaultDetailOpenRows);
-  const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
+  const [selectedRows, setSelectedRows] = useState(demoSessionState.selectedRows);
+  const [detailOpenRows, setDetailOpenRows] = useState(demoSessionState.detailOpenRows);
+  const [operationState, setOperationState] = useState(demoSessionState.operationState);
   const [activeSavedViewId, setActiveSavedViewId] = useState("");
-  const [activeCommandFilterId, setActiveCommandFilterId] = useState(COMMAND_CENTER_DEFAULT_FILTER_ID);
+  const [activeCommandFilterId, setActiveCommandFilterId] = useState(demoSessionState.activeCommandFilterId);
   const [syntheticRecords, setSyntheticRecords] = useState(runtimePipelineState.syntheticRecords);
   const [pipelineOverrides, setPipelineOverrides] = useState(runtimePipelineState.pipelineOverrides);
   const [syntheticDraft, setSyntheticDraft] = useState(EMPTY_SYNTHETIC_DRAFT);
@@ -2766,6 +2821,10 @@ export default function App() {
   useEffect(() => {
     writeRuntimePipelineState(syntheticRecords, pipelineOverrides);
   }, [pipelineOverrides, syntheticRecords]);
+
+  useEffect(() => {
+    writeDemoSessionState(operationState, selectedRows, detailOpenRows, activeCommandFilterId);
+  }, [activeCommandFilterId, detailOpenRows, operationState, selectedRows]);
 
   const runtimeSurfaces = useMemo(
     () => buildRuntimeSurfaces(syntheticRecords, pipelineOverrides),
@@ -3081,11 +3140,14 @@ export default function App() {
   const handleSyntheticAction = useCallback((kind) => {
     if (kind === "reset") {
       clearRuntimePipelineState();
+      clearDemoSessionState();
       setSyntheticRecords([]);
       setPipelineOverrides({});
       setSyntheticDraft(EMPTY_SYNTHETIC_DRAFT);
-      setSelectedRows(Object.fromEntries(surfaces.map(item => [item.id, item.selected])));
+      setSelectedRows(defaultSelectedRows());
       setDetailOpenRows(defaultDetailOpenRows());
+      setActiveSavedViewId("");
+      setActiveCommandFilterId(COMMAND_CENTER_DEFAULT_FILTER_ID);
       setOperationState({
         ...INITIAL_OPERATION_STATE,
         toast: {
@@ -3158,6 +3220,38 @@ export default function App() {
     const currentIndex = pipelineOverrides[record.name]?.workflowIndex ?? 0;
     handlePipelineStep(record.name, Math.min(workflowStages.length - 1, currentIndex + 1));
   }, [activeDemoRecord, addSyntheticRecord, handlePipelineStep, operationState.scenarioMode, pipelineOverrides, syntheticRecords.length]);
+
+  const handleOpenRuntimeRecord = useCallback((recordName) => {
+    const workflowIndex = pipelineOverrides[recordName]?.workflowIndex ?? 0;
+    focusRecordAcrossPipeline(recordName, workflowIndex);
+    setSurface(routeForPipelineIndex(workflowIndex));
+    recordOperation({
+      title: "Runtime record opened",
+      body: `${recordName} opened on its active pipeline surface.`,
+      tone: "blue",
+      workflowIndex,
+    });
+  }, [focusRecordAcrossPipeline, pipelineOverrides, recordOperation, routeForPipelineIndex, setSurface]);
+
+  const handleRemoveRuntimeRecord = useCallback((recordName) => {
+    setSyntheticRecords(current => current.filter(record => record.name !== recordName));
+    setPipelineOverrides(current => {
+      const next = { ...current };
+      delete next[recordName];
+      return next;
+    });
+    setSelectedRows(current => Object.fromEntries(
+      Object.entries(current).map(([surfaceId, selectedRowId]) => [
+        surfaceId,
+        selectedRowId === recordName ? surfaces.find(item => item.id === surfaceId)?.selected || selectedRowId : selectedRowId,
+      ]),
+    ));
+    recordOperation({
+      title: "Runtime record removed",
+      body: `${recordName} was removed from the browser-local demo pipeline.`,
+      tone: "danger",
+    });
+  }, [recordOperation]);
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
@@ -3309,6 +3403,8 @@ export default function App() {
               onSubmit={handleSyntheticSubmit}
               onGenerateRecord={handleGenerateSyntheticRecord}
               onPipelineStep={handlePipelineStep}
+              onOpenRecord={handleOpenRuntimeRecord}
+              onRemoveRecord={handleRemoveRuntimeRecord}
             />
           ) : null}
 
