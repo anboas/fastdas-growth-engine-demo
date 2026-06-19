@@ -38,6 +38,11 @@ for (const surface of [
 
 for (const hook of [
   "data-fastdas-demo-app",
+  "data-fastdas-shell-header",
+  "data-fastdas-header-route",
+  "data-fastdas-header-utilities",
+  "data-fastdas-header-status",
+  "data-fastdas-header-actions",
   "data-control-surface-nav",
   "data-fastdas-metric-grid",
   "data-fastdas-opportunity-grid",
@@ -56,6 +61,7 @@ for (const hook of [
   "data-fastdas-operator-mode",
   "data-fastdas-command-card",
   "data-fastdas-release-rail",
+  "data-fastdas-footer-status",
 ]) {
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
@@ -66,9 +72,11 @@ for (const frameworkClass of [
   "if-sidebar__section",
   "if-sidebar__group-header",
   "if-topbar",
+  "if-topbar__nav",
   "if-topbar__actions",
   "if-main--with-sidebar",
   "if-utility-cluster",
+  "if-utility-search",
   "if-account-menu",
   "if-avatar",
   "if-search__icon",
@@ -153,6 +161,7 @@ for (const frameworkClass of [
   "if-provenance-field__value",
   "if-source-badge",
   "if-panel__footer",
+  "if-route-demo-controls",
   "if-route-status",
   "if-segmented-control",
   "if-segmented-control__item",

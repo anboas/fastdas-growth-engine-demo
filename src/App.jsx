@@ -1164,16 +1164,29 @@ export default function App() {
       </aside>
 
       <main className="if-main if-main--with-sidebar fg-main">
-        <header className="if-topbar fg-topbar">
-          <label className="if-search if-autocomplete if-utility-search fg-search">
-            <span className="if-search__icon if-icon-slot" data-if-icon="search" aria-hidden="true"></span>
-            <span className="if-sr-only">Global search</span>
-            <input className="if-input" type="search" placeholder="Search property, signal, owner, contact, source..." />
-          </label>
-          <div className="if-topbar__actions if-utility-cluster fg-topbar-actions">
-            <Chip tone="blue">VA / MD / DC</Chip>
-            <Chip tone="success">Source tracking on</Chip>
-            <Chip tone="warning">{operationState.approvalCount} human approvals due</Chip>
+        <header className="if-topbar fg-topbar" data-fastdas-shell-header>
+          <div className="if-topbar__nav fg-topbar-route" data-fastdas-header-route>
+            <span className="if-route-status fg-route-status fg-route-status--primary">
+              <strong>{surface.nav}</strong>
+              <span>{surface.eyebrow}</span>
+            </span>
+            <span className="if-route-status fg-route-status">
+              <strong>{workflowStages[operationState.workflowIndex]}</strong>
+              <span>{operationState.operatorMode}</span>
+            </span>
+          </div>
+          <div className="if-topbar__actions if-utility-cluster fg-topbar-actions" data-fastdas-header-utilities>
+            <label className="if-search if-autocomplete if-utility-search fg-search">
+              <span className="if-search__icon if-icon-slot" data-if-icon="search" aria-hidden="true"></span>
+              <span className="if-sr-only">Global search</span>
+              <input className="if-input" type="search" placeholder="Search property, signal, owner, contact, source..." />
+            </label>
+            <div className="if-route-demo-controls fg-header-status" data-fastdas-header-status>
+              <Chip tone="blue">VA / MD / DC</Chip>
+              <Chip tone="success">Source tracking on</Chip>
+              <Chip tone="warning">{operationState.approvalCount} approvals</Chip>
+            </div>
+            <div className="if-toolbar__group fg-header-actions" data-fastdas-header-actions>
             <button
               className="if-btn if-btn--secondary fg-btn"
               type="button"
@@ -1189,6 +1202,7 @@ export default function App() {
             >
               <Icon name="refresh" />Run Signal Scan
             </button>
+            </div>
             <button className="if-account-menu fg-account-menu" type="button" aria-label="Growth operator account menu">
               <span className="if-avatar" aria-hidden="true">AB</span>
               <span className="if-account-menu__name if-desktop-only">Operator</span>
@@ -1263,10 +1277,18 @@ export default function App() {
 
           <BottomPanels surface={surface} />
 
-          <footer className="if-panel__footer fg-footer" data-fastdas-release-rail>
-            <span className="if-route-status"><strong>FastDAS Growth Engine</strong><span>{surface.title}</span></span>
-            <span className="if-route-status"><strong>control-surface-ui</strong><span>GitHub source / GitLab Pages host</span></span>
-            <span className="if-route-status"><strong>Demo state</strong><span>{operationState.activeSeed}</span></span>
+          <footer className="if-panel if-panel__footer fg-footer" data-fastdas-release-rail>
+            <div className="fg-footer__brand">
+              <strong>FastDAS Growth Engine</strong>
+              <span>Control Surface demo / customer walkthrough build</span>
+            </div>
+            <div className="if-route-demo-controls fg-footer__status" data-fastdas-footer-status>
+              <span className="if-route-status"><strong>Route</strong><span>{surface.title}</span></span>
+              <span className="if-route-status"><strong>Workflow</strong><span>{workflowStages[operationState.workflowIndex]}</span></span>
+              <span className="if-route-status"><strong>Seed</strong><span>{operationState.activeSeed}</span></span>
+              <span className="if-route-status"><strong>Source</strong><span>GitHub canonical</span></span>
+              <span className="if-route-status"><strong>Host</strong><span>GitLab Pages</span></span>
+            </div>
           </footer>
         </section>
       </main>
