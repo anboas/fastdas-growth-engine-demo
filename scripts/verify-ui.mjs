@@ -84,10 +84,8 @@ try {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await desktop.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-demo-app]");
-  await desktop.waitForSelector("[data-fastdas-operational-workflow]");
-  await desktop.waitForSelector("[data-fastdas-command-dock]");
+  await desktop.waitForSelector("[data-fastdas-command-center-ops-drawer]");
   await desktop.waitForSelector("[data-if-operations-workspace]");
-  await desktop.waitForSelector('[data-control-segmented="fastdas-operator-mode"]');
   await desktop.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(desktop, "desktop");
 
@@ -155,6 +153,14 @@ try {
   assert.equal(segmentedOptions, 3, "operator mode should use framework segmented-control options");
   const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
   assert.ok(dataTableShells >= 1, "workspace grid should use the framework data-table shell contract");
+  const commandCenterOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-opportunity-grid]");
+    const dock = document.querySelector("[data-fastdas-command-dock]");
+    return Boolean(grid && dock && (grid.compareDocumentPosition(dock) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(commandCenterOrder, true, "command center should put the work queue before demo command controls");
+  const commandWorkbenchColumns = await desktop.locator("[data-fastdas-command-center-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(commandWorkbenchColumns >= 2, "command center table should share the workspace with the selected-record panel on desktop");
   const commandBandAnatomy = await desktop.locator(".if-table-command-band__leading, .if-table-command-band__filters, .if-table-command-band__actions").count();
   assert.ok(commandBandAnatomy >= 3, "table command band should use framework leading/filter/action anatomy");
   const tableFilterControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").count();
@@ -217,6 +223,7 @@ try {
   assert.ok(ledgerEvents >= 1, "audit trail should use the framework rich ledger contract");
   const commandPatternCards = await desktop.locator("[data-fastdas-command-card].if-pattern-card").count();
   assert.equal(commandPatternCards, 4, "operator commands should use framework pattern cards");
+  await desktop.locator("[data-fastdas-command-center-ops-drawer] > summary").click();
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").fill("HarborPoint");
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent === "1");
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-clear]").click();
@@ -253,6 +260,12 @@ try {
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
+    if (surfaceId === "command-center") {
+      if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
+        await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
+        await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+      }
+    }
     await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
     const h1 = await desktop.locator("h1").textContent();
     assert.ok(h1 && h1.trim().length > 0, `${surfaceId} should render a page title`);
@@ -288,8 +301,10 @@ try {
   await assertNoPageOverflow(desktop, "desktop synthetic data");
 
   await desktop.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
-  await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
-  await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+  if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
+    await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
+    await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+  }
   await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
   await desktop.locator('[data-fastdas-action="approve-record"]').first().click();
   await assertAuditContains(desktop, "Inline record approved", "inline approval");
@@ -299,7 +314,7 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 920 }, isMobile: true });
   await mobile.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
   await mobile.waitForSelector("[data-fastdas-demo-app]");
-  await mobile.waitForSelector("[data-fastdas-command-dock]");
+  await mobile.waitForSelector("[data-fastdas-command-center-ops-drawer]");
   await mobile.waitForSelector("[data-if-operations-workspace]");
   await mobile.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(mobile, "mobile");

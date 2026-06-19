@@ -525,12 +525,18 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
   const columns = surface.table.columns;
   const selectedDetail = recordDetailForSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
+  const isCommandCenter = surface.id === "command-center";
+  const visibleFilters = isCommandCenter ? surface.filters.slice(0, 3) : surface.filters;
   return (
-    <section className="if-panel if-data-table if-table-shell fg-panel" data-fastdas-opportunity-grid data-if-data-table data-if-table-density="compact">
+    <section className={`if-panel if-data-table if-table-shell fg-panel ${isCommandCenter ? "fg-panel--command-center" : ""}`} data-fastdas-opportunity-grid data-if-data-table data-if-table-density="compact">
       <div className="if-panel__header fg-panel__header">
         <div>
           <h2 className="if-panel__title">{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
-          <p className="if-panel__subtitle">{surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.</p>
+          <p className="if-panel__subtitle">
+            {isCommandCenter
+              ? `${surface.table.count}. Click a row to inspect it, then open full details only when needed.`
+              : `${surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.`}
+          </p>
         </div>
         <div className="fg-panel__header-actions">
           <Chip tone="blue">Selected: {selectedRowId}</Chip>
@@ -553,7 +559,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           <span className="if-badge fg-counter"><strong data-if-table-status="selected">1</strong> selected</span>
         </div>
         <div className="if-table-command-band__filters fg-command-band__filters">
-          {surface.filters.map(filter => (
+          {visibleFilters.map(filter => (
             <button
               className="if-btn if-btn--secondary if-btn--sm fg-filter"
               type="button"
@@ -563,6 +569,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
               {filter}
             </button>
           ))}
+          {isCommandCenter ? <span className="if-badge fg-counter">Decision view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -593,72 +600,79 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           </button>
         </div>
       </div>
-      <RecordFocusPanel
-        surface={surface}
-        selectedRowId={selectedRowId}
-        detailsOpen={detailsOpen}
-        onOpenDetails={onOpenDetails}
-        onRecordAction={onRecordAction}
-      />
-      <div className="if-table-wrap if-table-scroll fg-table-wrap">
-        <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
-          <thead>
-            <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
-          </thead>
-          <tbody>
-            {surface.table.rows.map(row => (
-              <Fragment key={row.id}>
-                <tr
-                  className={row.id === selectedRowId ? "is-selected" : ""}
-                  data-if-table-row
-                  data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
-                  data-if-table-search={row.cells.join(" ")}
-                  tabIndex={0}
-                  onClick={() => onSelect(row.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onSelect(row.id);
-                    }
-                  }}
-                >
-                  {row.cells.map((cell, index) => (
-                    <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
-                      {index === 0 ? (
-                        <span className="if-table-actions fg-table-record-cell">
-                          <button
-                            className="if-icon-btn fg-expand-btn"
-                            type="button"
-                            data-if-table-expand
-                            aria-expanded={row.id === selectedRowId && detailOpenRowId === row.id}
-                            aria-label={`Toggle ${splitCell(cell).primary}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onSelect(row.id);
-                              onOpenDetails(row.id);
-                            }}
-                          >
-                            <Icon name="chevronDown" />
-                          </button>
-                          <TableCell value={cell} column={columns[index]} />
-                        </span>
-                      ) : <TableCell value={cell} column={columns[index]} />}
-                    </td>
-                  ))}
-                </tr>
-                {row.id === selectedRowId && detailOpenRowId === row.id ? (
-                  <ExpandedRecord
-                    key={`${row.id}-expanded`}
-                    surface={surface}
-                    selectedRowId={row.id}
-                    detail={selectedDetail}
-                    onRecordAction={onRecordAction}
-                  />
-                ) : null}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+      <div
+        className={isCommandCenter ? `fg-command-center-workbench ${detailsOpen ? "fg-command-center-workbench--details-open" : ""}` : ""}
+        data-fastdas-command-center-workbench={isCommandCenter ? "true" : undefined}
+      >
+        <div className="if-table-wrap if-table-scroll fg-table-wrap">
+          <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
+            <thead>
+              <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
+            </thead>
+            <tbody>
+              {surface.table.rows.map(row => (
+                <Fragment key={row.id}>
+                  <tr
+                    className={row.id === selectedRowId ? "is-selected" : ""}
+                    data-if-table-row
+                    data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
+                    data-if-table-search={row.cells.join(" ")}
+                    tabIndex={0}
+                    onClick={() => onSelect(row.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect(row.id);
+                      }
+                    }}
+                  >
+                    {row.cells.map((cell, index) => (
+                      <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
+                        {index === 0 ? (
+                          <span className="if-table-actions fg-table-record-cell">
+                            <button
+                              className="if-icon-btn fg-expand-btn"
+                              type="button"
+                              data-if-table-expand
+                              aria-expanded={row.id === selectedRowId && detailOpenRowId === row.id}
+                              aria-label={`Toggle ${splitCell(cell).primary}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onSelect(row.id);
+                                onOpenDetails(row.id);
+                              }}
+                            >
+                              <Icon name="chevronDown" />
+                            </button>
+                            <TableCell value={cell} column={columns[index]} />
+                          </span>
+                        ) : <TableCell value={cell} column={columns[index]} />}
+                      </td>
+                    ))}
+                  </tr>
+                  {row.id === selectedRowId && detailOpenRowId === row.id ? (
+                    <ExpandedRecord
+                      key={`${row.id}-expanded`}
+                      surface={surface}
+                      selectedRowId={row.id}
+                      detail={selectedDetail}
+                      onRecordAction={onRecordAction}
+                    />
+                  ) : null}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!detailsOpen ? (
+          <RecordFocusPanel
+            surface={surface}
+            selectedRowId={selectedRowId}
+            detailsOpen={detailsOpen}
+            onOpenDetails={onOpenDetails}
+            onRecordAction={onRecordAction}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -986,6 +1000,25 @@ function CommandDock({ state, onCommandAction, onModeChange }) {
   );
 }
 
+function CommandCenterOperationsDrawer({ operationState, onCommandAction, onModeChange }) {
+  return (
+    <details className="if-panel fg-command-center-drawer" data-fastdas-command-center-ops-drawer>
+      <summary className="if-panel__header fg-command-center-drawer__summary">
+        <span>
+          <strong>Operations Controls</strong>
+          <em>Workflow, runtime, audit, and demo commands</em>
+        </span>
+        <span className="if-badge if-badge--info">Open tools</span>
+      </summary>
+      <div className="fg-command-center-drawer__body">
+        <WorkflowStrip activeIndex={operationState.workflowIndex} />
+        <OperationalWorkflow state={operationState} />
+        <CommandDock state={operationState} onCommandAction={onCommandAction} onModeChange={onModeChange} />
+      </div>
+    </details>
+  );
+}
+
 function BottomPanels({ surface }) {
   const panels = {
     "command-center": [
@@ -1179,6 +1212,7 @@ export default function App() {
     () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
     [activeSurfaceId],
   );
+  const isCommandCenter = surface.id === "command-center";
   const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
@@ -1478,7 +1512,7 @@ export default function App() {
             </div>
           </div>
 
-          <header className="if-page-header if-operations-page__hero fg-page-header" data-fastdas-page-header>
+          <header className={`if-page-header if-operations-page__hero fg-page-header ${isCommandCenter ? "fg-page-header--command-center" : ""}`} data-fastdas-page-header>
             <div className="fg-page-header__copy">
               <div className="if-page-header__eyebrow if-operations-page__eyebrow fg-eyebrow">{surface.eyebrow}</div>
               <h1 className="if-page-header__title if-operations-page__title">{surface.title}</h1>
@@ -1515,23 +1549,22 @@ export default function App() {
             </div>
           </header>
 
-          <WorkflowStrip activeIndex={operationState.workflowIndex} />
-          <OperationalWorkflow state={operationState} />
-          <CommandDock state={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
+          {!isCommandCenter ? (
+            <>
+              <WorkflowStrip activeIndex={operationState.workflowIndex} />
+              <OperationalWorkflow state={operationState} />
+              <CommandDock state={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
+            </>
+          ) : null}
 
           <section
-            className="if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid"
+            className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isCommandCenter ? "fg-metric-grid--command-center" : ""}`}
             data-fastdas-metric-grid
             data-if-balanced-grid
             data-if-balanced-grid-min="168"
           >
             {surface.metrics.map((metric, index) => <MetricCard key={metric[0]} metric={metric} selected={index === 0} />)}
           </section>
-          <OperationsSignalPanels metrics={surface.metrics} />
-
-          <SourceCards cards={surface.sourceCards} />
-
-          <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
 
           <OpportunityGrid
             surface={surface}
@@ -1548,6 +1581,16 @@ export default function App() {
             onUtilityAction={handleUtilityAction}
             onRecordAction={handleRecordAction}
           />
+
+          <OperationsSignalPanels metrics={surface.metrics} />
+
+          {isCommandCenter ? (
+            <CommandCenterOperationsDrawer operationState={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
+          ) : null}
+
+          <SourceCards cards={surface.sourceCards} />
+
+          <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
 
           <BottomPanels surface={surface} />
 
