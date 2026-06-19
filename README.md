@@ -2,6 +2,10 @@
 
 Standalone React/Vite demo for the FastDAS Growth Engine control surface.
 
+Canonical source: <https://github.com/anboas/fastdas-growth-engine-demo>
+
+Hosted demo: <https://anboas.gitlab.io/fastdas-growth-engine-demo/>
+
 The app is built as an enterprise operations workbench, not a CRM. It covers the full signal-to-revenue workflow:
 
 `Signal -> Enrichment -> Qualification -> Human Review -> Outreach -> Discovery Call -> Paid Assessment -> Report -> Follow-On Opportunity -> Closed Won`
@@ -41,7 +45,16 @@ npm run verify:all
 
 ## GitLab Pages
 
-The repository includes `.gitlab-ci.yml`. GitLab Pages builds `dist/`, copies it to `public/`, and publishes it from the default branch.
+GitHub is the canonical repository. GitLab is used as the Pages hosting target.
+
+Local remotes are expected to be:
+
+```bash
+origin        https://github.com/anboas/fastdas-growth-engine-demo.git
+gitlab-pages  https://gitlab.com/anboas/fastdas-growth-engine-demo.git
+```
+
+The GitLab Pages target includes `.gitlab-ci.yml`. GitLab builds `dist/`, copies it to `public/`, and publishes it from the default branch.
 
 After deployment, smoke-check the published site:
 
