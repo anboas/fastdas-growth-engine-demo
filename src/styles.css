@@ -857,6 +857,39 @@ button.fg-product-header__brand {
   display: none;
 }
 
+[data-fastdas-simplified-shell] .fg-page-actions {
+  display: none;
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail__section:first-child {
+  display: none;
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail__section:nth-child(2) {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail .if-sidebar__group-header {
+  flex: 0 0 auto;
+}
+
+[data-fastdas-simplified-shell] .fg-workspace-rail .fg-nav--saved {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
 [data-fastdas-simplified-shell] .fg-page-header {
   padding: 10px 12px;
 }
@@ -867,6 +900,46 @@ button.fg-product-header__brand {
 
 [data-fastdas-simplified-shell] .fg-page-header p,
 [data-fastdas-simplified-shell] .fg-page-meta {
+  display: none;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center {
+  gap: 6px;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric {
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 58px;
+  gap: 6px 8px;
+  align-items: center;
+  padding: 8px;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__top {
+  display: contents;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__icon {
+  grid-row: 1 / span 3;
+  width: 30px;
+  height: 30px;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__label {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__value {
+  margin: 0;
+  font-size: 20px;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__change {
+  font-size: 10px;
+}
+
+[data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__meta {
   display: none;
 }
 
@@ -1121,11 +1194,15 @@ button.fg-product-header__brand {
 
 .fg-guided-demo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(320px, 1fr) minmax(190px, auto);
+  grid-template-areas:
+    "main artifact actions"
+    "scenarios artifact actions"
+    "steps artifact actions";
+  gap: 8px 10px;
   align-items: start;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid #b9dfe3;
   border-left: 4px solid var(--fg-teal-700);
   border-radius: 8px;
@@ -1134,9 +1211,10 @@ button.fg-product-header__brand {
 }
 
 .fg-guided-demo__main {
+  grid-area: main;
   display: grid;
   min-width: 0;
-  gap: 8px;
+  gap: 6px;
 }
 
 .fg-guided-demo h2 {
@@ -1164,16 +1242,18 @@ button.fg-product-header__brand {
 }
 
 .fg-guided-demo__scenarios {
+  grid-area: scenarios;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
 .fg-guided-demo__scenarios .fg-btn {
   min-width: 0;
-  min-height: 32px;
+  min-height: 28px;
   height: auto;
+  padding-inline: 8px;
   justify-content: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1188,9 +1268,10 @@ button.fg-product-header__brand {
 }
 
 .fg-guided-demo__steps {
+  grid-area: steps;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
   align-self: start;
   min-width: 0;
   margin: 0;
@@ -1201,9 +1282,9 @@ button.fg-product-header__brand {
 .fg-guided-demo__steps li {
   display: grid;
   justify-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
-  padding: 7px 6px;
+  padding: 5px 4px;
   border: 1px solid #d2e1ec;
   border-radius: 7px;
   background: #ffffff;
@@ -1226,12 +1307,12 @@ button.fg-product-header__brand {
 .fg-guided-demo__steps span {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
   background: currentColor;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 950;
 }
 
@@ -1245,10 +1326,11 @@ button.fg-product-header__brand {
 }
 
 .fg-guided-demo__artifact {
+  grid-area: artifact;
   display: grid;
   min-width: 0;
   gap: 5px;
-  padding: 10px;
+  padding: 9px;
   border: 1px solid #d2e1ec;
   border-radius: 7px;
   background: #ffffff;
@@ -1297,7 +1379,7 @@ button.fg-product-header__brand {
 
 .fg-guided-demo__brief {
   width: 100%;
-  min-height: 96px;
+  min-height: 62px;
   margin-top: 5px;
   resize: vertical;
   border-radius: 6px;
@@ -1306,8 +1388,18 @@ button.fg-product-header__brand {
 }
 
 .fg-guided-demo__actions {
-  grid-column: 1 / -1;
-  justify-content: flex-end;
+  grid-area: actions;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-self: stretch;
+  align-content: start;
+  justify-content: stretch;
+  gap: 6px;
+}
+
+.fg-guided-demo__actions .fg-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .fg-ops-panel__main {
@@ -3344,6 +3436,15 @@ button.fg-product-header__brand {
     grid-template-columns: 1fr;
   }
 
+  .fg-guided-demo {
+    grid-template-areas:
+      "main"
+      "scenarios"
+      "steps"
+      "artifact"
+      "actions";
+  }
+
   .fg-command-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3379,6 +3480,10 @@ button.fg-product-header__brand {
   }
 
   .fg-workspace-rail {
+    display: none;
+  }
+
+  [data-fastdas-simplified-shell] .fg-workspace-rail {
     display: none;
   }
 

@@ -196,7 +196,7 @@ try {
   const paidAssessmentSavedViewText = await desktop.locator("[data-fastdas-conversion-focus-panel]").textContent();
   assert.ok(paidAssessmentSavedViewText.includes("Public safety radio testing"), "saved view should select the configured conversion row");
   await assertAuditContains(desktop, "Saved view loaded", "saved view selection");
-  await desktop.locator("[data-control-surface-nav] button", { hasText: "Command Center" }).click();
+  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
   await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
   assert.equal(frameworkSignals, 6, "desktop metric strip should use framework operations signal cards");
