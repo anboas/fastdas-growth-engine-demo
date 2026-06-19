@@ -73,7 +73,7 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
-const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations"];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -381,11 +381,48 @@ function outreachDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function agentDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  if (!row) return surface.expanded;
+
+  const [agentCell, purpose, trigger, toolsTouched, output, status, owner] = row.cells;
+  const { primary: agentName, secondary: agentScope } = splitCell(agentCell);
+  const needsOperator = ["needs sample", "human gate"].includes(String(status).toLowerCase());
+
+  return {
+    title: agentName,
+    description: agentScope || purpose || surface.expanded.description,
+    agentRun: {
+      name: agentName,
+      scope: agentScope || purpose,
+      purpose,
+      trigger,
+      toolsTouched,
+      output,
+      status,
+      owner,
+      needsOperator,
+    },
+    evidence: [
+      [trigger, `Status / ${status}`, `${agentName} runs for: ${purpose}.`],
+      [toolsTouched, "Tool chain", `Current output: ${output}. Owner: ${owner}.`],
+      [output, needsOperator ? "Needs operator" : "Healthy", needsOperator ? "Keep the workflow gated until the sample, approval, or exception is cleared." : "Workflow can continue under normal monitoring."],
+    ],
+    actions: [
+      needsOperator ? `Triage ${agentName.toLowerCase()} before trusting new output.` : `Replay ${agentName.toLowerCase()} using the current trigger contract.`,
+      `Review tool chain: ${toolsTouched}.`,
+      `Route output to operator owner: ${owner}.`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
 function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
   if (surface.id === "evidence-review") return evidenceDetailForSelection(surface, selectedRowId);
   if (surface.id === "outreach-queue") return outreachDetailForSelection(surface, selectedRowId);
+  if (surface.id === "agent-operations") return agentDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
@@ -610,6 +647,79 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
             onClick={() => onRecordAction("approve-outreach", surface, detail)}
           >
             <Icon name="check" />Approve Outreach
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  if (surface.id === "agent-operations") {
+    const agent = detail.agentRun;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--agent"
+        data-fastdas-record-focus-panel
+        data-fastdas-agent-focus-panel
+        data-fastdas-record-focus-id={agent.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Agent Runtime Focus</div>
+            <h3 className="if-record-detail__title">{agent.name}</h3>
+            <p className="if-record-detail__text">{agent.scope}</p>
+          </div>
+          <Chip tone={toneForValue(agent.status)}>{agent.status}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Trigger</dt>
+            <dd className="if-provenance-field__value">{agent.trigger}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Output</dt>
+            <dd className="if-provenance-field__value">{agent.output}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Owner</dt>
+            <dd className="if-provenance-field__value">{agent.owner}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Status</dt>
+            <dd className="if-provenance-field__value">{agent.status}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Tool Chain</dt>
+            <dd className="if-provenance-field__value">{agent.toolsTouched}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="settings" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Agent-control action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-agent-details"
+            data-fastdas-open-details={agent.name}
+            onClick={() => onOpenDetails(agent.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Agent Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-run-agent"
+            onClick={() => onRecordAction("run-agent", surface, detail)}
+          >
+            <Icon name="refresh" />Run Agent
           </button>
         </div>
       </aside>
@@ -890,6 +1000,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       data-fastdas-opportunity-workbench-grid={surface.id === "opportunity-workbench" ? "true" : undefined}
       data-fastdas-evidence-review-grid={surface.id === "evidence-review" ? "true" : undefined}
       data-fastdas-outreach-queue-grid={surface.id === "outreach-queue" ? "true" : undefined}
+      data-fastdas-agent-operations-grid={surface.id === "agent-operations" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -938,6 +1049,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           {surface.id === "opportunity-workbench" ? <span className="if-badge fg-counter">Qualification view</span> : null}
           {surface.id === "evidence-review" ? <span className="if-badge fg-counter">Review view</span> : null}
           {surface.id === "outreach-queue" ? <span className="if-badge fg-counter">Approval queue</span> : null}
+          {surface.id === "agent-operations" ? <span className="if-badge fg-counter">Runtime view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -976,6 +1088,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-opportunity-workbench-workbench={surface.id === "opportunity-workbench" ? "true" : undefined}
         data-fastdas-evidence-review-workbench={surface.id === "evidence-review" ? "true" : undefined}
         data-fastdas-outreach-queue-workbench={surface.id === "outreach-queue" ? "true" : undefined}
+        data-fastdas-agent-operations-workbench={surface.id === "agent-operations" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1728,6 +1841,13 @@ export default function App() {
         tone: "success",
         workflowIndex: 4,
         updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
+      },
+      "run-agent": {
+        title: "Agent workflow queued",
+        body: `${recordTitle} is queued for a controlled replay with runtime, exception, and human-gate boundaries retained.`,
+        tone: "blue",
+        workflowIndex: 1,
+        updates: state => ({ signalRuns: state.signalRuns + 1 }),
       },
     };
     recordOperation(labels[kind]);

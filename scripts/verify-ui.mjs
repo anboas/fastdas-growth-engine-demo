@@ -366,9 +366,37 @@ try {
   assert.ok(outreachDetailText.includes("Capital Ridge Senior Living"), "opened outreach detail row should match the clicked task");
   assert.ok(outreachDetailText.includes("Radio testing"), "opened outreach detail should use outreach-specific first-offer context");
 
+  await desktop.goto(`${BASE_URL}#/agent-operations`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-agent-focus-panel]", { timeout: 5000 });
+  const agentWorkbenchColumns = await desktop.locator("[data-fastdas-agent-operations-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(agentWorkbenchColumns >= 2, "agent operations should share the workflow table with a selected-agent panel on desktop");
+  const agentDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-agent-operations-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(agentDrawerOrder, true, "agent operations should put workflow runs before operational controls");
+  const agentFocusPanel = desktop.locator("[data-fastdas-agent-focus-panel]");
+  let agentFocusText = await agentFocusPanel.textContent();
+  assert.ok(agentFocusText.includes("Permit Monitor Agent"), "agent operations should start with the selected agent workflow");
+  await desktop.locator("[data-fastdas-agent-operations-grid] tr[data-if-table-row]", { hasText: "Complaint Pattern Agent" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-agent-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Complaint Pattern Agent");
+  agentFocusText = await agentFocusPanel.textContent();
+  assert.ok(agentFocusText.includes("Complaint Pattern Agent"), "clicking an agent row should move the runtime focus panel");
+  assert.ok(agentFocusText.includes("Needs sample"), "agent focus panel should show the selected row's runtime status");
+  await desktop.locator('[data-fastdas-action="focus-run-agent"]').click();
+  await assertAuditContains(desktop, "Agent workflow queued", "agent workflow replay");
+  const closedAgentDetails = await desktop.locator('[data-fastdas-expanded-record-id="Complaint Pattern Agent"]').count();
+  assert.equal(closedAgentDetails, 0, "agent row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-agent-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Complaint Pattern Agent"]', { timeout: 5000 });
+  const agentDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Complaint Pattern Agent"]').textContent();
+  assert.ok(agentDetailText.includes("Complaint Pattern Agent"), "opened agent detail row should match the clicked workflow");
+  assert.ok(agentDetailText.includes("Search/API"), "opened agent detail should use agent-specific toolchain context");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
         const openSelector = surfaceId === "signal-intake"
@@ -379,7 +407,9 @@ try {
               ? '[data-fastdas-action="open-evidence-details"]'
               : surfaceId === "outreach-queue"
                 ? '[data-fastdas-action="open-outreach-details"]'
-                : '[data-fastdas-action="open-record-details"]';
+                : surfaceId === "agent-operations"
+                  ? '[data-fastdas-action="open-agent-details"]'
+                  : '[data-fastdas-action="open-record-details"]';
         await desktop.locator(openSelector).click();
       }
     }
