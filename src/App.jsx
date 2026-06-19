@@ -74,6 +74,40 @@ const SCENARIO_SEQUENCE = [
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
 const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations", "synthetic-data", "conversion-board"];
+const SAVED_VIEWS = [
+  {
+    id: "score-80-review",
+    label: "Score 80+ / Review",
+    surfaceId: "opportunity-workbench",
+    rowId: "Capital Ridge Senior Living",
+    workflowIndex: 3,
+    tone: "warning",
+  },
+  {
+    id: "closeout-signals",
+    label: "Closeout Signals",
+    surfaceId: "signal-intake",
+    rowId: "Arlington County Permit Portal",
+    workflowIndex: 1,
+    tone: "blue",
+  },
+  {
+    id: "paid-assessment-fit",
+    label: "Paid Assessment Fit",
+    surfaceId: "conversion-board",
+    rowId: "Capital Ridge Senior Living",
+    workflowIndex: 8,
+    tone: "success",
+  },
+  {
+    id: "partner-paths",
+    label: "Partner Paths",
+    surfaceId: "evidence-review",
+    rowId: "Partner route",
+    workflowIndex: 3,
+    tone: "purple",
+  },
+];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -1915,6 +1949,7 @@ export default function App() {
   const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
   const [detailOpenRows, setDetailOpenRows] = useState(defaultDetailOpenRows);
   const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
+  const [activeSavedViewId, setActiveSavedViewId] = useState("");
 
   useEffect(() => {
     const onHashChange = () => setActiveSurfaceId(getInitialSurfaceId());
@@ -1930,6 +1965,7 @@ export default function App() {
   const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
+    setActiveSavedViewId("");
     setActiveSurfaceId(id);
     window.location.hash = `/${id}`;
   }, []);
@@ -1950,6 +1986,20 @@ export default function App() {
       updates: { operatorMode: mode },
     }));
   }, []);
+
+  const handleSavedView = useCallback((view) => {
+    const targetSurface = surfaces.find(item => item.id === view.surfaceId);
+    setSurface(view.surfaceId);
+    setActiveSavedViewId(view.id);
+    setSelectedRows(current => ({ ...current, [view.surfaceId]: view.rowId }));
+    setDetailOpenRows(current => ({ ...current, [view.surfaceId]: "" }));
+    recordOperation({
+      title: "Saved view loaded",
+      body: `${view.label} opened ${targetSurface?.title || view.surfaceId} with ${view.rowId} selected.`,
+      tone: view.tone,
+      workflowIndex: view.workflowIndex,
+    });
+  }, [recordOperation, setSurface]);
 
   const handleCommandAction = useCallback((commandId) => {
     const commandEvents = {
@@ -2173,11 +2223,22 @@ export default function App() {
         <section className="if-sidebar__section fg-sidebar-section">
           <div className="if-sidebar__group-header">
             <h2 className="if-sidebar__title fg-nav__heading">Saved Views</h2>
-            <span className="if-sidebar__count">4</span>
+            <span className="if-sidebar__count">{SAVED_VIEWS.length}</span>
           </div>
-          <div className="if-sidebar__subnav fg-nav fg-nav--saved">
-          {["Score 80+ / Review", "Closeout Signals", "Paid Assessment Fit", "Partner Paths"].map(view => (
-            <button className="if-sidebar__link" type="button" key={view}><span /><span className="if-sidebar__link-label">{view}</span></button>
+          <div className="if-sidebar__subnav fg-nav fg-nav--saved" data-fastdas-saved-views>
+          {SAVED_VIEWS.map(view => (
+            <button
+              className={`if-sidebar__link ${activeSavedViewId === view.id ? "is-active" : ""}`}
+              type="button"
+              key={view.id}
+              data-fastdas-saved-view={view.id}
+              data-fastdas-saved-view-active={activeSavedViewId === view.id ? "true" : "false"}
+              data-fastdas-target-surface={view.surfaceId}
+              onClick={() => handleSavedView(view)}
+            >
+              <span />
+              <span className="if-sidebar__link-label">{view.label}</span>
+            </button>
           ))}
           </div>
         </section>

@@ -53,6 +53,8 @@ for (const hook of [
   "data-fastdas-page-meta",
   "data-fastdas-page-actions",
   "data-control-surface-nav",
+  "data-fastdas-saved-views",
+  "data-fastdas-saved-view",
   "data-fastdas-metric-grid",
   "data-fastdas-opportunity-grid",
   "data-fastdas-opportunity-workbench-grid",

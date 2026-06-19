@@ -137,6 +137,18 @@ try {
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
+  const savedViewButtons = await desktop.locator("[data-fastdas-saved-views] [data-fastdas-saved-view]").count();
+  assert.equal(savedViewButtons, 4, "sidebar should expose four functional saved views");
+  await desktop.locator('[data-fastdas-saved-view="paid-assessment-fit"]').click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Conversion Board"));
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-conversion-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
+  const paidAssessmentSavedViewActive = await desktop.locator('[data-fastdas-saved-view="paid-assessment-fit"]').getAttribute("data-fastdas-saved-view-active");
+  assert.equal(paidAssessmentSavedViewActive, "true", "selected saved view should expose active state");
+  const paidAssessmentSavedViewText = await desktop.locator("[data-fastdas-conversion-focus-panel]").textContent();
+  assert.ok(paidAssessmentSavedViewText.includes("Public safety radio testing"), "saved view should select the configured conversion row");
+  await assertAuditContains(desktop, "Saved view loaded", "saved view selection");
+  await desktop.locator("[data-control-surface-nav] button", { hasText: "Command Center" }).click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
   assert.equal(frameworkSignals, 6, "desktop metric strip should use framework operations signal cards");
   const frameworkSignalButtons = await desktop.locator(".if-operations-signal-grid button.if-operations-signal").count();
