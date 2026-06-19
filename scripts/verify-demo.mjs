@@ -17,6 +17,9 @@ assert.equal(gitlabCi.includes("pages:"), true, "GitLab Pages job should exist")
 assert.equal(gitlabCi.includes("cp -r dist public"), true, "GitLab Pages should publish the Vite dist folder");
 assert.equal(pkg.scripts.build.includes("patch-legacy-assets"), true, "build should patch known stale Pages asset bridges");
 assert.equal(legacyAssets.includes("assets/index-Cnt_SPVg.js"), true, "legacy patch should bridge the stale GitLab Pages entry asset");
+assert.equal(legacyAssets.includes("assets/index-DocpHply.css"), true, "legacy patch should bridge stale GitLab Pages CSS assets");
+assert.equal(viteConfig.includes('entryFileNames: "assets/[name].js"'), true, "Vite should use stable entry asset names for GitLab Pages");
+assert.equal(viteConfig.includes('chunkFileNames: "assets/[name].js"'), true, "Vite should use stable chunk asset names for GitLab Pages");
 
 for (const surface of [
   "command-center",

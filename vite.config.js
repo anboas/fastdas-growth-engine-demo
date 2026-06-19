@@ -12,6 +12,14 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
+        entryFileNames: "assets/[name].js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames(assetInfo) {
+          if (assetInfo.name?.endsWith(".css")) {
+            return "assets/[name][extname]";
+          }
+          return "assets/[name]-[hash][extname]";
+        },
         manualChunks(id) {
           if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/") || id.includes("/node_modules/scheduler/")) {
             return "react-vendor";
