@@ -8,12 +8,15 @@ const data = readFileSync("src/data.js", "utf8");
 const css = readFileSync("src/styles.css", "utf8");
 const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
 const viteConfig = readFileSync("vite.config.js", "utf8");
+const legacyAssets = readFileSync("scripts/patch-legacy-assets.mjs", "utf8");
 
 assert.equal(pkg.name, "fastdas-growth-engine-demo", "package should identify the new repo");
 assert.equal(html.includes("<title>FastDAS Growth Engine</title>"), true, "HTML title should identify FastDAS");
 assert.equal(viteConfig.includes('base: "./"'), true, "Vite should use relative assets for GitLab Pages project paths");
 assert.equal(gitlabCi.includes("pages:"), true, "GitLab Pages job should exist");
 assert.equal(gitlabCi.includes("cp -r dist public"), true, "GitLab Pages should publish the Vite dist folder");
+assert.equal(pkg.scripts.build.includes("patch-legacy-assets"), true, "build should patch known stale Pages asset bridges");
+assert.equal(legacyAssets.includes("assets/index-Cnt_SPVg.js"), true, "legacy patch should bridge the stale GitLab Pages entry asset");
 
 for (const surface of [
   "command-center",
