@@ -86,6 +86,15 @@ const SCENARIO_SEQUENCE = [
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
 
+const PRIMARY_ROUTE_IDS = ["command-center", "signal-intake", "opportunity-workbench"];
+const EXECUTION_ROUTE_IDS = ["evidence-review", "outreach-queue", "agent-operations"];
+const ADMIN_ROUTE_IDS = ["synthetic-data", "conversion-board"];
+const PROFILE_SETTINGS = [
+  ["source-tracking", "Source Tracking", "Source links and confidence remain visible", "Visible"],
+  ["review-queue", "Review Queue", "Human approval surfaces stay in the workspace", "Visible"],
+  ["table-density", "Table Density", "Compact scan-first table layout is active", "Compact"],
+];
+
 const PRIMARY_ACTIONS = {
   "command-center": {
     title: "Next best action approved",
@@ -213,6 +222,148 @@ function Chip({ children, tone = "neutral" }) {
     neutral: "",
   }[tone] || "";
   return <span className={`if-badge fg-chip ${ifTone} ${toneClass(tone)}`}>{children}</span>;
+}
+
+function ProfileSettingToggle({ label }) {
+  return (
+    <span className="ci-profile-setting-toggle ci-profile-setting-toggle--on" data-profile-setting-state="on">
+      <span className="ci-profile-setting-toggle__track" aria-hidden="true">
+        <span className="ci-profile-setting-toggle__knob" />
+      </span>
+      <span className="ci-profile-setting-toggle__label">{label}</span>
+    </span>
+  );
+}
+
+function FastDasProfileMenu({ operationState, onSurfaceSelect, onUtilityAction }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const currentStage = workflowStages[operationState.workflowIndex] || workflowStages[0];
+
+  useEffect(() => {
+    function handleOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className="if-popover if-account-popover ci-profile-menu fg-profile-menu" data-profile-menu data-fastdas-profile-menu>
+      <button
+        type="button"
+        className={`if-account-menu${open ? " is-active" : ""}`}
+        data-profile-menu-trigger
+        aria-label="Profile menu"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="fastdas-profile-menu"
+        title="FastDAS operator profile"
+        onClick={() => setOpen(value => !value)}
+      >
+        <span className="if-avatar if-profile-avatar" data-profile-avatar aria-hidden="true">AB</span>
+        <span className="if-account-menu__name if-desktop-only" data-profile-menu-name>Operator</span>
+        <span className="if-icon-slot if-account-menu__chevron" data-if-icon="chevronDown" aria-hidden="true" />
+      </button>
+
+      {open ? (
+        <section
+          id="fastdas-profile-menu"
+          className="if-popover__panel if-account-surface ci-profile-menu__surface fg-profile-menu__surface"
+          data-profile-menu-surface
+          role="dialog"
+          aria-label="FastDAS profile controls"
+        >
+          <header className="if-account-surface__header">
+            <span className="if-account-surface__avatar if-profile-avatar if-profile-avatar--large" aria-hidden="true">AB</span>
+            <span className="if-account-surface__identity">
+              <strong data-profile-active-name>Adam Boas</strong>
+              <span>Growth operator</span>
+              <span>Browser-local demo workspace</span>
+            </span>
+          </header>
+          <div className="if-account-surface__body">
+            <section className="if-account-surface__section" aria-label="Profile source">
+              <span className="if-account-surface__label">Identity Source</span>
+              <div className="if-account-surface__controls">
+                <div className="if-account-surface__control">
+                  <span>Provider</span>
+                  <strong>Local profile</strong>
+                </div>
+                <div className="if-account-surface__control">
+                  <span>Current stage</span>
+                  <strong>{currentStage}</strong>
+                </div>
+              </div>
+            </section>
+            <section className="if-account-surface__section" aria-label="Workspace display">
+              <span className="if-account-surface__label">Workspace Display</span>
+              {PROFILE_SETTINGS.map(([id, label, helper, stateLabel]) => (
+                <button
+                  type="button"
+                  className="if-account-action ci-profile-setting-action ci-profile-setting-action--on"
+                  data-profile-setting={id}
+                  data-profile-setting-state="on"
+                  aria-pressed="true"
+                  key={id}
+                  onClick={() => onUtilityAction(`${label} confirmed`, `${label} remains active for the FastDAS command workspace.`, "blue")}
+                >
+                  <span className="if-account-action__icon if-icon-slot ci-profile-setting-icon" data-if-icon={id === "review-queue" ? "eye" : id === "table-density" ? "columns" : "shield"} aria-hidden="true" />
+                  <span className="if-account-action__content ci-profile-setting-copy">
+                    <strong className="if-account-action__title" data-profile-setting-label={id}>{label}</strong>
+                    <span className="if-account-action__meta" data-profile-setting-helper={id}>{helper}</span>
+                  </span>
+                  <ProfileSettingToggle label={stateLabel} />
+                </button>
+              ))}
+            </section>
+            <section className="if-account-surface__section" aria-label="Profile actions">
+              <button
+                type="button"
+                className="if-account-action"
+                data-profile-command-center
+                onClick={() => {
+                  setOpen(false);
+                  onSurfaceSelect("command-center");
+                }}
+              >
+                <span className="if-account-action__icon if-icon-slot" data-if-icon="target" aria-hidden="true" />
+                <span className="if-account-action__content">
+                  <strong className="if-account-action__title">Command Center</strong>
+                  <span className="if-account-action__meta">Return to the primary FastDAS work queue</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="if-account-action"
+                data-profile-synthetic-data
+                onClick={() => {
+                  setOpen(false);
+                  onSurfaceSelect("synthetic-data");
+                }}
+              >
+                <span className="if-account-action__icon if-icon-slot" data-if-icon="database" aria-hidden="true" />
+                <span className="if-account-action__content">
+                  <strong className="if-account-action__title">Synthetic Data</strong>
+                  <span className="if-account-action__meta">Manage seed, scenarios, exports, and reset state</span>
+                </span>
+              </button>
+            </section>
+          </div>
+          <footer className="if-account-surface__footer">
+            <span className="if-text-xs if-text-muted">{operationState.activeSeed} / {operationState.operatorMode}</span>
+          </footer>
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
 function ScoreCell({ value }) {
@@ -1608,33 +1759,77 @@ function BottomPanels({ surface }) {
 }
 
 function HeaderSurfaceNav({ surface, onSelect }) {
-  const [secondaryOpen, setSecondaryOpen] = useState(false);
-  const secondaryRef = useRef(null);
-  const primarySurfaces = surfaces.slice(0, 4);
-  const secondarySurfaces = surfaces.slice(4);
-  const secondaryMenuId = "fastdas-secondary-surfaces-menu";
+  const [executionOpen, setExecutionOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const executionRef = useRef(null);
+  const adminRef = useRef(null);
+  const mobileMoreRef = useRef(null);
+  const surfaceById = new Map(surfaces.map(item => [item.id, item]));
+  const primarySurfaces = PRIMARY_ROUTE_IDS.map(id => surfaceById.get(id)).filter(Boolean);
+  const executionSurfaces = EXECUTION_ROUTE_IDS.map(id => surfaceById.get(id)).filter(Boolean);
+  const adminSurfaces = ADMIN_ROUTE_IDS.map(id => surfaceById.get(id)).filter(Boolean);
+  const executionActive = EXECUTION_ROUTE_IDS.includes(surface.id);
+  const adminActive = ADMIN_ROUTE_IDS.includes(surface.id);
 
   useEffect(() => {
     function handleDocumentClick(event) {
-      if (secondaryRef.current && !secondaryRef.current.contains(event.target)) {
-        setSecondaryOpen(false);
+      if (executionRef.current && !executionRef.current.contains(event.target)) setExecutionOpen(false);
+      if (adminRef.current && !adminRef.current.contains(event.target)) setAdminOpen(false);
+      if (mobileMoreRef.current && !mobileMoreRef.current.contains(event.target)) setMobileMoreOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setExecutionOpen(false);
+        setAdminOpen(false);
+        setMobileMoreOpen(false);
       }
     }
 
     document.addEventListener("mousedown", handleDocumentClick);
-    return () => document.removeEventListener("mousedown", handleDocumentClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
-  function handleSecondaryKeyDown(event) {
-    if (event.key === "Escape") {
-      setSecondaryOpen(false);
-      event.currentTarget.querySelector("[data-fastdas-header-secondary-toggle]")?.focus();
-    }
+  function closeMenus() {
+    setExecutionOpen(false);
+    setAdminOpen(false);
+    setMobileMoreOpen(false);
+  }
+
+  function selectSurface(id) {
+    closeMenus();
+    onSelect(id);
+  }
+
+  function renderMenuItem(item, group) {
+    return (
+      <button
+        type="button"
+        role="menuitem"
+        aria-current={item.id === surface.id ? "page" : undefined}
+        className={`if-btn if-operations-topnav__menu-item${item.id === surface.id ? " is-active" : ""}`}
+        data-fastdas-header-secondary-item={item.id}
+        data-fastdas-header-secondary-active={item.id === surface.id ? "true" : "false"}
+        data-fastdas-header-menu-group={group}
+        key={item.id}
+        onClick={() => selectSurface(item.id)}
+      >
+        <span className="ci-topnav-menu-copy">
+          <span className="ci-topnav-menu-label">{item.nav}</span>
+          <span className="ci-topnav-menu-description">{item.summary}</span>
+        </span>
+        <span className="if-status-pill if-status-pill--compact ci-topnav-menu-badge">{item.table.count}</span>
+      </button>
+    );
   }
 
   return (
     <nav
-      className="if-topbar__nav if-operations-topnav fg-operations-topnav"
+      className="if-topbar__nav if-operations-topnav ci-header-nav fg-operations-topnav"
       data-fastdas-header-route
       data-fastdas-active-route={surface.id}
       aria-label="FastDAS operations surfaces"
@@ -1642,71 +1837,218 @@ function HeaderSurfaceNav({ surface, onSelect }) {
       {primarySurfaces.map(item => (
         <button
           type="button"
-          className={`if-operations-topnav__link${item.id === surface.id ? " is-active" : ""}`}
+          className={`if-operations-topnav__link ci-header-nav__primary-link${item.id === surface.id ? " is-active" : ""}`}
           aria-current={item.id === surface.id ? "page" : undefined}
           data-fastdas-header-surface={item.id}
           data-fastdas-header-surface-active={item.id === surface.id ? "true" : "false"}
           key={item.id}
-          onClick={() => {
-            setSecondaryOpen(false);
-            onSelect(item.id);
-          }}
+          onClick={() => selectSurface(item.id)}
         >
           {item.nav}
         </button>
       ))}
-      <span className="if-operations-topnav__divider" aria-hidden="true" />
-      <div
-        className={`if-operations-topnav__secondary${secondaryOpen ? " is-open" : ""}`}
-        ref={secondaryRef}
-        onKeyDown={handleSecondaryKeyDown}
-      >
+      <div ref={executionRef} className="if-operations-topnav__secondary ci-header-nav__desktop-menu">
         <button
-          className="if-operations-topnav__secondary-button"
+          className={`if-operations-topnav__secondary-button ci-header-nav__menu-trigger${executionActive ? " has-active-child" : ""}`}
           type="button"
-          aria-controls={secondaryMenuId}
-          aria-expanded={secondaryOpen}
+          aria-controls="fastdas-execution-menu"
+          aria-expanded={executionOpen}
           aria-haspopup="menu"
           data-fastdas-header-secondary-toggle
-          onClick={() => setSecondaryOpen(open => !open)}
+          data-fastdas-header-execution-toggle
+          data-nav-group-trigger="execution"
+          data-nav-group-active-child={executionActive ? surface.id : undefined}
+          onClick={() => {
+            setAdminOpen(false);
+            setMobileMoreOpen(false);
+            setExecutionOpen(open => !open);
+          }}
         >
-          More surfaces
+          <span className="ci-header-nav__menu-trigger-label">Execution</span>
+          {executionActive ? <span className="ci-header-nav__menu-trigger-context">{surface.nav}</span> : null}
+          <span className="ci-header-nav__menu-trigger-chevron" aria-hidden="true">{executionOpen ? "▲" : "▼"}</span>
         </button>
-        <div
-          className="if-operations-topnav__menu"
-          id={secondaryMenuId}
-          role="menu"
-          data-fastdas-header-secondary-menu
+        {executionOpen ? (
+          <div id="fastdas-execution-menu" className="if-operations-topnav__menu" role="menu" data-fastdas-header-secondary-menu data-fastdas-header-execution-menu>
+            <span className="if-operations-topnav__menu-label">Execution Surfaces</span>
+            {executionSurfaces.map(item => renderMenuItem(item, "execution"))}
+          </div>
+        ) : null}
+      </div>
+      <div ref={adminRef} className="if-operations-topnav__secondary ci-header-nav__desktop-menu">
+        <button
+          className={`if-operations-topnav__secondary-button ci-header-nav__menu-trigger${adminActive ? " has-active-child" : ""}`}
+          type="button"
+          aria-controls="fastdas-admin-menu"
+          aria-expanded={adminOpen}
+          aria-haspopup="menu"
+          data-fastdas-header-admin-toggle
+          data-nav-group-trigger="platform-admin"
+          data-nav-group-active-child={adminActive ? surface.id : undefined}
+          onClick={() => {
+            setExecutionOpen(false);
+            setMobileMoreOpen(false);
+            setAdminOpen(open => !open);
+          }}
         >
-          <span className="if-operations-topnav__menu-label">Secondary surfaces</span>
-          {secondarySurfaces.map(item => (
+          <span className="ci-header-nav__menu-trigger-label">Admin</span>
+          {adminActive ? <span className="ci-header-nav__menu-trigger-context">{surface.nav}</span> : null}
+          <span className="ci-header-nav__menu-trigger-chevron" aria-hidden="true">{adminOpen ? "▲" : "▼"}</span>
+        </button>
+        {adminOpen ? (
+          <div id="fastdas-admin-menu" className="if-operations-topnav__menu" role="menu" data-fastdas-header-admin-menu>
+            <span className="if-operations-topnav__menu-label">Platform Admin</span>
+            {adminSurfaces.map(item => renderMenuItem(item, "platform-admin"))}
+          </div>
+        ) : null}
+      </div>
+      <div ref={mobileMoreRef} className="if-operations-topnav__secondary ci-header-nav__mobile-more">
+        <button
+          type="button"
+          className={`if-operations-topnav__secondary-button${executionActive || adminActive ? " is-active" : ""}`}
+          aria-haspopup="menu"
+          aria-expanded={mobileMoreOpen}
+          aria-controls="fastdas-mobile-more-menu"
+          data-mobile-more-menu-button
+          onClick={() => {
+            setExecutionOpen(false);
+            setAdminOpen(false);
+            setMobileMoreOpen(open => !open);
+          }}
+        >
+          More {mobileMoreOpen ? "▲" : "▼"}
+        </button>
+        {mobileMoreOpen ? (
+          <div id="fastdas-mobile-more-menu" className="if-operations-topnav__menu ci-header-nav__mobile-menu" data-mobile-more-menu role="menu">
+            <span className="if-operations-topnav__menu-label">Primary</span>
+            {primarySurfaces.map(item => renderMenuItem(item, "primary"))}
+            <span className="if-operations-topnav__menu-label">Execution</span>
+            {executionSurfaces.map(item => renderMenuItem(item, "execution"))}
+            <span className="if-operations-topnav__menu-label">Platform Admin</span>
+            {adminSurfaces.map(item => renderMenuItem(item, "platform-admin"))}
+          </div>
+        ) : null}
+      </div>
+    </nav>
+  );
+}
+
+function WorkspaceRail({ surface, activeSavedViewId, onSurfaceSelect, onSavedView }) {
+  return (
+    <aside className="if-sidebar fg-sidebar fg-workspace-rail" data-fastdas-workspace-rail>
+      <section className="if-sidebar__section fg-sidebar-section fg-workspace-rail__section">
+        <div className="if-sidebar__group-header">
+          <h2 className="if-sidebar__title fg-nav__heading">Workspace</h2>
+          <span className="if-sidebar__count">{surfaces.length}</span>
+        </div>
+        <nav
+          className="if-sidebar__nav fg-nav"
+          data-control-surface-nav
+          data-fastdas-active-route={surface.id}
+          aria-label="Workspace navigation"
+        >
+          {surfaces.map(item => (
             <button
               type="button"
-              role="menuitem"
+              className={`if-sidebar__link ${item.id === surface.id ? "is-active" : ""}`}
               aria-current={item.id === surface.id ? "page" : undefined}
-              className={`if-operations-topnav__menu-item${item.id === surface.id ? " is-active" : ""}`}
-              data-fastdas-header-secondary-item={item.id}
-              data-fastdas-header-secondary-active={item.id === surface.id ? "true" : "false"}
+              data-fastdas-nav-surface={item.id}
+              data-fastdas-nav-active={item.id === surface.id ? "true" : "false"}
               key={item.id}
-              onClick={() => {
-                setSecondaryOpen(false);
-                onSelect(item.id);
-              }}
+              onClick={() => onSurfaceSelect(item.id)}
             >
-              {item.nav}
+              <span />
+              <span className="if-sidebar__link-label">{item.nav}</span>
+            </button>
+          ))}
+        </nav>
+      </section>
+      <section className="if-sidebar__section fg-sidebar-section fg-workspace-rail__section">
+        <div className="if-sidebar__group-header">
+          <h2 className="if-sidebar__title fg-nav__heading">Saved Views</h2>
+          <span className="if-sidebar__count">{SAVED_VIEWS.length}</span>
+        </div>
+        <div className="if-sidebar__subnav fg-nav fg-nav--saved" data-fastdas-saved-views>
+          {SAVED_VIEWS.map(view => (
+            <button
+              className={`if-sidebar__link ${activeSavedViewId === view.id ? "is-active" : ""}`}
+              type="button"
+              key={view.id}
+              data-fastdas-saved-view={view.id}
+              data-fastdas-saved-view-active={activeSavedViewId === view.id ? "true" : "false"}
+              data-fastdas-target-surface={view.surfaceId}
+              onClick={() => onSavedView(view)}
+            >
+              <span />
+              <span className="if-sidebar__link-label">{view.label}</span>
             </button>
           ))}
         </div>
-      </div>
-      <span className="if-route-status fg-route-status fg-route-status--primary">
-        <strong>{surface.nav}</strong>
-        <span>{surface.eyebrow}</span>
-      </span>
-      <span className="if-route-status fg-route-status">
+      </section>
+      <section className="if-sidebar__section fg-sidebar-section fg-workspace-rail__section fg-workspace-rail__kpis">
+        <div className="if-sidebar__group-header">
+          <h2 className="if-sidebar__title fg-nav__heading">Trial Model</h2>
+          <span className="if-sidebar__count">2</span>
+        </div>
+        <div className="if-claim-toolbar fg-sidebar-kpis">
+          {sidebarKpis.map(([value, label]) => (
+            <div className="if-claim-summary-card" key={label}>
+              <Icon name="target" />
+              <span><strong>{value}</strong><em>{label}</em></span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="if-sidebar__section fg-sidebar-section fg-workspace-rail__section fg-workspace-rail__note">
+        <div className="if-alert if-alert--info fg-sidebar-note">
+          <strong>Automation Boundary</strong>
+          Agents and offshore support can find, enrich, score, draft, and queue. Humans approve outreach, technical claims, pricing, discovery, and close strategy.
+        </div>
+      </section>
+    </aside>
+  );
+}
+
+function WorkingSetRibbon({ surface, selectedRowId, operationState, activeCommandFilterId, onReset, onRunScan }) {
+  const commandFilter = surface.id === "command-center" ? commandCenterQuickFilter(activeCommandFilterId) : null;
+  const currentStage = workflowStages[operationState.workflowIndex] || workflowStages[0];
+  const chips = [
+    ["Route", surface.nav],
+    ["Selected", selectedRowId],
+    ["Workflow", currentStage],
+    ["Mode", operationState.operatorMode],
+  ];
+  if (commandFilter) chips.push(["View", commandFilter.label]);
+
+  return (
+    <section
+      className="ci-working-set-ribbon fg-working-set-ribbon has-context"
+      data-fastdas-working-set-ribbon
+      data-fastdas-working-set-route={surface.id}
+      aria-label="Current FastDAS working set"
+    >
+      <div className="fg-working-set-ribbon__copy">
+        <span className="ci-working-set-ribbon__kicker">Working Set</span>
         <strong>{surface.title}</strong>
-        <span>Live route</span>
-      </span>
-    </nav>
+        <em>{surface.summary}</em>
+      </div>
+      <div className="fg-working-set-ribbon__chips">
+        {chips.map(([label, value]) => (
+          <span className="if-route-status" key={label}>
+            <strong>{label}</strong>
+            <span>{value}</span>
+          </span>
+        ))}
+      </div>
+      <div className="fg-working-set-ribbon__actions">
+        <button className="if-btn if-btn--secondary fg-btn" type="button" onClick={onReset}>
+          <Icon name="rotate" />Reset
+        </button>
+        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button" onClick={onRunScan}>
+          <Icon name="refresh" />Scan
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -2029,130 +2371,45 @@ export default function App() {
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
-      <aside className="if-sidebar fg-sidebar">
-        <div className="if-brand fg-brand">
-          <div className="if-brand__mark fg-brand__mark">FD</div>
-          <div>
-            <strong>FastDAS Growth Engine</strong>
-            <span>Control Surface</span>
-          </div>
-        </div>
-        <section className="if-sidebar__section fg-sidebar-section">
-          <div className="if-sidebar__group-header">
-            <h2 className="if-sidebar__title fg-nav__heading">Workspace</h2>
-            <span className="if-sidebar__count">{surfaces.length}</span>
-          </div>
-          <nav
-            className="if-sidebar__nav fg-nav"
-            data-control-surface-nav
-            data-fastdas-active-route={surface.id}
-            aria-label="Workspace navigation"
-          >
-          {surfaces.map(item => (
-            <button
-              type="button"
-              className={`if-sidebar__link ${item.id === surface.id ? "is-active" : ""}`}
-              aria-current={item.id === surface.id ? "page" : undefined}
-              data-fastdas-nav-surface={item.id}
-              data-fastdas-nav-active={item.id === surface.id ? "true" : "false"}
-              key={item.id}
-              onClick={() => setSurface(item.id)}
-            >
-              <span />
-              <span className="if-sidebar__link-label">{item.nav}</span>
-            </button>
-          ))}
-          </nav>
-        </section>
-        <section className="if-sidebar__section fg-sidebar-section">
-          <div className="if-sidebar__group-header">
-            <h2 className="if-sidebar__title fg-nav__heading">Saved Views</h2>
-            <span className="if-sidebar__count">{SAVED_VIEWS.length}</span>
-          </div>
-          <div className="if-sidebar__subnav fg-nav fg-nav--saved" data-fastdas-saved-views>
-          {SAVED_VIEWS.map(view => (
-            <button
-              className={`if-sidebar__link ${activeSavedViewId === view.id ? "is-active" : ""}`}
-              type="button"
-              key={view.id}
-              data-fastdas-saved-view={view.id}
-              data-fastdas-saved-view-active={activeSavedViewId === view.id ? "true" : "false"}
-              data-fastdas-target-surface={view.surfaceId}
-              onClick={() => handleSavedView(view)}
-            >
-              <span />
-              <span className="if-sidebar__link-label">{view.label}</span>
-            </button>
-          ))}
-          </div>
-        </section>
-        <section className="if-sidebar__section fg-sidebar-section">
-          <div className="if-sidebar__group-header">
-            <h2 className="if-sidebar__title fg-nav__heading">Trial Model</h2>
-            <span className="if-sidebar__count">2</span>
-          </div>
-          <div className="if-claim-toolbar fg-sidebar-kpis">
-          {sidebarKpis.map(([value, label]) => (
-            <div className="if-claim-summary-card" key={label}>
-              <Icon name="target" />
-              <span><strong>{value}</strong><em>{label}</em></span>
-            </div>
-          ))}
-          </div>
-        </section>
-        <section className="if-sidebar__section fg-sidebar-section">
-          <div className="if-alert if-alert--info fg-sidebar-note">
-          <strong>Automation Boundary</strong>
-          Agents and offshore support can find, enrich, score, draft, and queue. Humans approve outreach, technical claims, pricing, discovery, and close strategy.
-          </div>
-        </section>
-      </aside>
-
       <main className="if-main if-main--with-sidebar fg-main">
         <header className="if-topbar if-product-header if-product-header--sticky if-product-header--compact if-product-header--masthead fg-topbar fg-product-header" data-fastdas-shell-header>
-          <div className="if-product-header__inner fg-product-header__inner">
-            <div className="if-brand if-product-header__brand fg-product-header__brand">
+          <div className="if-product-header__inner if-utility-cluster fg-product-header__inner" data-fastdas-header-utilities>
+            <button
+              type="button"
+              className="if-brand if-product-header__brand fg-product-header__brand"
+              data-home-link
+              aria-label="Go to FastDAS Command Center"
+              onClick={() => setSurface("command-center")}
+            >
               <div className="if-brand__mark fg-brand__mark">FD</div>
               <div>
                 <span className="if-product-header__eyebrow">FastDAS Growth Engine</span>
-                <strong className="if-product-header__title">Control Surface</strong>
+                <strong className="if-product-header__title" data-active-page-title>{surface.nav}</strong>
               </div>
-            </div>
+            </button>
             <HeaderSurfaceNav surface={surface} onSelect={setSurface} />
-          </div>
-          <div className="if-topbar__actions if-utility-cluster fg-topbar-actions" data-fastdas-header-utilities>
-            <label className="if-search if-autocomplete if-utility-search fg-search">
-              <span className="if-search__icon if-icon-slot" data-if-icon="search" aria-hidden="true"></span>
-              <span className="if-sr-only">Global search</span>
-              <input className="if-input" type="search" placeholder="Search property, signal, owner, contact, source..." />
-            </label>
             <div className="if-route-demo-controls fg-header-status" data-fastdas-header-status>
               <Chip tone="blue">VA / MD / DC</Chip>
-              <Chip tone="success">Source tracking on</Chip>
               <Chip tone="warning">{operationState.approvalCount} approvals</Chip>
             </div>
-            <div className="if-toolbar__group fg-header-actions" data-fastdas-header-actions>
-            <button
-              className="if-btn if-btn--secondary fg-btn"
-              type="button"
-              onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
-            >
-              <Icon name="save" />Save View
-            </button>
-            <button
-              className="if-btn if-btn--primary fg-btn fg-btn--primary"
-              type="button"
-              data-fastdas-action="run-signal-scan"
-              onClick={() => handlePrimaryAction("global-signal-scan")}
-            >
-              <Icon name="refresh" />Run Signal Scan
-            </button>
+            <div className="if-topbar__actions if-utility-cluster if-toolbar__group fg-header-actions" data-fastdas-header-actions>
+              <button
+                className="if-btn if-btn--secondary fg-btn"
+                type="button"
+                onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
+              >
+                <Icon name="save" />Save View
+              </button>
+              <button
+                className="if-btn if-btn--primary fg-btn fg-btn--primary"
+                type="button"
+                data-fastdas-action="run-signal-scan"
+                onClick={() => handlePrimaryAction("global-signal-scan")}
+              >
+                <Icon name="refresh" />Run Signal Scan
+              </button>
             </div>
-            <button className="if-account-menu fg-account-menu" type="button" aria-label="Growth operator account menu">
-              <span className="if-avatar" aria-hidden="true">AB</span>
-              <span className="if-account-menu__name if-desktop-only">Operator</span>
-              <span className="if-icon-slot if-account-menu__chevron" data-if-icon="chevronDown" aria-hidden="true"></span>
-            </button>
+            <FastDasProfileMenu operationState={operationState} onSurfaceSelect={setSurface} onUtilityAction={handleUtilityAction} />
           </div>
         </header>
 
@@ -2175,6 +2432,27 @@ export default function App() {
               <span className="if-badge if-badge--status-on-track">{operationState.operatorMode}</span>
             </div>
           </div>
+
+          <WorkspaceRail
+            surface={surface}
+            activeSavedViewId={activeSavedViewId}
+            onSurfaceSelect={setSurface}
+            onSavedView={handleSavedView}
+          />
+
+          <WorkingSetRibbon
+            surface={surface}
+            selectedRowId={selectedRows[surface.id]}
+            operationState={operationState}
+            activeCommandFilterId={activeCommandFilterId}
+            onReset={() => {
+              if (surface.id === "command-center") {
+                applyCommandCenterFilter(COMMAND_CENTER_DEFAULT_FILTER_ID, false);
+              }
+              handleUtilityAction("Working set reset", `${surface.title} returned to its default FastDAS working set.`, "blue");
+            }}
+            onRunScan={() => handlePrimaryAction("global-signal-scan")}
+          />
 
           <header className={`if-page-header if-operations-page__hero fg-page-header ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
             <div className="fg-page-header__copy">
