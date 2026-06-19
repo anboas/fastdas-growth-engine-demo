@@ -1,0 +1,20 @@
+image: node:22
+
+pages:
+  stage: deploy
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run verify:all
+    - rm -rf public
+    - cp -r dist public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

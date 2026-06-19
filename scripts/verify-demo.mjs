@@ -1,0 +1,56 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+const html = readFileSync("index.html", "utf8");
+const app = readFileSync("src/App.jsx", "utf8");
+const data = readFileSync("src/data.js", "utf8");
+const css = readFileSync("src/styles.css", "utf8");
+const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
+const viteConfig = readFileSync("vite.config.js", "utf8");
+
+assert.equal(pkg.name, "fastdas-growth-engine-demo", "package should identify the new repo");
+assert.equal(html.includes("<title>FastDAS Growth Engine</title>"), true, "HTML title should identify FastDAS");
+assert.equal(viteConfig.includes('base: "./"'), true, "Vite should use relative assets for GitLab Pages project paths");
+assert.equal(gitlabCi.includes("pages:"), true, "GitLab Pages job should exist");
+assert.equal(gitlabCi.includes("cp -r dist public"), true, "GitLab Pages should publish the Vite dist folder");
+
+for (const surface of [
+  "command-center",
+  "signal-intake",
+  "opportunity-workbench",
+  "evidence-review",
+  "outreach-queue",
+  "agent-operations",
+  "conversion-board",
+]) {
+  assert.equal(data.includes(`id: "${surface}"`), true, `data should include ${surface}`);
+}
+
+for (const hook of [
+  "data-fastdas-demo-app",
+  "data-control-surface-nav",
+  "data-fastdas-metric-grid",
+  "data-fastdas-opportunity-grid",
+  "data-fastdas-expanded-record",
+  "data-fastdas-provenance",
+  "data-fastdas-human-approval-boundary",
+]) {
+  assert.equal(app.includes(hook), true, `app should expose ${hook}`);
+}
+
+for (const phrase of [
+  "first paid step",
+  "No auto-send",
+  "Source tracking",
+  "Human approval",
+  "Agent Operations",
+  "Conversion Board",
+]) {
+  assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
+}
+
+assert.equal(css.includes("linear-gradient"), false, "demo CSS should avoid gradient-heavy UI surfaces");
+assert.equal(css.includes(".fg-shell"), true, "demo CSS should define the FastDAS shell");
+
+console.log("Verified FastDAS demo identity, routes, provenance hooks, human gates, and GitLab Pages config.");
