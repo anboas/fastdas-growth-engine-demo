@@ -42,6 +42,28 @@ for (const hook of [
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
 
+for (const frameworkClass of [
+  "if-shell",
+  "if-sidebar",
+  "if-topbar",
+  "if-content",
+  "if-page-header",
+  "if-metric-grid",
+  "if-card",
+  "if-metric",
+  "if-panel",
+  "if-toolbar",
+  "if-table",
+  "if-btn",
+  "if-badge",
+  "if-icon-slot",
+]) {
+  assert.equal(app.includes(frameworkClass), true, `app should use Control Surface UI class ${frameworkClass}`);
+}
+
+assert.equal(app.includes("data-if-data-table"), true, "tables should expose Control Surface UI data-table behavior hooks");
+assert.equal(app.includes("fg-root fg-shell"), true, "FastDAS customization should layer on top of the framework shell");
+
 for (const phrase of [
   "first paid step",
   "No auto-send",

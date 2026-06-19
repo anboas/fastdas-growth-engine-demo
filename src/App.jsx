@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { sidebarKpis, surfaces, workflowStages } from "./data.js";
 
 function Icon({ name }) {
-  return <span className="fg-icon" data-if-icon={name} aria-hidden="true" />;
+  return <span className="if-icon-slot fg-icon" data-if-icon={name} aria-hidden="true" />;
 }
 
 function getInitialSurfaceId() {
@@ -22,20 +22,30 @@ function splitCell(value) {
 function MetricCard({ metric }) {
   const [label, value, change, meta, tone, icon] = metric;
   return (
-    <article className={`fg-card fg-metric ${toneClass(tone)}`}>
-      <div className="fg-metric__icon"><Icon name={icon} /></div>
-      <div className="fg-metric__body">
-        <div className="fg-metric__label">{label}</div>
-        <div className="fg-metric__value">{value}</div>
-        <div className="fg-metric__change">{change}</div>
-        <div className="fg-metric__meta">{meta}</div>
+    <article className={`if-card if-metric fg-card fg-metric ${toneClass(tone)}`}>
+      <div className="if-metric__top fg-metric__top">
+        <span className="if-metric__icon fg-metric__icon"><Icon name={icon} /></span>
+        <p className="if-metric__label fg-metric__label">{label}</p>
       </div>
+      <div className="if-metric__main fg-metric__main">
+        <p className="if-metric__value fg-metric__value">{value}</p>
+      </div>
+      <span className="if-metric__change fg-metric__change">{change}</span>
+      <div className="if-metric__meta fg-metric__meta"><span>{meta}</span></div>
     </article>
   );
 }
 
 function Chip({ children, tone = "neutral" }) {
-  return <span className={`fg-chip ${toneClass(tone)}`}>{children}</span>;
+  const ifTone = {
+    blue: "if-badge--info",
+    success: "if-badge--status-approved",
+    warning: "if-badge--warning",
+    danger: "if-badge--danger",
+    purple: "if-badge--status-in-review",
+    neutral: "",
+  }[tone] || "";
+  return <span className={`if-badge fg-chip ${ifTone} ${toneClass(tone)}`}>{children}</span>;
 }
 
 function toneForValue(value) {
@@ -54,7 +64,7 @@ function ScoreCell({ value }) {
   return (
     <div className="fg-score">
       <span>{score}</span>
-      <div className="fg-scorebar" aria-hidden="true"><i style={{ width: `${Math.min(100, score)}%` }} /></div>
+      <div className="if-source-signal__bar fg-scorebar" aria-hidden="true"><i style={{ width: `${Math.min(100, score)}%` }} /></div>
     </div>
   );
 }
@@ -80,9 +90,9 @@ function SourceCards({ cards = [] }) {
   return (
     <section className="fg-source-grid" aria-label="Signal source lanes">
       {cards.map(([title, status, body]) => (
-        <article className="fg-source-card" key={title}>
+        <article className="if-card if-source-card fg-source-card" key={title}>
           <div className="fg-source-card__top">
-            <span className="fg-source-card__mark">{title.slice(0, 1)}</span>
+            <span className="if-source-card__icon fg-source-card__mark">{title.slice(0, 1)}</span>
             <div>
               <h3>{title}</h3>
               <Chip tone={toneForValue(status)}>{status}</Chip>
@@ -116,7 +126,7 @@ function ExpandedRecord({ surface }) {
           <section className="fg-expanded__section" data-fastdas-provenance>
             <div className="fg-eyebrow">Evidence + Provenance</div>
             {detail.evidence.map(([title, badge, text]) => (
-              <article className="fg-evidence" key={title}>
+              <article className="if-evidence-panel fg-evidence" key={title}>
                 <div>
                   <strong>{title}</strong>
                   <Chip tone={toneForValue(badge)}>{badge}</Chip>
@@ -127,19 +137,19 @@ function ExpandedRecord({ surface }) {
           </section>
           <section className="fg-expanded__section" data-fastdas-human-approval-boundary>
             <div className="fg-eyebrow">Operator Workbench</div>
-            <div className="fg-callout">
+            <div className="if-alert if-alert--info fg-callout">
               <strong>First paid step:</strong> Keep the ask bounded to survey, inspection, benchmark, testing engagement, troubleshooting visit, or system review.
             </div>
             <div className="fg-action-list">
               {detail.actions.map(action => (
-                <div className="fg-action-card" key={action}>{action}</div>
+                <div className="if-card fg-action-card" key={action}>{action}</div>
               ))}
             </div>
             <div className="fg-action-row">
-              <button type="button" className="fg-btn fg-btn--primary"><Icon name="check" />Approve</button>
-              <button type="button" className="fg-btn"><Icon name="edit" />Edit</button>
-              <button type="button" className="fg-btn"><Icon name="users" />Assign</button>
-              <button type="button" className="fg-btn fg-btn--danger"><Icon name="x" />Hold</button>
+              <button type="button" className="if-btn if-btn--success fg-btn fg-btn--primary"><Icon name="check" />Approve</button>
+              <button type="button" className="if-btn if-btn--secondary fg-btn"><Icon name="edit" />Edit</button>
+              <button type="button" className="if-btn if-btn--secondary fg-btn"><Icon name="users" />Assign</button>
+              <button type="button" className="if-btn if-btn--danger fg-btn fg-btn--danger"><Icon name="x" />Hold</button>
             </div>
           </section>
         </div>
@@ -151,8 +161,8 @@ function ExpandedRecord({ surface }) {
 function OpportunityGrid({ surface, selectedRowId, onSelect }) {
   const columns = surface.table.columns;
   return (
-    <section className="fg-panel" data-fastdas-opportunity-grid>
-      <div className="fg-panel__header">
+    <section className="if-panel fg-panel" data-fastdas-opportunity-grid data-if-data-table>
+      <div className="if-panel__header fg-panel__header">
         <div>
           <h2>{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
           <p>{surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.</p>
@@ -162,15 +172,15 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
           <Chip tone="warning">Human approval</Chip>
         </div>
       </div>
-      <div className="fg-command-band">
+      <div className="if-toolbar fg-command-band">
         <span className="fg-counter">{surface.table.count}</span>
-        {surface.filters.map(filter => <button className="fg-filter" type="button" key={filter}>{filter}</button>)}
+        {surface.filters.map(filter => <button className="if-btn if-btn--secondary if-btn--sm fg-filter" type="button" key={filter}>{filter}</button>)}
         <span className="fg-command-band__spacer" />
-        <button className="fg-btn" type="button"><Icon name="columns" />Columns</button>
-        <button className="fg-btn fg-btn--primary" type="button"><Icon name="arrowUp" />{surface.primaryAction}</button>
+        <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="columns" />Columns</button>
+        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="arrowUp" />{surface.primaryAction}</button>
       </div>
-      <div className="fg-table-wrap">
-        <table className="fg-table">
+      <div className="if-table-scroll fg-table-wrap">
+        <table className="if-table fg-table">
           <thead>
             <tr>{columns.map(column => <th key={column}>{column}</th>)}</tr>
           </thead>
@@ -179,6 +189,7 @@ function OpportunityGrid({ surface, selectedRowId, onSelect }) {
               <Fragment key={row.id}>
                 <tr
                   className={row.id === selectedRowId ? "is-selected" : ""}
+                  data-if-table-row
                   onClick={() => onSelect(row.id)}
                 >
                   {row.cells.map((cell, index) => (
@@ -201,23 +212,23 @@ function DataManagement({ management }) {
   if (!management) return null;
 
   return (
-    <section className="fg-management" data-fastdas-data-management>
-      <div className="fg-management__control">
+    <section className="if-stack fg-management" data-fastdas-data-management>
+      <div className="if-panel fg-management__control">
         <div>
           <div className="fg-eyebrow">Demo Data Control Plane</div>
           <h2>Synthetic Dataset Operations</h2>
           <p>Control the seed, scenario mix, validation gates, and export/reset behavior that make the demo repeatable and customer-safe.</p>
         </div>
         <div className="fg-management__actions">
-          <button className="fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Generate Variant</button>
-          <button className="fg-btn" type="button"><Icon name="download" />Export Bundle</button>
-          <button className="fg-btn fg-btn--danger" type="button"><Icon name="rotate" />Reset Demo</button>
+          <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Generate Variant</button>
+          <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="download" />Export Bundle</button>
+          <button className="if-btn if-btn--danger fg-btn fg-btn--danger" type="button"><Icon name="rotate" />Reset Demo</button>
         </div>
       </div>
 
       <div className="fg-management__control-grid">
         {management.controls.map(([label, value, body]) => (
-          <article className="fg-management-control-card" key={label}>
+          <article className="if-card fg-management-control-card" key={label}>
             <span>{label}</span>
             <strong>{value}</strong>
             <p>{body}</p>
@@ -227,7 +238,7 @@ function DataManagement({ management }) {
 
       <div className="fg-management-grid">
         {management.areas.map(area => (
-          <article className="fg-management-card" key={area.title}>
+          <article className="if-card fg-management-card" key={area.title}>
             <div className="fg-management-card__top">
               <div>
                 <h3>{area.title}</h3>
@@ -246,8 +257,8 @@ function DataManagement({ management }) {
         ))}
       </div>
 
-      <section className="fg-scenario-panel" data-fastdas-scenario-packs>
-        <div className="fg-panel__header">
+      <section className="if-panel fg-scenario-panel" data-fastdas-scenario-packs>
+        <div className="if-panel__header fg-panel__header">
           <div>
             <h2>Scenario Packs</h2>
             <p>Switchable synthetic narratives for customer-specific walkthroughs while keeping the same operating model.</p>
@@ -256,7 +267,7 @@ function DataManagement({ management }) {
         </div>
         <div className="fg-scenario-grid">
           {management.scenarioPacks.map(([title, body, count]) => (
-            <article className="fg-scenario-card" key={title}>
+            <article className="if-card fg-scenario-card" key={title}>
               <strong>{title}</strong>
               <p>{body}</p>
               <Chip tone={toneForValue(count)}>{count}</Chip>
@@ -317,9 +328,9 @@ function BottomPanels({ surface }) {
   return (
     <section className="fg-bottom-grid">
       {activePanels.map(([title, items]) => (
-        <article className="fg-panel fg-panel--compact" key={title}>
-          <div className="fg-panel__header"><h2>{title}</h2></div>
-          <div className="fg-panel__body">
+        <article className="if-panel fg-panel fg-panel--compact" key={title}>
+          <div className="if-panel__header fg-panel__header"><h2>{title}</h2></div>
+          <div className="if-panel__body fg-panel__body">
             <ul>
               {items.map(item => <li key={item}>{item}</li>)}
             </ul>
@@ -351,21 +362,21 @@ export default function App() {
   };
 
   return (
-    <div className="fg-shell" data-fastdas-demo-app>
-      <aside className="fg-sidebar">
-        <div className="fg-brand">
-          <div className="fg-brand__mark">FD</div>
+    <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
+      <aside className="if-sidebar fg-sidebar">
+        <div className="if-brand fg-brand">
+          <div className="if-brand__mark fg-brand__mark">FD</div>
           <div>
             <strong>FastDAS Growth Engine</strong>
             <span>Control Surface</span>
           </div>
         </div>
-        <nav className="fg-nav" data-control-surface-nav aria-label="Workspace navigation">
-          <div className="fg-nav__heading">Workspace</div>
+        <nav className="if-sidebar__nav fg-nav" data-control-surface-nav aria-label="Workspace navigation">
+          <div className="if-sidebar__title fg-nav__heading">Workspace</div>
           {surfaces.map(item => (
             <button
               type="button"
-              className={item.id === surface.id ? "is-active" : ""}
+              className={`if-sidebar__link ${item.id === surface.id ? "is-active" : ""}`}
               key={item.id}
               onClick={() => setSurface(item.id)}
             >
@@ -374,10 +385,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="fg-nav fg-nav--saved">
-          <div className="fg-nav__heading">Saved Views</div>
+        <div className="if-sidebar__nav fg-nav fg-nav--saved">
+          <div className="if-sidebar__title fg-nav__heading">Saved Views</div>
           {["Score 80+ / Review", "Closeout Signals", "Paid Assessment Fit", "Partner Paths"].map(view => (
-            <button type="button" key={view}><span />{view}</button>
+            <button className="if-sidebar__link" type="button" key={view}><span />{view}</button>
           ))}
         </div>
         <div className="fg-sidebar-kpis">
@@ -391,35 +402,35 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="fg-main">
-        <header className="fg-topbar">
-          <div className="fg-search"><Icon name="search" />Global search: property, signal, owner, contact, source...</div>
+      <main className="if-main fg-main">
+        <header className="if-topbar fg-topbar">
+          <div className="if-search if-utility-search fg-search"><Icon name="search" />Global search: property, signal, owner, contact, source...</div>
           <Chip tone="blue">VA / MD / DC</Chip>
           <Chip tone="success">Source tracking on</Chip>
           <Chip tone="warning">7 human approvals due</Chip>
           <span className="fg-topbar__spacer" />
-          <button className="fg-btn" type="button"><Icon name="save" />Save View</button>
-          <button className="fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Run Signal Scan</button>
+          <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="save" />Save View</button>
+          <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="refresh" />Run Signal Scan</button>
           <div className="fg-user"><span>AB</span>Growth Operator</div>
         </header>
 
-        <section className="fg-content">
-          <header className="fg-page-header">
+        <section className="if-content if-page fg-content">
+          <header className="if-page-header fg-page-header">
             <div>
               <div className="fg-eyebrow">{surface.eyebrow}</div>
               <h1>{surface.title}</h1>
               <p>{surface.summary}</p>
             </div>
             <div className="fg-page-actions">
-              <button className="fg-btn" type="button"><Icon name="rotate" />Reset Filters</button>
-              <button className="fg-btn" type="button"><Icon name="download" />Export</button>
-              <button className="fg-btn fg-btn--primary" type="button"><Icon name="check" />{surface.primaryAction}</button>
+              <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="rotate" />Reset Filters</button>
+              <button className="if-btn if-btn--secondary fg-btn" type="button"><Icon name="download" />Export</button>
+              <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button"><Icon name="check" />{surface.primaryAction}</button>
             </div>
           </header>
 
           <WorkflowStrip />
 
-          <section className="fg-metric-grid" data-fastdas-metric-grid>
+          <section className="if-metric-grid fg-metric-grid" data-fastdas-metric-grid>
             {surface.metrics.map(metric => <MetricCard key={metric[0]} metric={metric} />)}
           </section>
 

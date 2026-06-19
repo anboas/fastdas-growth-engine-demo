@@ -84,9 +84,7 @@ function ControlSurfaceApp() {
   }, []);
 
   return (
-    <div className="if-shell fg-root" data-theme="light" data-density="compact">
-      <App />
-    </div>
+    <App />
   );
 }
 

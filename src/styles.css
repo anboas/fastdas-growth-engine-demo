@@ -77,14 +77,20 @@ button {
 }
 
 .fg-sidebar {
+  position: static;
+  inset: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: auto;
+  height: auto;
   min-width: 0;
+  overflow: visible;
   padding: 18px 14px;
   color: #dbeafa;
   background: var(--fg-navy-950);
   border-right: 1px solid rgba(255, 255, 255, 0.14);
+  transform: none;
 }
 
 .fg-brand {
@@ -110,6 +116,8 @@ button {
 
 .fg-brand strong {
   display: block;
+  min-width: 0;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 850;
   line-height: 1.05;
@@ -431,12 +439,19 @@ button {
 }
 
 .fg-metric {
-  display: flex;
+  display: grid;
   min-width: 0;
   min-height: 104px;
-  gap: 11px;
+  gap: 5px;
   align-items: flex-start;
   padding: 12px;
+}
+
+.fg-metric__top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
 }
 
 .fg-metric__icon {
@@ -455,7 +470,13 @@ button {
   min-width: 0;
 }
 
+.fg-metric__main {
+  display: block;
+  min-height: 0;
+}
+
 .fg-metric__label {
+  margin: 0;
   color: #5f7288;
   font-size: 10px;
   font-weight: 900;
