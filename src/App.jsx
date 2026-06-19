@@ -274,17 +274,24 @@ function ExpandedRecord({ surface, onRecordAction }) {
   return (
     <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
       <td colSpan={surface.table.columns.length}>
-        <div className="if-table-detail__content fg-expanded" data-fastdas-expanded-record>
+        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence fg-expanded" data-fastdas-expanded-record>
           <section className="fg-expanded__section">
             <div className="fg-eyebrow">Selected Record</div>
             <h3>{detail.title}</h3>
             <p>{detail.description}</p>
-            <div className="fg-flow" aria-label="Workflow state">
-              {detail.gates.map((gate, index) => (
-                <span className={index < Math.max(1, detail.gates.length - 3) ? "is-complete" : index === Math.max(1, detail.gates.length - 3) ? "is-active" : ""} key={gate}>
-                  {gate}
-                </span>
-              ))}
+            <div className="if-status-timeline fg-flow" aria-label="Workflow state">
+              {detail.gates.map((gate, index) => {
+                const gateState = index < Math.max(1, detail.gates.length - 3)
+                  ? "if-status-step--complete is-complete"
+                  : index === Math.max(1, detail.gates.length - 3)
+                    ? "if-status-step--active is-active"
+                    : "if-status-step--pending";
+                return (
+                  <div className={`if-status-step ${gateState}`} key={gate}>
+                    <strong>{gate}</strong>
+                  </div>
+                );
+              })}
             </div>
           </section>
           <section className="fg-expanded__section" data-fastdas-provenance>
@@ -377,9 +384,13 @@ function ExpandedRecord({ surface, onRecordAction }) {
                   <span className="if-badge if-badge--review-status" data-if-review-current-status>Open</span>
                 </div>
                 <section className="if-review-workflow__panel" data-if-review-panel={surface.selected}>
-                  <div className="fg-action-list">
+                  <div className="if-action-queue fg-action-list">
                     {detail.actions.map(action => (
-                      <div className="if-card fg-action-card" key={action}>{action}</div>
+                      <div className="if-action-queue__item if-tone-info fg-action-card" key={action}>
+                        <Icon name="check" />
+                        <span><strong>{action}</strong></span>
+                        <Chip tone="blue">Action</Chip>
+                      </div>
                     ))}
                   </div>
                 </section>
@@ -1116,15 +1127,26 @@ export default function App() {
           ))}
           </div>
         </section>
-        <div className="fg-sidebar-kpis">
+        <section className="if-sidebar__section fg-sidebar-section">
+          <div className="if-sidebar__group-header">
+            <h2 className="if-sidebar__title fg-nav__heading">Trial Model</h2>
+            <span className="if-sidebar__count">2</span>
+          </div>
+          <div className="if-claim-toolbar fg-sidebar-kpis">
           {sidebarKpis.map(([value, label]) => (
-            <div key={label}><strong>{value}</strong><span>{label}</span></div>
+            <div className="if-claim-summary-card" key={label}>
+              <Icon name="target" />
+              <span><strong>{value}</strong><em>{label}</em></span>
+            </div>
           ))}
-        </div>
-        <div className="fg-sidebar-note">
+          </div>
+        </section>
+        <section className="if-sidebar__section fg-sidebar-section">
+          <div className="if-alert if-alert--info fg-sidebar-note">
           <strong>Automation Boundary</strong>
           Agents and offshore support can find, enrich, score, draft, and queue. Humans approve outreach, technical claims, pricing, discovery, and close strategy.
-        </div>
+          </div>
+        </section>
       </aside>
 
       <main className="if-main if-main--with-sidebar fg-main">
@@ -1227,8 +1249,10 @@ export default function App() {
 
           <BottomPanels surface={surface} />
 
-          <footer className="fg-footer">
-            FastDAS Growth Engine / {surface.title} / Control-surface UI demo / GitLab Pages ready
+          <footer className="if-panel__footer fg-footer" data-fastdas-release-rail>
+            <span className="if-route-status"><strong>FastDAS Growth Engine</strong><span>{surface.title}</span></span>
+            <span className="if-route-status"><strong>control-surface-ui</strong><span>GitHub source / GitLab Pages host</span></span>
+            <span className="if-route-status"><strong>Demo state</strong><span>{operationState.activeSeed}</span></span>
           </footer>
         </section>
       </main>

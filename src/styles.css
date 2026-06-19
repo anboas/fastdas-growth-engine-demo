@@ -217,12 +217,29 @@ button {
   margin: 2px 8px 0;
 }
 
-.fg-sidebar-kpis div {
+.fg-sidebar-kpis .if-claim-summary-card {
+  display: flex;
   min-width: 0;
+  align-items: center;
+  gap: 8px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.fg-sidebar-kpis .if-icon-slot {
+  width: 22px;
+  height: 22px;
+  border-color: rgba(127, 202, 210, 0.36);
+  background: rgba(10, 125, 131, 0.24);
+  color: #7fcad2;
+}
+
+.fg-sidebar-kpis span {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
 }
 
 .fg-sidebar-kpis strong {
@@ -232,9 +249,10 @@ button {
   font-weight: 900;
 }
 
-.fg-sidebar-kpis span {
+.fg-sidebar-kpis em {
   color: #a9c4dc;
   font-size: 10px;
+  font-style: normal;
 }
 
 .fg-sidebar-note {
@@ -435,6 +453,7 @@ button {
 }
 
 .fg-workflow span,
+.fg-flow .if-status-step,
 .fg-flow span {
   display: inline-flex;
   align-items: center;
@@ -450,6 +469,7 @@ button {
 }
 
 .fg-workflow span.is-complete,
+.fg-flow .if-status-step.is-complete,
 .fg-flow span.is-complete {
   border-color: #b4dfc8;
   background: #eaf9f2;
@@ -457,6 +477,7 @@ button {
 }
 
 .fg-workflow span.is-active,
+.fg-flow .if-status-step.is-active,
 .fg-flow span.is-active {
   border-color: var(--fg-teal-600);
   background: var(--fg-teal-600);
@@ -1296,6 +1317,22 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 12px;
+  padding: 0;
+}
+
+.fg-flow::before {
+  display: none;
+}
+
+.fg-flow .if-status-step {
+  position: static;
+  margin: 0;
+}
+
+.fg-flow .if-status-step strong {
+  display: block;
+  color: inherit;
+  font-size: inherit;
 }
 
 .fg-evidence,
@@ -1341,6 +1378,11 @@ button {
   gap: 8px;
 }
 
+.fg-action-list.if-action-queue {
+  margin: 0;
+  padding: 0;
+}
+
 .fg-review-workflow {
   grid-template-columns: minmax(0, 1fr);
   gap: 10px;
@@ -1360,7 +1402,28 @@ button {
 
 .fg-action-card {
   margin: 0;
+  align-items: center;
+  justify-content: space-between;
   color: #2d4860;
+  font-size: 12px;
+}
+
+.fg-action-card.if-action-queue__item {
+  display: flex;
+  gap: 8px;
+}
+
+.fg-action-card.if-action-queue__item .if-icon-slot {
+  color: var(--fg-teal-600);
+}
+
+.fg-action-card.if-action-queue__item span {
+  min-width: 0;
+  flex: 1;
+}
+
+.fg-action-card.if-action-queue__item strong {
+  color: #18334e;
   font-size: 12px;
 }
 
@@ -1556,12 +1619,32 @@ button {
 }
 
 .fg-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   color: #8ca0b2;
   font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.08em;
   text-align: right;
   text-transform: uppercase;
+}
+
+.fg-footer .if-route-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid #d6e2ed;
+  border-radius: 999px;
+  background: #fbfdff;
+  color: #5f7288;
+}
+
+.fg-footer .if-route-status strong {
+  color: #18334e;
 }
 
 @media (max-width: 1320px) {

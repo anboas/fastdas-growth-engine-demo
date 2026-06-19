@@ -88,7 +88,7 @@ try {
   await desktop.waitForSelector("[data-fastdas-command-dock]");
   await desktop.waitForSelector("[data-if-operations-workspace]");
   await desktop.waitForSelector('[data-control-segmented="fastdas-operator-mode"]');
-  await desktop.waitForSelector("[data-fg-icon-rendered]");
+  await desktop.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(desktop, "desktop");
 
   const shellMain = await desktop.locator(".if-main.if-main--with-sidebar").count();
@@ -97,6 +97,10 @@ try {
   assert.ok(sidebarSections >= 2, "sidebar should use framework sidebar sections");
   const sidebarCounts = await desktop.locator(".if-sidebar .if-sidebar__count").count();
   assert.ok(sidebarCounts >= 2, "sidebar should expose framework count slots");
+  const sidebarClaimCards = await desktop.locator(".if-sidebar .if-claim-toolbar .if-claim-summary-card").count();
+  assert.equal(sidebarClaimCards, 2, "sidebar trial model should use framework claim summary cards");
+  const sidebarAlert = await desktop.locator(".if-sidebar .if-alert.if-alert--info").count();
+  assert.equal(sidebarAlert, 1, "sidebar automation boundary should use the framework alert contract");
   const utilityCluster = await desktop.locator(".if-topbar__actions.if-utility-cluster").count();
   assert.equal(utilityCluster, 1, "topbar should use the framework utility cluster");
   const topbarSearch = await desktop.locator(".if-topbar .if-search .if-search__icon + .if-sr-only + input.if-input").count();
@@ -132,6 +136,10 @@ try {
   assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
+  const intelligenceDetails = await desktop.locator("[data-fastdas-expanded-record].if-record-detail--intelligence").count();
+  assert.ok(intelligenceDetails >= 1, "expanded records should use framework intelligence detail anatomy");
+  const statusSteps = await desktop.locator("[data-fastdas-expanded-record] .if-status-timeline .if-status-step").count();
+  assert.ok(statusSteps >= 5, "expanded workflow state should use framework status timeline steps");
   const reviewWorkflow = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-workflow].if-review-workflow").count();
   assert.equal(reviewWorkflow, 1, "expanded record actions should use framework review-workflow anatomy");
   const reviewActions = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-action]").count();
@@ -140,6 +148,8 @@ try {
   assert.ok(reviewCounts >= 4, "expanded record should expose framework review count slots");
   const reviewLedger = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-ledger]").count();
   assert.equal(reviewLedger, 1, "expanded record should expose framework review ledger");
+  const actionQueueItems = await desktop.locator("[data-fastdas-expanded-record] .if-action-queue .if-action-queue__item").count();
+  assert.ok(actionQueueItems >= 3, "expanded next actions should use the framework action queue contract");
   const tableCellMain = await desktop.locator(".if-table-cell-main .if-table-cell-meta").count();
   assert.ok(tableCellMain >= 1, "table cells should use framework primary/meta anatomy");
   const progressBars = await desktop.locator(".if-table-progress .if-table-progress__track span").count();
@@ -170,6 +180,8 @@ try {
   assert.equal(governancePanelCards, 3, "bottom governance panels should use framework impact, runbook, and contract cards");
   const impactChain = await desktop.locator("[data-fastdas-governance-panels] .if-impact-chain span").count();
   assert.ok(impactChain >= 1, "bottom governance panels should expose framework impact chains");
+  const releaseRail = await desktop.locator("[data-fastdas-release-rail].if-panel__footer .if-route-status").count();
+  assert.equal(releaseRail, 3, "release footer should use framework panel-footer route status chips");
 
   await desktop.locator('[data-fastdas-action="run-signal-scan"]').click();
   await assertAuditContains(desktop, "Signal scan completed", "global scan");
@@ -224,7 +236,7 @@ try {
   await mobile.waitForSelector("[data-fastdas-demo-app]");
   await mobile.waitForSelector("[data-fastdas-command-dock]");
   await mobile.waitForSelector("[data-if-operations-workspace]");
-  await mobile.waitForSelector("[data-fg-icon-rendered]");
+  await mobile.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(mobile, "mobile");
   const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
   assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
