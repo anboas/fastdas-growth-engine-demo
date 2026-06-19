@@ -105,6 +105,19 @@ try {
   assert.equal(utilityCluster, 1, "topbar should use the framework utility cluster");
   const shellHeader = await desktop.locator("[data-fastdas-shell-header].if-topbar").count();
   assert.equal(shellHeader, 1, "header should expose the FastDAS shell header contract");
+  const productHeader = await desktop.locator("[data-fastdas-shell-header].if-product-header.if-product-header--sticky.if-product-header--compact.if-product-header--masthead").count();
+  assert.equal(productHeader, 1, "header should use the framework product masthead contract");
+  const operationsTopnav = await desktop.locator("[data-fastdas-header-route].if-operations-topnav .if-operations-topnav__link").count();
+  assert.equal(operationsTopnav, 4, "header should expose primary surfaces through framework operations topnav links");
+  const secondaryTopnavItems = await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu .if-operations-topnav__menu-item").count();
+  assert.equal(secondaryTopnavItems, 4, "header should expose secondary surfaces through the framework operations topnav menu");
+  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__secondary-button").click();
+  const visibleSecondaryItems = await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu .if-operations-topnav__menu-item:visible").count();
+  assert.equal(visibleSecondaryItems, 4, "secondary operations topnav menu should open from the header control");
+  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__menu-item", { hasText: "Agent Operations" }).click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Agent Operations"));
+  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
   const headerRouteStatuses = await desktop.locator("[data-fastdas-header-route].if-topbar__nav .if-route-status").count();
   assert.equal(headerRouteStatuses, 2, "header route area should use framework route status chips");
   const headerStatusControls = await desktop.locator("[data-fastdas-header-status].if-route-demo-controls .if-badge").count();
@@ -117,6 +130,10 @@ try {
   assert.equal(accountMenu, 1, "topbar identity should use framework account-menu and avatar anatomy");
   const pageMeta = await desktop.locator("[data-fastdas-page-meta].if-page-header__meta .if-route-status").count();
   assert.equal(pageMeta, 3, "page header should expose framework route-status metadata");
+  const operationsPage = await desktop.locator("[data-if-operations-workspace].if-operations-page .if-operations-page__topbar .if-breadcrumbs").count();
+  assert.equal(operationsPage, 1, "content should use the framework operations-page topbar and breadcrumbs");
+  const operationsHero = await desktop.locator("[data-fastdas-page-header].if-operations-page__hero .if-operations-page__title").count();
+  assert.equal(operationsHero, 1, "page header should use the framework operations-page hero contract");
   const pageActions = await desktop.locator("[data-fastdas-page-actions].if-toolbar__group .if-btn").count();
   assert.equal(pageActions, 3, "page header actions should use framework toolbar grouping");
 
@@ -196,6 +213,10 @@ try {
   assert.ok(impactChain >= 1, "bottom governance panels should expose framework impact chains");
   const releaseRail = await desktop.locator("[data-fastdas-release-rail].if-panel.if-panel__footer [data-fastdas-footer-status] .if-route-status").count();
   assert.equal(releaseRail, 5, "release footer should use framework panel-footer route status chips");
+  const releaseControls = await desktop.locator("[data-fastdas-release-rail].if-release-controls .if-release-summary .if-route-status").count();
+  assert.equal(releaseControls, 5, "release footer should use framework release summary status controls");
+  const releaseLanes = await desktop.locator("[data-fastdas-release-rail] .if-release-lane-grid .if-release-lane .if-release-lane__kv").count();
+  assert.equal(releaseLanes, 3, "release footer should expose framework release lanes");
   const releaseBrand = await desktop.locator("[data-fastdas-release-rail] .fg-footer__brand").textContent();
   assert.ok(releaseBrand.includes("FastDAS Growth Engine"), "release footer should keep a readable product identity");
 
@@ -258,8 +279,12 @@ try {
   await assertNoPageOverflow(mobile, "mobile");
   const mobileHeaderRoute = await mobile.locator("[data-fastdas-header-route] .if-route-status").count();
   assert.equal(mobileHeaderRoute, 2, "mobile header should keep route status context");
+  const mobileTopnavLinks = await mobile.locator("[data-fastdas-header-route] .if-operations-topnav__link").count();
+  assert.equal(mobileTopnavLinks, 4, "mobile header should keep framework operations topnav links");
   const mobileHeaderActions = await mobile.locator("[data-fastdas-header-actions] .if-btn").count();
   assert.equal(mobileHeaderActions, 2, "mobile header should keep grouped actions");
+  const mobileBreadcrumbs = await mobile.locator(".if-operations-page__topbar .if-breadcrumbs__current").count();
+  assert.equal(mobileBreadcrumbs, 1, "mobile content should keep operations-page breadcrumbs");
   const mobilePageMeta = await mobile.locator("[data-fastdas-page-meta] .if-route-status").count();
   assert.equal(mobilePageMeta, 3, "mobile page header should keep route-status metadata");
   const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();

@@ -283,9 +283,94 @@ button {
   min-width: 0;
   align-items: stretch;
   gap: 8px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--fg-line);
-  background: #ffffff;
+  margin: 0;
+  padding: 10px 18px 12px;
+  border-bottom: 3px solid #0a7d83;
+  background: var(--fg-navy-950);
+  color: #e8f2fb;
+}
+
+.fg-product-header {
+  top: 0;
+}
+
+.fg-product-header__inner {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+.fg-product-header__brand {
+  flex: 0 0 230px;
+  min-width: 0;
+  color: #ffffff;
+}
+
+.fg-product-header__brand .fg-brand__mark {
+  width: 36px;
+  height: 36px;
+  border-color: rgba(255, 255, 255, 0.36);
+  background: #0a7d83;
+}
+
+.fg-product-header__brand .if-product-header__eyebrow {
+  display: block;
+  color: #91d8df;
+}
+
+.fg-product-header__brand .if-product-header__title {
+  display: block;
+  color: #ffffff;
+}
+
+.fg-operations-topnav {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 0;
+}
+
+.fg-operations-topnav .if-operations-topnav__link,
+.fg-operations-topnav .if-operations-topnav__secondary-button {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.055);
+  color: #dcecf8;
+}
+
+.fg-operations-topnav .if-operations-topnav__link.is-active,
+.fg-operations-topnav .if-operations-topnav__link[aria-current="page"] {
+  border-color: rgba(127, 202, 210, 0.52);
+  background: #12365f;
+  color: #ffffff;
+}
+
+.fg-operations-topnav .if-operations-topnav__divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.fg-operations-topnav .if-operations-topnav__menu {
+  display: none;
+}
+
+.fg-operations-topnav .if-operations-topnav__secondary:hover .if-operations-topnav__menu,
+.fg-operations-topnav .if-operations-topnav__secondary:focus-within .if-operations-topnav__menu,
+.fg-operations-topnav .if-operations-topnav__secondary.is-open .if-operations-topnav__menu {
+  display: grid;
+}
+
+.fg-operations-topnav .if-operations-topnav__menu-item {
+  border: 0;
+  background: transparent;
 }
 
 .fg-topbar-route {
@@ -300,19 +385,25 @@ button {
 .fg-route-status {
   min-width: 0;
   padding: 5px 8px;
-  border: 1px solid #d6e2ed;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
-  background: #fbfdff;
+  background: rgba(255, 255, 255, 0.075);
+  color: #dcecf8;
 }
 
 .fg-route-status--primary {
-  flex: 1 1 auto;
-  border-color: #b9d3ee;
-  background: #edf6ff;
+  flex: 0 1 210px;
+  border-color: rgba(127, 202, 210, 0.44);
+  background: rgba(10, 125, 131, 0.22);
 }
 
+.fg-operations-topnav .fg-route-status:not(.fg-route-status--primary),
 .fg-topbar-route .fg-route-status:not(.fg-route-status--primary) {
   flex: 0 0 auto;
+}
+
+.fg-operations-topnav .fg-route-status {
+  max-width: 220px;
 }
 
 .fg-route-status span,
@@ -331,6 +422,8 @@ button {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
 }
 
 .fg-header-status,
@@ -353,10 +446,10 @@ button {
   gap: 8px;
   overflow: hidden;
   padding: 0 14px;
-  border: 1px solid var(--fg-line);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: #f8fbfe;
-  color: #61758b;
+  background: rgba(255, 255, 255, 0.08);
+  color: #bfd4e7;
   font-size: 13px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -367,7 +460,7 @@ button {
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: #334d66;
+  color: #ffffff;
   font-size: 13px;
 }
 
@@ -405,6 +498,7 @@ button {
   min-width: 0;
   flex: 0 0 auto;
   margin-left: 0;
+  color: #ffffff;
 }
 
 .fg-content {
@@ -415,12 +509,21 @@ button {
   padding: 18px 20px 22px;
 }
 
+.fg-page-topbar {
+  padding: 0 2px;
+}
+
+.fg-page-topbar__actions {
+  justify-content: flex-end;
+}
+
 .fg-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   min-width: 0;
+  border-left-color: #0a7d83;
 }
 
 .fg-page-header__copy {
@@ -1724,12 +1827,11 @@ button {
 }
 
 .fg-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  align-items: stretch;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 12px;
+  border-top: 3px solid #0a7d83;
   color: #8ca0b2;
   font-size: 10px;
   font-weight: 850;
@@ -1738,9 +1840,11 @@ button {
 }
 
 .fg-footer__brand {
-  display: grid;
-  min-width: 220px;
-  gap: 2px;
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   text-align: left;
 }
 
@@ -1757,8 +1861,11 @@ button {
 }
 
 .fg-footer__status {
-  justify-content: flex-end;
-  flex: 1 1 520px;
+  justify-content: stretch;
+  width: 100%;
+  flex: none;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .fg-footer .if-route-status {
@@ -1780,6 +1887,20 @@ button {
 .fg-footer .if-route-status span {
   overflow: hidden;
   max-width: 180px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-release-lanes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fg-release-lane {
+  background: #ffffff;
+}
+
+.fg-release-lane dd {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1875,8 +1996,27 @@ button {
   .fg-topbar {
     min-height: 62px;
     height: auto;
-    flex-wrap: wrap;
     padding: 10px 12px;
+  }
+
+  .fg-product-header__inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fg-product-header__brand {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .fg-operations-topnav {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .fg-operations-topnav .fg-route-status {
+    flex: 0 0 auto;
   }
 
   .fg-topbar-route {
@@ -1997,13 +2137,13 @@ button {
   }
 
   .fg-footer {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: stretch;
   }
 
   .fg-footer__status {
-    justify-content: flex-start;
+    justify-content: stretch;
     width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .fg-footer .if-route-status {
@@ -2012,5 +2152,13 @@ button {
 
   .fg-footer .if-route-status span {
     max-width: 100%;
+  }
+
+  .fg-footer__brand {
+    display: grid;
+  }
+
+  .fg-release-lanes {
+    grid-template-columns: 1fr;
   }
 }

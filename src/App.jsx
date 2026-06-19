@@ -919,6 +919,111 @@ function BottomPanels({ surface }) {
   );
 }
 
+function HeaderSurfaceNav({ surface, onSelect }) {
+  const [secondaryOpen, setSecondaryOpen] = useState(false);
+  const primarySurfaces = surfaces.slice(0, 4);
+  const secondarySurfaces = surfaces.slice(4);
+
+  return (
+    <nav className="if-topbar__nav if-operations-topnav fg-operations-topnav" data-fastdas-header-route aria-label="FastDAS operations surfaces">
+      {primarySurfaces.map(item => (
+        <button
+          type="button"
+          className={`if-operations-topnav__link${item.id === surface.id ? " is-active" : ""}`}
+          aria-current={item.id === surface.id ? "page" : undefined}
+          key={item.id}
+          onClick={() => onSelect(item.id)}
+        >
+          {item.nav}
+        </button>
+      ))}
+      <span className="if-operations-topnav__divider" aria-hidden="true" />
+      <div className={`if-operations-topnav__secondary${secondaryOpen ? " is-open" : ""}`}>
+        <button
+          className="if-operations-topnav__secondary-button"
+          type="button"
+          aria-expanded={secondaryOpen}
+          onClick={() => setSecondaryOpen(open => !open)}
+        >
+          More surfaces
+        </button>
+        <div className="if-operations-topnav__menu" role="menu">
+          <span className="if-operations-topnav__menu-label">Secondary surfaces</span>
+          {secondarySurfaces.map(item => (
+            <button
+              type="button"
+              role="menuitem"
+              className={`if-operations-topnav__menu-item${item.id === surface.id ? " is-active" : ""}`}
+              key={item.id}
+              onClick={() => {
+                setSecondaryOpen(false);
+                onSelect(item.id);
+              }}
+            >
+              {item.nav}
+            </button>
+          ))}
+        </div>
+      </div>
+      <span className="if-route-status fg-route-status fg-route-status--primary">
+        <strong>{surface.nav}</strong>
+        <span>{surface.eyebrow}</span>
+      </span>
+      <span className="if-route-status fg-route-status">
+        <strong>{surface.title}</strong>
+        <span>Live route</span>
+      </span>
+    </nav>
+  );
+}
+
+function ReleaseRail({ surface, operationState }) {
+  const currentStage = workflowStages[operationState.workflowIndex] || workflowStages[0];
+
+  return (
+    <footer className="if-panel if-panel__footer if-release-controls fg-footer" data-fastdas-release-rail>
+      <div className="fg-footer__brand">
+        <strong>FastDAS Growth Engine</strong>
+        <span>Control Surface demo / customer walkthrough build</span>
+      </div>
+      <div className="if-release-summary if-route-demo-controls fg-footer__status" data-fastdas-footer-status>
+        <span className="if-route-status"><strong>Route</strong><span>{surface.title}</span></span>
+        <span className="if-route-status"><strong>Workflow</strong><span>{currentStage}</span></span>
+        <span className="if-route-status"><strong>Seed</strong><span>{operationState.activeSeed}</span></span>
+        <span className="if-route-status"><strong>Source</strong><span>GitHub canonical</span></span>
+        <span className="if-route-status"><strong>Host</strong><span>GitLab Pages</span></span>
+      </div>
+      <section className="if-release-lane-grid fg-release-lanes" aria-label="Release readiness lanes">
+        {[
+          ["Route Contract", "Current walkthrough state", surface.nav, surface.primaryAction, "route"],
+          ["Data Contract", "Synthetic customer-safe state", operationState.activeSeed, operationState.scenarioMode, "database"],
+          ["Approval Contract", "Human boundary status", `${operationState.approvalCount} approvals due`, currentStage, "shield"],
+        ].map(([title, body, keyValue, detail, icon]) => (
+          <article className="if-release-lane fg-release-lane" key={title}>
+            <header>
+              <span className="if-release-lane__icon if-icon-slot" data-if-icon={icon} aria-hidden="true" />
+              <div>
+                <h3>{title}</h3>
+                <span>{body}</span>
+              </div>
+            </header>
+            <dl className="if-release-lane__kv">
+              <div>
+                <dt>Current</dt>
+                <dd>{keyValue}</dd>
+              </div>
+              <div>
+                <dt>Next check</dt>
+                <dd>{detail}</dd>
+              </div>
+            </dl>
+          </article>
+        ))}
+      </section>
+    </footer>
+  );
+}
+
 export default function App() {
   const [activeSurfaceId, setActiveSurfaceId] = useState(getInitialSurfaceId);
   const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
@@ -1164,16 +1269,16 @@ export default function App() {
       </aside>
 
       <main className="if-main if-main--with-sidebar fg-main">
-        <header className="if-topbar fg-topbar" data-fastdas-shell-header>
-          <div className="if-topbar__nav fg-topbar-route" data-fastdas-header-route>
-            <span className="if-route-status fg-route-status fg-route-status--primary">
-              <strong>{surface.nav}</strong>
-              <span>{surface.eyebrow}</span>
-            </span>
-            <span className="if-route-status fg-route-status">
-              <strong>{workflowStages[operationState.workflowIndex]}</strong>
-              <span>{operationState.operatorMode}</span>
-            </span>
+        <header className="if-topbar if-product-header if-product-header--sticky if-product-header--compact if-product-header--masthead fg-topbar fg-product-header" data-fastdas-shell-header>
+          <div className="if-product-header__inner fg-product-header__inner">
+            <div className="if-brand if-product-header__brand fg-product-header__brand">
+              <div className="if-brand__mark fg-brand__mark">FD</div>
+              <div>
+                <span className="if-product-header__eyebrow">FastDAS Growth Engine</span>
+                <strong className="if-product-header__title">Control Surface</strong>
+              </div>
+            </div>
+            <HeaderSurfaceNav surface={surface} onSelect={setSurface} />
           </div>
           <div className="if-topbar__actions if-utility-cluster fg-topbar-actions" data-fastdas-header-utilities>
             <label className="if-search if-autocomplete if-utility-search fg-search">
@@ -1212,15 +1317,30 @@ export default function App() {
         </header>
 
         <section
-          className="if-content if-page if-operations-workspace if-operations-workspace--compact fg-content"
+          className="if-content if-page if-operations-page if-operations-workspace if-operations-workspace--compact fg-content"
           data-if-operations-workspace
           data-if-operations-current={activeMetricSignalId}
         >
-          <header className="if-page-header fg-page-header" data-fastdas-page-header>
+          <div className="if-operations-page__topbar fg-page-topbar">
+            <nav className="if-breadcrumbs" aria-label="Current route">
+              <span>FastDAS</span>
+              <span className="if-breadcrumbs__separator">/</span>
+              <span>Growth Engine</span>
+              <span className="if-breadcrumbs__separator">/</span>
+              <span className="if-breadcrumbs__current">{surface.nav}</span>
+            </nav>
+            <div className="if-operations-page__actions fg-page-topbar__actions">
+              <span className="if-badge if-badge--info">Source tracking</span>
+              <span className="if-badge if-badge--status-needs-review">Human approval</span>
+              <span className="if-badge if-badge--status-on-track">{operationState.operatorMode}</span>
+            </div>
+          </div>
+
+          <header className="if-page-header if-operations-page__hero fg-page-header" data-fastdas-page-header>
             <div className="fg-page-header__copy">
-              <div className="if-page-header__eyebrow fg-eyebrow">{surface.eyebrow}</div>
-              <h1 className="if-page-header__title">{surface.title}</h1>
-              <p className="if-panel__subtitle">{surface.summary}</p>
+              <div className="if-page-header__eyebrow if-operations-page__eyebrow fg-eyebrow">{surface.eyebrow}</div>
+              <h1 className="if-page-header__title if-operations-page__title">{surface.title}</h1>
+              <p className="if-panel__subtitle if-operations-page__summary">{surface.summary}</p>
               <div className="if-page-header__meta if-route-demo-controls fg-page-meta" data-fastdas-page-meta>
                 <span className="if-route-status"><strong>Selected</strong><span>{selectedRows[surface.id]}</span></span>
                 <span className="if-route-status"><strong>Primary action</strong><span>{surface.primaryAction}</span></span>
@@ -1282,19 +1402,7 @@ export default function App() {
 
           <BottomPanels surface={surface} />
 
-          <footer className="if-panel if-panel__footer fg-footer" data-fastdas-release-rail>
-            <div className="fg-footer__brand">
-              <strong>FastDAS Growth Engine</strong>
-              <span>Control Surface demo / customer walkthrough build</span>
-            </div>
-            <div className="if-route-demo-controls fg-footer__status" data-fastdas-footer-status>
-              <span className="if-route-status"><strong>Route</strong><span>{surface.title}</span></span>
-              <span className="if-route-status"><strong>Workflow</strong><span>{workflowStages[operationState.workflowIndex]}</span></span>
-              <span className="if-route-status"><strong>Seed</strong><span>{operationState.activeSeed}</span></span>
-              <span className="if-route-status"><strong>Source</strong><span>GitHub canonical</span></span>
-              <span className="if-route-status"><strong>Host</strong><span>GitLab Pages</span></span>
-            </div>
-          </footer>
+          <ReleaseRail surface={surface} operationState={operationState} />
         </section>
       </main>
     </div>
