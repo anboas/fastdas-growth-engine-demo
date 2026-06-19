@@ -166,7 +166,7 @@ try {
   const tableFilterControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").count();
   assert.equal(tableFilterControls, 1, "opportunity grid should expose framework table search");
   const tableStatusCounters = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-status]").count();
-  assert.ok(tableStatusCounters >= 2, "opportunity grid should expose framework status counters");
+  assert.ok(tableStatusCounters >= 1, "opportunity grid should expose framework status counters without duplicating selected-row state");
   const expandControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-expand]").count();
   assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
   const focusPanel = desktop.locator("[data-fastdas-record-focus-panel]");
@@ -282,12 +282,45 @@ try {
   assert.ok(sourceDetailText.includes("Google Reviews / Hospitality Coverage"), "opened source detail row should match the clicked source");
   assert.ok(sourceDetailText.includes("Needs sample"), "opened source detail should use source-specific exception context");
 
+  await desktop.goto(`${BASE_URL}#/opportunity-workbench`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-opportunity-focus-panel]", { timeout: 5000 });
+  const opportunityWorkbenchColumns = await desktop.locator("[data-fastdas-opportunity-workbench-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(opportunityWorkbenchColumns >= 2, "opportunity workbench should share the opportunity table with a selected-opportunity panel on desktop");
+  const opportunityDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-opportunity-workbench-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(opportunityDrawerOrder, true, "opportunity workbench should put the qualification table before operational controls");
+  const opportunityFocusPanel = desktop.locator("[data-fastdas-opportunity-focus-panel]");
+  let opportunityFocusText = await opportunityFocusPanel.textContent();
+  assert.ok(opportunityFocusText.includes("HarborPoint Garage"), "opportunity workbench should start with the selected opportunity in the focus panel");
+  await desktop.locator("[data-fastdas-opportunity-workbench-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
+  opportunityFocusText = await opportunityFocusPanel.textContent();
+  assert.ok(opportunityFocusText.includes("Capital Ridge Senior Living"), "clicking an opportunity row should move the qualification focus panel");
+  assert.ok(opportunityFocusText.includes("Public safety radio testing"), "opportunity focus panel should show the selected row's first-offer detail");
+  await desktop.locator('[data-fastdas-action="focus-promote-opportunity"]').click();
+  await assertAuditContains(desktop, "Opportunity promoted to review", "opportunity promotion");
+  const closedOpportunityDetails = await desktop.locator('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]').count();
+  assert.equal(closedOpportunityDetails, 0, "opportunity row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-opportunity-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]', { timeout: 5000 });
+  const opportunityDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]').textContent();
+  assert.ok(opportunityDetailText.includes("Capital Ridge Senior Living"), "opened opportunity detail row should match the clicked opportunity");
+  assert.ok(opportunityDetailText.includes("Potential closeout risk"), "opened opportunity detail should use opportunity-specific evidence");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
-        await desktop.locator(surfaceId === "signal-intake" ? '[data-fastdas-action="open-source-details"]' : '[data-fastdas-action="open-record-details"]').click();
+        const openSelector = surfaceId === "signal-intake"
+          ? '[data-fastdas-action="open-source-details"]'
+          : surfaceId === "opportunity-workbench"
+            ? '[data-fastdas-action="open-opportunity-details"]'
+            : '[data-fastdas-action="open-record-details"]';
+        await desktop.locator(openSelector).click();
       }
     }
     await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });

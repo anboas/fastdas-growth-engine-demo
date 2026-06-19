@@ -73,9 +73,10 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench"];
 
 function defaultDetailOpenRows() {
-  return Object.fromEntries(surfaces.map(surface => [surface.id, ["command-center", "signal-intake"].includes(surface.id) ? "" : surface.selected]));
+  return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
 }
 
 const PRIMARY_ACTIONS = {
@@ -308,13 +309,13 @@ function sourceDetailForSelection(surface, selectedRowId) {
 }
 
 function detailForSurfaceSelection(surface, selectedRowId) {
-  if (surface.id === "command-center") return recordDetailForSelection(surface, selectedRowId);
+  if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
 function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, onRecordAction }) {
-  if (!["command-center", "signal-intake"].includes(surface.id)) return null;
+  if (!FOCUSED_WORKBENCH_SURFACES.includes(surface.id)) return null;
   const detail = detailForSurfaceSelection(surface, selectedRowId);
 
   if (surface.id === "signal-intake") {
@@ -395,16 +396,18 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
   }
 
   const record = detail.record;
+  const isQualificationWorkbench = surface.id === "opportunity-workbench";
 
   return (
     <aside
-      className="if-panel if-record-detail if-operations-section fg-record-focus"
+      className={`if-panel if-record-detail if-operations-section fg-record-focus ${isQualificationWorkbench ? "fg-record-focus--qualification" : ""}`}
       data-fastdas-record-focus-panel
+      data-fastdas-opportunity-focus-panel={isQualificationWorkbench ? "true" : undefined}
       data-fastdas-record-focus-id={record.name}
     >
       <div className="fg-record-focus__header">
         <div>
-          <div className="if-record-detail__eyebrow fg-eyebrow">Selected Opportunity</div>
+          <div className="if-record-detail__eyebrow fg-eyebrow">{isQualificationWorkbench ? "Qualification Focus" : "Selected Opportunity"}</div>
           <h3 className="if-record-detail__title">{record.name}</h3>
           <p className="if-record-detail__text">{detail.description}</p>
         </div>
@@ -419,6 +422,12 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
           <dt>Score</dt>
           <dd className="if-provenance-field__value">{record.score}</dd>
         </div>
+        {isQualificationWorkbench ? (
+          <div className="if-provenance-field">
+            <dt>Signal</dt>
+            <dd className="if-provenance-field__value">{record.signal}</dd>
+          </div>
+        ) : null}
         <div className="if-provenance-field">
           <dt>First Offer</dt>
           <dd className="if-provenance-field__value">{record.firstOffer}</dd>
@@ -443,19 +452,19 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
         <button
           className="if-btn if-btn--primary fg-btn fg-btn--primary"
           type="button"
-          data-fastdas-action="open-record-details"
+          data-fastdas-action={isQualificationWorkbench ? "open-opportunity-details" : "open-record-details"}
           data-fastdas-open-details={record.name}
           onClick={() => onOpenDetails(record.name)}
         >
-          <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Details"}
+          <Icon name="arrowUp" />{detailsOpen ? "Details Open" : isQualificationWorkbench ? "Open Opportunity Details" : "Open Details"}
         </button>
         <button
           className="if-btn if-btn--secondary fg-btn"
           type="button"
-          data-fastdas-action="focus-approve"
-          onClick={() => onRecordAction("approve", surface, detail)}
+          data-fastdas-action={isQualificationWorkbench ? "focus-promote-opportunity" : "focus-approve"}
+          onClick={() => onRecordAction(isQualificationWorkbench ? "promote-opportunity" : "approve", surface, detail)}
         >
-          <Icon name="check" />Approve Gate
+          <Icon name="check" />{isQualificationWorkbench ? "Promote Review" : "Approve Gate"}
         </button>
       </div>
     </aside>
@@ -650,13 +659,14 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
   const isCommandCenter = surface.id === "command-center";
-  const isFocusedWorkbench = ["command-center", "signal-intake"].includes(surface.id);
+  const isFocusedWorkbench = FOCUSED_WORKBENCH_SURFACES.includes(surface.id);
   const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   return (
     <section
       className={`if-panel if-data-table if-table-shell fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
       data-fastdas-opportunity-grid
       data-fastdas-signal-intake-grid={surface.id === "signal-intake" ? "true" : undefined}
+      data-fastdas-opportunity-workbench-grid={surface.id === "opportunity-workbench" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -682,12 +692,12 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
               className="if-input"
               type="search"
               data-if-table-filter
-              placeholder="Search records, owners, sources..."
+              placeholder={isFocusedWorkbench ? "Search current view..." : "Search records, owners, sources..."}
               aria-label="Search current table"
             />
           </label>
           <span className="if-badge fg-counter"><strong data-if-table-status="filtered">{surface.table.rows.length}</strong> visible</span>
-          <span className="if-badge fg-counter"><strong data-if-table-status="selected">1</strong> selected</span>
+          {!isFocusedWorkbench ? <span className="if-badge fg-counter"><strong data-if-table-status="selected">1</strong> selected</span> : null}
         </div>
         <div className="if-table-command-band__filters fg-command-band__filters">
           {visibleFilters.map(filter => (
@@ -702,6 +712,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           ))}
           {isCommandCenter ? <span className="if-badge fg-counter">Decision view</span> : null}
           {surface.id === "signal-intake" ? <span className="if-badge fg-counter">Source health view</span> : null}
+          {surface.id === "opportunity-workbench" ? <span className="if-badge fg-counter">Qualification view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -737,6 +748,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-record-workbench={isFocusedWorkbench ? "true" : undefined}
         data-fastdas-command-center-workbench={isCommandCenter ? "true" : undefined}
         data-fastdas-signal-intake-workbench={surface.id === "signal-intake" ? "true" : undefined}
+        data-fastdas-opportunity-workbench-workbench={surface.id === "opportunity-workbench" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1346,7 +1358,7 @@ export default function App() {
     () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
     [activeSurfaceId],
   );
-  const isFocusedWorkbench = ["command-center", "signal-intake"].includes(surface.id);
+  const isFocusedWorkbench = FOCUSED_WORKBENCH_SURFACES.includes(surface.id);
   const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
@@ -1470,6 +1482,12 @@ export default function App() {
         tone: "blue",
         workflowIndex: 1,
         updates: state => ({ signalRuns: state.signalRuns + 1 }),
+      },
+      "promote-opportunity": {
+        title: "Opportunity promoted to review",
+        body: `${recordTitle} is staged for human review with scoring, source, and contact gates retained.`,
+        tone: "warning",
+        workflowIndex: 3,
       },
     };
     recordOperation(labels[kind]);

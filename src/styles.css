@@ -1529,6 +1529,7 @@ button {
 }
 
 .fg-record-focus__facts .if-provenance-field {
+  display: block;
   min-width: 0;
   padding: 8px;
   border: 1px solid #d5e4ee;
