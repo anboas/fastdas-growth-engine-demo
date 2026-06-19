@@ -37,6 +37,8 @@ assert.equal(workbenchModel.includes("export const SAVED_VIEWS"), true, "workben
 assert.equal(workbenchModel.includes("export const WORKBENCH_SURFACE_CONFIG"), true, "workbench model should own per-surface workbench config");
 assert.equal(workbenchModel.includes("export function gridSurfaceAttributes"), true, "workbench model should build per-surface grid hooks");
 assert.equal(workbenchModel.includes("export function workbenchSurfaceAttributes"), true, "workbench model should build per-surface workbench hooks");
+assert.equal(workbenchModel.includes("export const COMMAND_CENTER_QUICK_FILTERS"), true, "workbench model should own command-center quick filter config");
+assert.equal(workbenchModel.includes("export function commandCenterRowsForFilter"), true, "workbench model should own command-center filtered row selection");
 assert.equal(workbenchModel.includes("export function detailForSurfaceSelection"), true, "workbench model should own selected-record detail builders");
 assert.equal(workbenchModel.includes("const detailBuilders"), true, "workbench model should route surface detail builders through a registry");
 
@@ -72,6 +74,14 @@ for (const hook of [
   "data-fastdas-saved-views",
   "data-fastdas-saved-view",
   "data-fastdas-metric-grid",
+  "data-fastdas-command-center-nav",
+  "data-fastdas-command-center-active-filter",
+  "data-fastdas-command-filter-tab",
+  "data-fastdas-command-filter-card",
+  "data-fastdas-command-filter-select",
+  "data-fastdas-command-segment-select",
+  "data-fastdas-command-owner-select",
+  "data-fastdas-command-filter-label",
   "data-fastdas-grid-surface",
   "data-fastdas-workbench-surface",
   "data-fastdas-opportunity-grid",

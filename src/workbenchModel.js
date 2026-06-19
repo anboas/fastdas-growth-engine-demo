@@ -89,6 +89,73 @@ export const WORKBENCH_SURFACE_CONFIG = {
   },
 };
 
+export const COMMAND_CENTER_DEFAULT_FILTER_ID = "high-score-opportunities";
+
+export const COMMAND_CENTER_QUICK_FILTERS = [
+  {
+    id: "high-score-opportunities",
+    label: "High Score Opportunities",
+    navLabel: "Score 80+",
+    description: "Score 80+ / human review",
+    rowIds: ["Capital Ridge Senior Living", "HarborPoint Garage", "Arlington Medical Pavilion", "Mosaic West Hotel"],
+  },
+  {
+    id: "paid-assessment-fit",
+    label: "Paid Assessment Fit",
+    navLabel: "Paid Fit",
+    description: "Survey, test, benchmark, or health-check ready",
+    rowIds: ["Capital Ridge Senior Living", "HarborPoint Garage", "Arlington Medical Pavilion", "Mosaic West Hotel"],
+  },
+  {
+    id: "approval-queue",
+    label: "Approval Queue",
+    navLabel: "Approval",
+    description: "Human approval or approved-send work",
+    rowIds: ["Capital Ridge Senior Living", "HarborPoint Garage"],
+  },
+  {
+    id: "follow-ups-due",
+    label: "Follow-Ups Due",
+    navLabel: "Follow-Up",
+    description: "Due or nurture-stage opportunities",
+    rowIds: ["Mosaic West Hotel", "DC Mixed-Use Tower"],
+  },
+  {
+    id: "source-confidence",
+    label: "Source Confidence",
+    navLabel: "Source Trust",
+    description: "Highest-confidence source-backed opportunities",
+    rowIds: ["Capital Ridge Senior Living", "HarborPoint Garage", "Arlington Medical Pavilion"],
+  },
+  {
+    id: "qualified-conversations",
+    label: "Qualified Conversations",
+    navLabel: "Conversations",
+    description: "Human-review, outreach, or follow-up conversations",
+    rowIds: ["Capital Ridge Senior Living", "HarborPoint Garage", "Mosaic West Hotel"],
+  },
+];
+
+export function commandCenterQuickFilter(filterId) {
+  return COMMAND_CENTER_QUICK_FILTERS.find(filter => filter.id === filterId) || COMMAND_CENTER_QUICK_FILTERS[0];
+}
+
+export function commandCenterFilterIdForMetric(metricLabel) {
+  const metricId = String(metricLabel || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return commandCenterQuickFilter(metricId).id;
+}
+
+export function commandCenterRowsForFilter(surface, filterId) {
+  if (surface.id !== "command-center") return surface.table.rows;
+  const filter = commandCenterQuickFilter(filterId);
+  const rowIdSet = new Set(filter.rowIds);
+  return surface.table.rows.filter(row => rowIdSet.has(row.id));
+}
+
+export function firstCommandCenterRowId(surface, filterId) {
+  return commandCenterRowsForFilter(surface, filterId)[0]?.id || surface.selected;
+}
+
 export function isFocusedWorkbenchSurface(surfaceId) {
   return FOCUSED_WORKBENCH_SURFACES.includes(surfaceId);
 }

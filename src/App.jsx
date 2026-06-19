@@ -1,8 +1,14 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sidebarKpis, surfaces, workflowStages } from "./data.js";
 import {
+  COMMAND_CENTER_DEFAULT_FILTER_ID,
+  COMMAND_CENTER_QUICK_FILTERS,
+  commandCenterFilterIdForMetric,
+  commandCenterQuickFilter,
+  commandCenterRowsForFilter,
   detailForSurfaceSelection,
   defaultDetailOpenRows,
+  firstCommandCenterRowId,
   gridSurfaceAttributes,
   isFocusedWorkbenchSurface,
   SAVED_VIEWS,
@@ -169,7 +175,7 @@ function appendEvent(state, { title, body, tone = "blue", workflowIndex, updates
   };
 }
 
-function MetricCard({ metric, selected = false }) {
+function MetricCard({ metric, selected = false, onSelect }) {
   const [label, value, change, meta, tone, icon] = metric;
   const signalId = signalIdForLabel(label);
   return (
@@ -179,7 +185,10 @@ function MetricCard({ metric, selected = false }) {
       data-if-operations-signal={signalId}
       data-if-operations-label={label}
       data-if-operations-focus-panel={signalId}
+      data-fastdas-command-filter-card={signalId}
+      data-fastdas-command-filter-active={selected ? "true" : "false"}
       aria-pressed={selected}
+      onClick={onSelect}
     >
       <div className="if-metric__top fg-metric__top">
         <span className="if-metric__icon fg-metric__icon"><Icon name={icon} /></span>
@@ -230,6 +239,86 @@ function TableCell({ value, column }) {
       <strong>{primary}</strong>
       {secondary ? <small className="if-table-cell-meta">{secondary}</small> : null}
     </span>
+  );
+}
+
+function CommandCenterControlNav({ activeFilterId, selectedRowId, onFilterChange, onUtilityAction }) {
+  const activeFilter = commandCenterQuickFilter(activeFilterId);
+  return (
+    <section
+      className="if-toolbar fg-command-center-nav"
+      data-fastdas-command-center-nav
+      data-fastdas-command-center-active-filter={activeFilter.id}
+      aria-label="Command Center view controls"
+    >
+      <div className="fg-command-center-nav__tabs" role="tablist" aria-label="Command Center quick views">
+        {COMMAND_CENTER_QUICK_FILTERS.slice(0, 4).map(filter => (
+          <button
+            className={`if-btn if-btn--secondary if-btn--sm fg-command-center-nav__tab ${filter.id === activeFilter.id ? "is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={filter.id === activeFilter.id}
+            data-fastdas-command-filter-tab={filter.id}
+            key={filter.id}
+            onClick={() => onFilterChange(filter.id)}
+          >
+            {filter.navLabel}
+          </button>
+        ))}
+      </div>
+      <div className="fg-command-center-nav__selects">
+        <label className="if-field fg-command-center-select">
+          <span className="if-field__label">View</span>
+          <select
+            className="if-select"
+            value={activeFilter.id}
+            data-fastdas-command-filter-select
+            onChange={(event) => onFilterChange(event.target.value)}
+          >
+            {COMMAND_CENTER_QUICK_FILTERS.map(filter => (
+              <option value={filter.id} key={filter.id}>{filter.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="if-field fg-command-center-select">
+          <span className="if-field__label">Segment</span>
+          <select
+            className="if-select"
+            defaultValue="va-md-dc"
+            data-fastdas-command-segment-select
+            onChange={(event) => onUtilityAction("Command segment changed", `${event.target.selectedOptions[0].text} is staged for the Command Center view.`, "blue")}
+          >
+            <option value="va-md-dc">VA / MD / DC</option>
+            <option value="healthcare">Healthcare-adjacent</option>
+            <option value="hospitality">Hospitality</option>
+            <option value="portfolio">Portfolio risk</option>
+          </select>
+        </label>
+        <label className="if-field fg-command-center-select">
+          <span className="if-field__label">Owner</span>
+          <select
+            className="if-select"
+            defaultValue="operator-review"
+            data-fastdas-command-owner-select
+            onChange={(event) => onUtilityAction("Command owner changed", `${event.target.selectedOptions[0].text} is staged for the Command Center view.`, "purple")}
+          >
+            <option value="operator-review">Operator review</option>
+            <option value="outreach">Outreach queue</option>
+            <option value="research">Research handoff</option>
+          </select>
+        </label>
+      </div>
+      <div className="fg-command-center-nav__status">
+        <span className="if-route-status">
+          <strong>Filter</strong>
+          <span>{activeFilter.description}</span>
+        </span>
+        <span className="if-route-status">
+          <strong>Focus</strong>
+          <span>{selectedRowId}</span>
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -938,7 +1027,7 @@ function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
   );
 }
 
-function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
+function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuickFilterId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
@@ -946,11 +1035,14 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
   const workbenchConfig = workbenchSurfaceConfig(surface.id);
   const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
+  const rows = isCommandCenter ? commandCenterRowsForFilter(surface, commandQuickFilterId) : surface.table.rows;
+  const activeCommandFilter = isCommandCenter ? commandCenterQuickFilter(commandQuickFilterId) : null;
   return (
     <section
       className={`if-panel if-data-table if-table-shell fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
       data-fastdas-opportunity-grid
       {...gridSurfaceAttributes(surface.id)}
+      data-fastdas-active-command-filter={isCommandCenter ? activeCommandFilter.id : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -980,7 +1072,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
               aria-label="Search current table"
             />
           </label>
-          <span className="if-badge fg-counter"><strong data-if-table-status="filtered">{surface.table.rows.length}</strong> visible</span>
+          <span className="if-badge fg-counter"><strong data-if-table-status="filtered">{rows.length}</strong> visible</span>
           {!isFocusedWorkbench ? <span className="if-badge fg-counter"><strong data-if-table-status="selected">1</strong> selected</span> : null}
         </div>
         <div className="if-table-command-band__filters fg-command-band__filters">
@@ -995,6 +1087,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
             </button>
           ))}
           {workbenchConfig.viewLabel ? <span className="if-badge fg-counter">{workbenchConfig.viewLabel}</span> : null}
+          {activeCommandFilter ? <span className="if-badge fg-counter" data-fastdas-command-filter-label>{activeCommandFilter.label}</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -1036,7 +1129,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
               <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
             </thead>
             <tbody>
-              {surface.table.rows.map(row => (
+              {rows.map(row => (
                 <Fragment key={row.id}>
                   <tr
                     className={row.id === selectedRowId ? "is-selected" : ""}
@@ -1673,6 +1766,7 @@ export default function App() {
   const [detailOpenRows, setDetailOpenRows] = useState(defaultDetailOpenRows);
   const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
   const [activeSavedViewId, setActiveSavedViewId] = useState("");
+  const [activeCommandFilterId, setActiveCommandFilterId] = useState(COMMAND_CENTER_DEFAULT_FILTER_ID);
 
   useEffect(() => {
     const onHashChange = () => setActiveSurfaceId(getInitialSurfaceId());
@@ -1685,7 +1779,7 @@ export default function App() {
     [activeSurfaceId],
   );
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
-  const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
+  const activeMetricSignalId = surface.id === "command-center" ? activeCommandFilterId : signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
     setActiveSavedViewId("");
@@ -1699,6 +1793,25 @@ export default function App() {
 
   const handleUtilityAction = useCallback((title, body, tone = "blue") => {
     recordOperation({ title, body, tone });
+  }, [recordOperation]);
+
+  const applyCommandCenterFilter = useCallback((filterId, shouldRecord = true) => {
+    const filter = commandCenterQuickFilter(filterId);
+    const commandSurface = surfaces.find(item => item.id === "command-center") || surfaces[0];
+    const nextRowId = firstCommandCenterRowId(commandSurface, filter.id);
+
+    setActiveCommandFilterId(filter.id);
+    setActiveSavedViewId("");
+    setSelectedRows(current => ({ ...current, "command-center": nextRowId }));
+    setDetailOpenRows(current => ({ ...current, "command-center": "" }));
+
+    if (shouldRecord) {
+      recordOperation({
+        title: "Command filter applied",
+        body: `${filter.label} moved Command Center focus to ${nextRowId}.`,
+        tone: "blue",
+      });
+    }
   }, [recordOperation]);
 
   const handleModeChange = useCallback((mode) => {
@@ -2078,7 +2191,12 @@ export default function App() {
               <button
                 className="if-btn if-btn--secondary fg-btn"
                 type="button"
-                onClick={() => handleUtilityAction("Filters reset", `${surface.title} returned to the default demo view.`, "blue")}
+                onClick={() => {
+                  if (surface.id === "command-center") {
+                    applyCommandCenterFilter(COMMAND_CENTER_DEFAULT_FILTER_ID, false);
+                  }
+                  handleUtilityAction("Filters reset", `${surface.title} returned to the default demo view.`, "blue");
+                }}
               >
                 <Icon name="rotate" />Reset Filters
               </button>
@@ -2108,19 +2226,40 @@ export default function App() {
             </>
           ) : null}
 
+          {surface.id === "command-center" ? (
+            <CommandCenterControlNav
+              activeFilterId={activeCommandFilterId}
+              selectedRowId={selectedRows[surface.id]}
+              onFilterChange={(filterId) => applyCommandCenterFilter(filterId)}
+              onUtilityAction={handleUtilityAction}
+            />
+          ) : null}
+
           <section
             className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isFocusedWorkbench ? "fg-metric-grid--focused-workbench fg-metric-grid--command-center" : ""}`}
             data-fastdas-metric-grid
             data-if-balanced-grid
             data-if-balanced-grid-min="168"
           >
-            {surface.metrics.map((metric, index) => <MetricCard key={metric[0]} metric={metric} selected={index === 0} />)}
+            {surface.metrics.map((metric, index) => {
+              const metricFilterId = commandCenterFilterIdForMetric(metric[0]);
+              const selected = surface.id === "command-center" ? activeCommandFilterId === metricFilterId : index === 0;
+              return (
+                <MetricCard
+                  key={metric[0]}
+                  metric={metric}
+                  selected={selected}
+                  onSelect={surface.id === "command-center" ? () => applyCommandCenterFilter(metricFilterId) : undefined}
+                />
+              );
+            })}
           </section>
 
           <OpportunityGrid
             surface={surface}
             selectedRowId={selectedRows[surface.id]}
             detailOpenRowId={detailOpenRows[surface.id]}
+            commandQuickFilterId={activeCommandFilterId}
             onSelect={rowId => {
               setSelectedRows(current => ({ ...current, [surface.id]: rowId }));
               setDetailOpenRows(current => ({ ...current, [surface.id]: current[surface.id] === rowId ? current[surface.id] : "" }));

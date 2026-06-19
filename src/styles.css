@@ -1304,6 +1304,78 @@ button {
   font-size: 24px;
 }
 
+.fg-command-center-nav {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(360px, 1fr) minmax(320px, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-command-center-nav__tabs,
+.fg-command-center-nav__selects,
+.fg-command-center-nav__status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.fg-command-center-nav__tabs {
+  flex-wrap: nowrap;
+}
+
+.fg-command-center-nav__tab {
+  height: 32px;
+  white-space: nowrap;
+}
+
+.fg-command-center-nav__tab.is-active,
+.fg-command-center-nav__tab[aria-selected="true"] {
+  border-color: rgba(10, 125, 131, 0.42);
+  background: #e9f7f8;
+  color: #075f65;
+}
+
+.fg-command-center-nav__selects {
+  justify-content: center;
+}
+
+.fg-command-center-select {
+  min-width: 0;
+  margin: 0;
+}
+
+.fg-command-center-select .if-field__label {
+  margin: 0 0 3px;
+  color: #667b8f;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fg-command-center-select .if-select {
+  width: 100%;
+  min-width: 132px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.fg-command-center-nav__status {
+  justify-content: flex-end;
+}
+
+.fg-command-center-nav__status .if-route-status {
+  max-width: 190px;
+}
+
 .fg-panel--command-center .fg-panel__header {
   min-height: 46px;
   padding-block: 10px;
@@ -2157,6 +2229,15 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .fg-command-center-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-command-center-nav__selects,
+  .fg-command-center-nav__status {
+    justify-content: flex-start;
+  }
+
   .fg-source-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2394,6 +2475,16 @@ button {
 
   .fg-command-band {
     align-items: stretch;
+  }
+
+  .fg-command-center-nav__tabs,
+  .fg-command-center-nav__selects,
+  .fg-command-center-nav__status {
+    flex-wrap: wrap;
+  }
+
+  .fg-command-center-select {
+    flex: 1 1 160px;
   }
 
   .fg-command-band .fg-btn,
