@@ -1096,7 +1096,7 @@ button.fg-product-header__brand {
 
 .fg-guided-demo {
   display: grid;
-  grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 0.9fr) auto;
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.82fr) minmax(280px, 0.9fr);
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -1194,7 +1194,59 @@ button.fg-product-header__brand {
   white-space: nowrap;
 }
 
+.fg-guided-demo__artifact {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid #d2e1ec;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.fg-guided-demo__artifact > span {
+  color: #64788d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fg-guided-demo__artifact > strong {
+  overflow-wrap: anywhere;
+  color: #17354f;
+  font-size: 13px;
+  font-weight: 930;
+}
+
+.fg-guided-demo__artifact p {
+  margin: 0;
+  color: #53677e;
+  font-size: 11px;
+}
+
+.fg-guided-demo__artifact ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fg-guided-demo__artifact li {
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid #cddce8;
+  border-radius: 999px;
+  background: #f4f8fb;
+  color: #38536d;
+  font-size: 10px;
+  font-weight: 820;
+}
+
 .fg-guided-demo__actions {
+  grid-column: 1 / -1;
   justify-content: flex-end;
 }
 

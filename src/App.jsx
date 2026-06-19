@@ -2087,18 +2087,63 @@ function SyntheticPipelineConsole({
   );
 }
 
+function demoArtifactForStage(record, workflowIndex) {
+  if (!record) {
+    return {
+      title: "No active artifact",
+      body: "Create or generate a synthetic lead to produce workflow artifacts.",
+      items: ["Lead profile", "Source evidence", "Outreach draft"],
+    };
+  }
+  if (workflowIndex >= 8) {
+    return {
+      title: "Follow-on learning captured",
+      body: `${record.firstOffer} learning is ready to feed scoring, follow-on path, and segment calibration.`,
+      items: ["Outcome logged", "Offer performance tagged", "Next experiment queued"],
+    };
+  }
+  if (workflowIndex >= 6) {
+    return {
+      title: "Assessment offer ready",
+      body: `${record.name} has a paid first step framed around ${record.firstOffer.toLowerCase()}.`,
+      items: ["Discovery brief", "Assessment scope", "Follow-on roadmap"],
+    };
+  }
+  if (workflowIndex >= 4) {
+    return {
+      title: "Approved outreach package",
+      body: `${record.stakeholderPath} path is approved with human-gated language and source-safe evidence.`,
+      items: ["First-touch draft", "Cadence plan", "Approval reason"],
+    };
+  }
+  if (workflowIndex >= 2) {
+    return {
+      title: "Qualified opportunity packet",
+      body: `${record.signal} supports a bounded ${record.firstOffer.toLowerCase()} offer.`,
+      items: ["Score rationale", "Stakeholder route", "Evidence notes"],
+    };
+  }
+  return {
+    title: "Signal captured",
+    body: `${record.signal} is captured for ${record.market} and ready for enrichment.`,
+    items: ["Lead created", "Synthetic-safe source", "Enrichment queued"],
+  };
+}
+
 function GuidedDemoRunner({
   activeRecord,
   workflowIndex,
   syntheticRecordCount,
   onCreateRecord,
   onAdvance,
+  onRunWalkthrough,
   onOpenInput,
   onExport,
   onReset,
 }) {
   const currentStage = workflowStages[workflowIndex] || workflowStages[0];
   const nextStage = workflowStages[Math.min(workflowStages.length - 1, workflowIndex + 1)] || currentStage;
+  const artifact = demoArtifactForStage(activeRecord, workflowIndex);
   const runnerSteps = [
     ["Create", syntheticRecordCount > 0],
     ["Qualify", workflowIndex >= 2],
@@ -2137,12 +2182,23 @@ function GuidedDemoRunner({
           </li>
         ))}
       </ol>
+      <div className="fg-guided-demo__artifact" data-fastdas-stage-artifacts>
+        <span>Stage Artifact</span>
+        <strong>{artifact.title}</strong>
+        <p>{artifact.body}</p>
+        <ul>
+          {artifact.items.map(item => <li key={item}>{item}</li>)}
+        </ul>
+      </div>
       <div className="if-toolbar__group fg-guided-demo__actions">
         <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button" data-fastdas-action="guided-create-record" onClick={onCreateRecord}>
           <Icon name="plus" />{activeRecord ? "Add Lead" : "Create Lead"}
         </button>
         <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="guided-advance-stage" disabled={!activeRecord} onClick={onAdvance}>
           <Icon name="arrowUp" />Advance Stage
+        </button>
+        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button" data-fastdas-action="guided-run-walkthrough" onClick={onRunWalkthrough}>
+          <Icon name="check" />Run Walkthrough
         </button>
         <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="guided-open-input" onClick={onOpenInput}>
           <Icon name="database" />Input
@@ -3221,6 +3277,20 @@ export default function App() {
     handlePipelineStep(record.name, Math.min(workflowStages.length - 1, currentIndex + 1));
   }, [activeDemoRecord, addSyntheticRecord, handlePipelineStep, operationState.scenarioMode, pipelineOverrides, syntheticRecords.length]);
 
+  const handleGuidedWalkthrough = useCallback(() => {
+    const record = activeDemoRecord || addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode), "Working demo lead created", { workflowIndex: 1 });
+    const targetWorkflowIndex = 6;
+    focusRecordAcrossPipeline(record.name, targetWorkflowIndex);
+    recordOperation({
+      title: "Guided walkthrough completed",
+      body: `${record.name} advanced from captured signal to paid assessment candidate with artifacts ready for customer review.`,
+      tone: "success",
+      workflowIndex: targetWorkflowIndex,
+      updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1), generatedRecords: state.generatedRecords + (activeDemoRecord ? 0 : 1) }),
+    });
+    setSurface("conversion-board");
+  }, [activeDemoRecord, addSyntheticRecord, focusRecordAcrossPipeline, operationState.scenarioMode, recordOperation, setSurface, syntheticRecords.length]);
+
   const handleOpenRuntimeRecord = useCallback((recordName) => {
     const workflowIndex = pipelineOverrides[recordName]?.workflowIndex ?? 0;
     focusRecordAcrossPipeline(recordName, workflowIndex);
@@ -3388,6 +3458,7 @@ export default function App() {
             syntheticRecordCount={syntheticRecords.length}
             onCreateRecord={handleGuidedCreateRecord}
             onAdvance={handleGuidedAdvance}
+            onRunWalkthrough={handleGuidedWalkthrough}
             onOpenInput={() => setSurface("synthetic-data")}
             onExport={() => handleSyntheticAction("export")}
             onReset={() => handleSyntheticAction("reset")}

@@ -167,7 +167,8 @@ try {
   const guidedRunner = desktop.locator("[data-fastdas-guided-demo-runner]");
   await guidedRunner.waitFor({ timeout: 5000 });
   const guidedRunnerActions = await desktop.locator("[data-fastdas-guided-demo-runner] [data-fastdas-action]").count();
-  assert.ok(guidedRunnerActions >= 5, "working demo runner should expose create, advance, input, export, and reset actions");
+  assert.ok(guidedRunnerActions >= 6, "working demo runner should expose create, walkthrough, advance, input, export, and reset actions");
+  await desktop.locator("[data-fastdas-stage-artifacts]").waitFor({ timeout: 5000 });
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
@@ -627,6 +628,13 @@ try {
   await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
   await desktop.locator('[data-fastdas-action="approve-record"]').first().click();
   await assertAuditContains(desktop, "Inline record approved", "inline approval");
+  await desktop.locator('[data-fastdas-action="guided-run-walkthrough"]').click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Conversion Board"));
+  await assertAuditContains(desktop, "Guided walkthrough completed", "guided full walkthrough");
+  const stageArtifactText = await desktop.locator("[data-fastdas-stage-artifacts]").textContent();
+  assert.ok(stageArtifactText.includes("Assessment offer ready"), "guided walkthrough should show a sellable paid-assessment artifact");
+  const guidedRuntimeState = await desktop.evaluate(() => JSON.parse(window.localStorage.getItem("fastdas.demo.runtimePipeline.v1") || "{}"));
+  assert.ok(Object.values(guidedRuntimeState.pipelineOverrides || {}).some(value => value.workflowIndex === 6), "guided walkthrough should persist the active record at paid assessment stage");
 
   await desktop.screenshot({ path: `${OUT_DIR}/fastdas-desktop.png`, fullPage: true });
 
