@@ -1892,45 +1892,51 @@ button {
   justify-content: stretch;
   width: 100%;
   flex: none;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 
 .fg-footer .if-route-status {
   display: inline-flex;
   min-width: 0;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   padding: 5px 8px;
   border: 1px solid #d6e2ed;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #fbfdff;
   color: #5f7288;
 }
 
 .fg-footer .if-route-status strong {
   color: #18334e;
+  line-height: 1.1;
 }
 
 .fg-footer .if-route-status span {
-  overflow: hidden;
   max-width: 180px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+  white-space: normal;
 }
 
 .fg-release-lanes {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .fg-release-lane {
   background: #ffffff;
 }
 
+.fg-release-lane--delivery {
+  border-color: #b9dfe3;
+  background: #f6fcfd;
+}
+
 .fg-release-lane dd {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 @media (max-width: 1320px) {

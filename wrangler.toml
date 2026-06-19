@@ -1,0 +1,6 @@
+name = "fastdas-growth-engine-demo"
+compatibility_date = "2026-06-19"
+pages_build_output_dir = "dist"
+
+[vars]
+FASTDAS_RELEASE_CHANNEL = "customer-demo"

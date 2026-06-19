@@ -12,7 +12,8 @@
     "verify:ui": "node scripts/verify-ui.mjs",
     "verify:prod-smoke": "node scripts/prod-smoke.mjs",
     "verify:all": "npm run lint && npm run build && npm audit && npm run verify:demo && npm run verify:ui",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "deploy:cloudflare": "npm run build && npx wrangler pages deploy dist --project-name fastdas-growth-engine-demo --branch main"
   },
   "dependencies": {
     "control-surface-ui": "file:vendor/control-surface-ui-0.1.0.tgz",

@@ -987,12 +987,18 @@ function HeaderSurfaceNav({ surface, onSelect }) {
 
 function ReleaseRail({ surface, operationState }) {
   const currentStage = workflowStages[operationState.workflowIndex] || workflowStages[0];
+  const releaseLanes = [
+    ["Route Contract", "Current walkthrough state", surface.nav, surface.primaryAction, "route"],
+    ["Data Contract", "Synthetic customer-safe state", operationState.activeSeed, operationState.scenarioMode, "database"],
+    ["Approval Contract", "Human boundary status", `${operationState.approvalCount} approvals due`, currentStage, "shield"],
+    ["Delivery Contract", "GitHub source with Cloudflare-ready static artifact", "GitHub -> dist", "Cloudflare Pages direct upload", "cloud"],
+  ];
 
   return (
     <footer className="if-panel if-panel__footer if-release-controls fg-footer" data-fastdas-release-rail>
       <div className="fg-footer__brand">
         <strong>FastDAS Growth Engine</strong>
-        <span>Control Surface demo / customer walkthrough build</span>
+        <span>Control Surface demo / customer walkthrough build / delivery-ready artifact</span>
       </div>
       <div className="if-release-summary if-route-demo-controls fg-footer__status" data-fastdas-footer-status>
         <span className="if-route-status"><strong>Route</strong><span>{surface.title}</span></span>
@@ -1000,14 +1006,11 @@ function ReleaseRail({ surface, operationState }) {
         <span className="if-route-status"><strong>Seed</strong><span>{operationState.activeSeed}</span></span>
         <span className="if-route-status"><strong>Source</strong><span>GitHub canonical</span></span>
         <span className="if-route-status"><strong>Host</strong><span>GitLab Pages</span></span>
+        <span className="if-route-status"><strong>Cloudflare</strong><span>Deploy path ready</span></span>
       </div>
-      <section className="if-release-lane-grid fg-release-lanes" aria-label="Release readiness lanes">
-        {[
-          ["Route Contract", "Current walkthrough state", surface.nav, surface.primaryAction, "route"],
-          ["Data Contract", "Synthetic customer-safe state", operationState.activeSeed, operationState.scenarioMode, "database"],
-          ["Approval Contract", "Human boundary status", `${operationState.approvalCount} approvals due`, currentStage, "shield"],
-        ].map(([title, body, keyValue, detail, icon]) => (
-          <article className="if-release-lane fg-release-lane" key={title}>
+      <section className="if-release-lane-grid fg-release-lanes" aria-label="Release readiness lanes" data-fastdas-delivery-readiness>
+        {releaseLanes.map(([title, body, keyValue, detail, icon]) => (
+          <article className={`if-release-lane fg-release-lane ${title === "Delivery Contract" ? "fg-release-lane--delivery" : ""}`} key={title}>
             <header>
               <span className="if-release-lane__icon if-icon-slot" data-if-icon={icon} aria-hidden="true" />
               <div>

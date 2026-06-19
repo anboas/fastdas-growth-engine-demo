@@ -6,6 +6,8 @@ Canonical source: <https://github.com/anboas/fastdas-growth-engine-demo>
 
 Hosted demo: <https://anboas.gitlab.io/fastdas-growth-engine-demo/>
 
+Cloudflare Pages deploy target: `fastdas-growth-engine-demo`
+
 The app is built as an enterprise operations workbench, not a CRM. It covers the full signal-to-revenue workflow:
 
 `Signal -> Enrichment -> Qualification -> Human Review -> Outreach -> Discovery Call -> Paid Assessment -> Report -> Follow-On Opportunity -> Closed Won`
@@ -71,5 +73,20 @@ After deployment, smoke-check the published site:
 ```bash
 npm run verify:prod-smoke -- --url https://YOUR_NAMESPACE.gitlab.io/fastdas-growth-engine-demo/
 ```
+
+## Cloudflare Pages
+
+The repo also includes a direct Cloudflare Pages path for publishing the built `dist/` artifact without changing the canonical GitHub source.
+
+```bash
+npm run deploy:cloudflare
+```
+
+Required environment:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+The Cloudflare deploy path is configured by `wrangler.toml`; static response headers live in `public/_headers` and are copied by Vite during build.
 
 <!-- pages refresh 2026-06-19T16:11:02Z -->

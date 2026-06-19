@@ -218,11 +218,13 @@ try {
   const impactChain = await desktop.locator("[data-fastdas-governance-panels] .if-impact-chain span").count();
   assert.ok(impactChain >= 1, "bottom governance panels should expose framework impact chains");
   const releaseRail = await desktop.locator("[data-fastdas-release-rail].if-panel.if-panel__footer [data-fastdas-footer-status] .if-route-status").count();
-  assert.equal(releaseRail, 5, "release footer should use framework panel-footer route status chips");
+  assert.equal(releaseRail, 6, "release footer should use framework panel-footer route status chips");
   const releaseControls = await desktop.locator("[data-fastdas-release-rail].if-release-controls .if-release-summary .if-route-status").count();
-  assert.equal(releaseControls, 5, "release footer should use framework release summary status controls");
+  assert.equal(releaseControls, 6, "release footer should use framework release summary status controls");
   const releaseLanes = await desktop.locator("[data-fastdas-release-rail] .if-release-lane-grid .if-release-lane .if-release-lane__kv").count();
-  assert.equal(releaseLanes, 3, "release footer should expose framework release lanes");
+  assert.equal(releaseLanes, 4, "release footer should expose framework release lanes");
+  const deliveryReadinessText = await desktop.locator("[data-fastdas-delivery-readiness]").textContent();
+  assert.ok(deliveryReadinessText.includes("Cloudflare Pages direct upload"), "release footer should expose Cloudflare delivery readiness");
   const releaseBrand = await desktop.locator("[data-fastdas-release-rail] .fg-footer__brand").textContent();
   assert.ok(releaseBrand.includes("FastDAS Growth Engine"), "release footer should keep a readable product identity");
 

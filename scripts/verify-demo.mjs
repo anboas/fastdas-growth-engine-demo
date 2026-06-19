@@ -9,6 +9,8 @@ const css = readFileSync("src/styles.css", "utf8");
 const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
 const viteConfig = readFileSync("vite.config.js", "utf8");
 const legacyAssets = readFileSync("scripts/patch-legacy-assets.mjs", "utf8");
+const wranglerConfig = readFileSync("wrangler.toml", "utf8");
+const cloudflareHeaders = readFileSync("public/_headers", "utf8");
 
 assert.equal(pkg.name, "fastdas-growth-engine-demo", "package should identify the new repo");
 assert.equal(html.includes("<title>FastDAS Growth Engine</title>"), true, "HTML title should identify FastDAS");
@@ -16,6 +18,10 @@ assert.equal(viteConfig.includes('base: "./"'), true, "Vite should use relative 
 assert.equal(gitlabCi.includes("pages:"), true, "GitLab Pages job should exist");
 assert.equal(gitlabCi.includes("cp -r dist public"), true, "GitLab Pages should publish the Vite dist folder");
 assert.equal(pkg.scripts.build.includes("patch-legacy-assets"), true, "build should patch known stale Pages asset bridges");
+assert.equal(pkg.scripts["deploy:cloudflare"].includes("wrangler pages deploy dist"), true, "Cloudflare Pages deploy script should publish dist directly");
+assert.equal(wranglerConfig.includes('name = "fastdas-growth-engine-demo"'), true, "Cloudflare Pages config should use the FastDAS project name");
+assert.equal(wranglerConfig.includes('pages_build_output_dir = "dist"'), true, "Cloudflare Pages config should publish the Vite dist folder");
+assert.equal(cloudflareHeaders.includes("X-Content-Type-Options: nosniff"), true, "Cloudflare Pages headers should include basic hardening");
 assert.equal(legacyAssets.includes("assets/index-Cnt_SPVg.js"), true, "legacy patch should bridge the stale GitLab Pages entry asset");
 assert.equal(legacyAssets.includes("assets/index-DocpHply.css"), true, "legacy patch should bridge stale GitLab Pages CSS assets");
 assert.equal(legacyAssets.includes("assets/control-surface-ui-B0ozY_LW.css"), true, "legacy patch should bridge stale framework stylesheet assets");
@@ -65,6 +71,7 @@ for (const hook of [
   "data-fastdas-command-card",
   "data-fastdas-release-rail",
   "data-fastdas-footer-status",
+  "data-fastdas-delivery-readiness",
 ]) {
   assert.equal(app.includes(hook), true, `app should expose ${hook}`);
 }
@@ -249,6 +256,8 @@ for (const phrase of [
   "Command export staged",
   "Operator mode changed",
   "Conversion Board",
+  "Deploy path ready",
+  "Cloudflare Pages direct upload",
 ]) {
   assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
 }

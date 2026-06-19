@@ -18,6 +18,8 @@ venv/
 # Build output
 dist/
 public/
+!public/
+!public/_headers
 
 # Generated verification artifacts
 test-results/
