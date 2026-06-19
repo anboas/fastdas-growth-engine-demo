@@ -338,9 +338,37 @@ try {
   assert.ok(evidenceDetailText.includes("Partner route"), "opened evidence detail row should match the clicked packet");
   assert.ok(evidenceDetailText.includes("Manual review"), "opened evidence detail should use evidence-specific source context");
 
+  await desktop.goto(`${BASE_URL}#/outreach-queue`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-outreach-focus-panel]", { timeout: 5000 });
+  const outreachWorkbenchColumns = await desktop.locator("[data-fastdas-outreach-queue-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(outreachWorkbenchColumns >= 2, "outreach queue should share the task table with a selected-outreach panel on desktop");
+  const outreachDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-outreach-queue-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(outreachDrawerOrder, true, "outreach queue should put outreach tasks before operational controls");
+  const outreachFocusPanel = desktop.locator("[data-fastdas-outreach-focus-panel]");
+  let outreachFocusText = await outreachFocusPanel.textContent();
+  assert.ok(outreachFocusText.includes("HarborPoint Garage"), "outreach queue should start with the selected outreach task");
+  await desktop.locator("[data-fastdas-outreach-queue-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-outreach-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
+  outreachFocusText = await outreachFocusPanel.textContent();
+  assert.ok(outreachFocusText.includes("Capital Ridge Senior Living"), "clicking an outreach row should move the outreach focus panel");
+  assert.ok(outreachFocusText.includes("Technical review"), "outreach focus panel should show the selected row's approval state");
+  await desktop.locator('[data-fastdas-action="focus-approve-outreach"]').click();
+  await assertAuditContains(desktop, "Outreach task approved", "outreach approval");
+  const closedOutreachDetails = await desktop.locator('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]').count();
+  assert.equal(closedOutreachDetails, 0, "outreach row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-outreach-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]', { timeout: 5000 });
+  const outreachDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Capital Ridge Senior Living"]').textContent();
+  assert.ok(outreachDetailText.includes("Capital Ridge Senior Living"), "opened outreach detail row should match the clicked task");
+  assert.ok(outreachDetailText.includes("Radio testing"), "opened outreach detail should use outreach-specific first-offer context");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
         const openSelector = surfaceId === "signal-intake"
@@ -349,7 +377,9 @@ try {
             ? '[data-fastdas-action="open-opportunity-details"]'
             : surfaceId === "evidence-review"
               ? '[data-fastdas-action="open-evidence-details"]'
-              : '[data-fastdas-action="open-record-details"]';
+              : surfaceId === "outreach-queue"
+                ? '[data-fastdas-action="open-outreach-details"]'
+                : '[data-fastdas-action="open-record-details"]';
         await desktop.locator(openSelector).click();
       }
     }

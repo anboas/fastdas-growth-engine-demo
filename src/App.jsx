@@ -73,7 +73,7 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
-const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue"];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -344,10 +344,48 @@ function evidenceDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function outreachDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  if (!row) return surface.expanded;
+
+  const [opportunityCell, channel, draftType, firstOffer, risk, state, due, owner] = row.cells;
+  const { primary: opportunityName, secondary: stakeholderPath } = splitCell(opportunityCell);
+  const isBlocked = ["technical review", "research needed"].includes(String(state).toLowerCase());
+
+  return {
+    title: opportunityName,
+    description: `${draftType} via ${channel} for ${stakeholderPath || "the selected stakeholder path"}. First offer: ${firstOffer}.`,
+    outreachTask: {
+      name: opportunityName,
+      stakeholderPath,
+      channel,
+      draftType,
+      firstOffer,
+      risk,
+      state,
+      due,
+      owner,
+      isBlocked,
+    },
+    evidence: [
+      [channel, `Risk / ${risk}`, `${draftType} queued for ${stakeholderPath || opportunityName}. Owner: ${owner}.`],
+      [firstOffer, "First offer", `Keep the ask bounded to ${firstOffer.toLowerCase()} and avoid unsupported technical claims.`],
+      [state, isBlocked ? "Needs review" : "Ready for approval", isBlocked ? `Resolve ${state.toLowerCase()} before any send action.` : `Due ${due}; ready for human approval before send.`],
+    ],
+    actions: [
+      isBlocked ? `Resolve ${state.toLowerCase()} before approving ${opportunityName}.` : `Approve ${draftType.toLowerCase()} for ${opportunityName}.`,
+      `Keep channel posture to ${channel}.`,
+      `Schedule next cadence check for ${due}.`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
 function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
   if (surface.id === "evidence-review") return evidenceDetailForSelection(surface, selectedRowId);
+  if (surface.id === "outreach-queue") return outreachDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
@@ -499,6 +537,79 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
             onClick={() => onRecordAction("approve-evidence", surface, detail)}
           >
             <Icon name="check" />Approve Evidence
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
+  if (surface.id === "outreach-queue") {
+    const task = detail.outreachTask;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--outreach"
+        data-fastdas-record-focus-panel
+        data-fastdas-outreach-focus-panel
+        data-fastdas-record-focus-id={task.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Outreach Focus</div>
+            <h3 className="if-record-detail__title">{task.name}</h3>
+            <p className="if-record-detail__text">{detail.description}</p>
+          </div>
+          <Chip tone={toneForValue(task.state)}>{task.state}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Channel</dt>
+            <dd className="if-provenance-field__value">{task.channel}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Draft</dt>
+            <dd className="if-provenance-field__value">{task.draftType}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>First Offer</dt>
+            <dd className="if-provenance-field__value">{task.firstOffer}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Risk</dt>
+            <dd className="if-provenance-field__value">{task.risk}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Due / Owner</dt>
+            <dd className="if-provenance-field__value">{task.due} / {task.owner}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="mail" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Human-gated outreach action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-outreach-details"
+            data-fastdas-open-details={task.name}
+            onClick={() => onOpenDetails(task.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Outreach Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-approve-outreach"
+            onClick={() => onRecordAction("approve-outreach", surface, detail)}
+          >
+            <Icon name="check" />Approve Outreach
           </button>
         </div>
       </aside>
@@ -778,6 +889,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       data-fastdas-signal-intake-grid={surface.id === "signal-intake" ? "true" : undefined}
       data-fastdas-opportunity-workbench-grid={surface.id === "opportunity-workbench" ? "true" : undefined}
       data-fastdas-evidence-review-grid={surface.id === "evidence-review" ? "true" : undefined}
+      data-fastdas-outreach-queue-grid={surface.id === "outreach-queue" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -825,6 +937,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           {surface.id === "signal-intake" ? <span className="if-badge fg-counter">Source health view</span> : null}
           {surface.id === "opportunity-workbench" ? <span className="if-badge fg-counter">Qualification view</span> : null}
           {surface.id === "evidence-review" ? <span className="if-badge fg-counter">Review view</span> : null}
+          {surface.id === "outreach-queue" ? <span className="if-badge fg-counter">Approval queue</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -862,6 +975,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-signal-intake-workbench={surface.id === "signal-intake" ? "true" : undefined}
         data-fastdas-opportunity-workbench-workbench={surface.id === "opportunity-workbench" ? "true" : undefined}
         data-fastdas-evidence-review-workbench={surface.id === "evidence-review" ? "true" : undefined}
+        data-fastdas-outreach-queue-workbench={surface.id === "outreach-queue" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1607,6 +1721,13 @@ export default function App() {
         body: `${recordTitle} is approved for the human review packet with outreach boundaries retained.`,
         tone: "success",
         workflowIndex: 3,
+      },
+      "approve-outreach": {
+        title: "Outreach task approved",
+        body: `${recordTitle} is approved for the human-gated send queue with cadence and risk notes retained.`,
+        tone: "success",
+        workflowIndex: 4,
+        updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
       },
     };
     recordOperation(labels[kind]);
