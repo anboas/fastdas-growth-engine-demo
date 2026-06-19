@@ -149,7 +149,7 @@ export function commandCenterRowsForFilter(surface, filterId) {
   if (surface.id !== "command-center") return surface.table.rows;
   const filter = commandCenterQuickFilter(filterId);
   const rowIdSet = new Set(filter.rowIds);
-  return surface.table.rows.filter(row => rowIdSet.has(row.id));
+  return surface.table.rows.filter(row => rowIdSet.has(row.id) || row.synthetic);
 }
 
 export function firstCommandCenterRowId(surface, filterId) {
@@ -201,8 +201,8 @@ export function toneForValue(value) {
   return "neutral";
 }
 
-function opportunityRecordForId(rowId) {
-  return opportunityRecords.find(record => record.name === rowId);
+function opportunityRecordForId(rowId, records = opportunityRecords) {
+  return records.find(record => record.name === rowId);
 }
 
 function tableRowForId(surface, selectedRowId) {
@@ -210,7 +210,7 @@ function tableRowForId(surface, selectedRowId) {
 }
 
 function recordDetailForSelection(surface, selectedRowId) {
-  const record = opportunityRecordForId(selectedRowId || surface.selected);
+  const record = opportunityRecordForId(selectedRowId || surface.selected, surface.records || opportunityRecords);
   if (!record) return surface.expanded;
 
   return {
@@ -414,7 +414,7 @@ function datasetDetailForSelection(surface, selectedRowId) {
 
 function conversionDetailForSelection(surface, selectedRowId) {
   const row = tableRowForId(surface, selectedRowId || surface.selected);
-  const record = opportunityRecordForId(selectedRowId || surface.selected);
+  const record = opportunityRecordForId(selectedRowId || surface.selected, surface.records || opportunityRecords);
   if (!row || !record) return surface.expanded;
 
   const [opportunityCell, signal, firstPaidStep, conversation, assessment, report, followOn, learning] = row.cells;

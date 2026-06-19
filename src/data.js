@@ -84,6 +84,8 @@ export const opportunityRecords = [
   },
 ];
 
+export const seedOpportunityRows = opportunityRecords;
+
 export const syntheticDataManagement = {
   controls: [
     ["Active seed", "FD-GE-DEMO-0619", "Locks every table, score, source note, and outreach state for repeatable walkthroughs."],

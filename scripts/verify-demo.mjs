@@ -305,6 +305,9 @@ for (const phrase of [
   "Synthetic Data Management",
   "Golden demo state",
   "Scenario Packs",
+  "Enter Synthetic Opportunity",
+  "Add to Pipeline",
+  "Pipeline stage advanced",
   "Generated demo variant",
   "Reset demo state",
   "Export bundle prepared",
@@ -322,6 +325,8 @@ for (const phrase of [
 for (const handler of [
   "handlePrimaryAction",
   "handleSyntheticAction",
+  "handleSyntheticSubmit",
+  "handlePipelineStep",
   "handleRecordAction",
   "appendEvent",
 ]) {
@@ -333,6 +338,8 @@ for (const actionHook of [
   'data-fastdas-action="page-primary"',
   'data-fastdas-action="approve-record"',
   'data-fastdas-action="generate-variant"',
+  'data-fastdas-action="add-synthetic-record"',
+  'data-fastdas-pipeline-step',
   'data-fastdas-action="export-bundle"',
   'data-fastdas-action="reset-demo"',
   'data-fastdas-action={`command-${command.id}`}',

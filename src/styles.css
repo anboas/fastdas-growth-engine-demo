@@ -2738,6 +2738,168 @@ button.fg-product-header__brand {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.fg-synthetic-console {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #bddfe5;
+  border-radius: 8px;
+  background: #f8fcfd;
+  box-shadow: var(--fg-shadow-soft);
+}
+
+.fg-synthetic-console__actions {
+  justify-content: flex-end;
+}
+
+.fg-synthetic-entry-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) repeat(2, minmax(160px, 0.8fr)) minmax(190px, 1fr) minmax(180px, 0.9fr) minmax(210px, 1fr) minmax(86px, 0.35fr) auto;
+  gap: 10px;
+  align-items: end;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d2e1ec;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.fg-synthetic-entry-form .if-field {
+  min-width: 0;
+  margin: 0;
+}
+
+.fg-synthetic-entry-form .if-field__label {
+  margin-bottom: 4px;
+  color: #64788d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fg-synthetic-entry-form .if-input {
+  width: 100%;
+  height: 34px;
+  min-width: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.fg-synthetic-entry-form .fg-btn {
+  min-height: 34px;
+  white-space: nowrap;
+}
+
+.fg-synthetic-runtime {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fg-synthetic-runtime__summary {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fg-synthetic-runtime__summary .if-route-status {
+  padding: 6px 9px;
+  border: 1px solid #d2e1ec;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.fg-synthetic-record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.fg-synthetic-record {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-color: #cfe0eb;
+  background: #ffffff;
+}
+
+.fg-synthetic-record__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fg-synthetic-record__header h3 {
+  margin: 0;
+  color: #15324e;
+  font-size: 14px;
+  font-weight: 930;
+}
+
+.fg-synthetic-record__meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fg-synthetic-record__meta .if-provenance-field {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #dbe5ef;
+  border-radius: 6px;
+  background: #f8fbfe;
+  color: #64788d;
+  font-size: 10px;
+}
+
+.fg-synthetic-record__meta .if-provenance-field__value {
+  display: block;
+  overflow: hidden;
+  color: #18334e;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-synthetic-pipeline-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.fg-synthetic-pipeline-actions .fg-btn {
+  min-width: 0;
+  justify-content: center;
+  padding-inline: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fg-synthetic-pipeline-actions .fg-btn.is-active,
+.fg-synthetic-pipeline-actions .fg-btn[aria-pressed="true"] {
+  border-color: #0a7d83;
+  background: #e9f7f8;
+  color: #075f65;
+}
+
+.fg-synthetic-empty {
+  padding: 18px;
+  border: 1px dashed #b8c9d9;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #62768b;
+  font-size: 12px;
+  font-weight: 760;
+  text-align: center;
+}
+
 .fg-bottom-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2865,12 +3027,18 @@ button.fg-product-header__brand {
   }
 
   .fg-management__control-grid,
-  .fg-scenario-grid {
+  .fg-scenario-grid,
+  .fg-synthetic-entry-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .fg-management-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fg-synthetic-entry-form .fg-btn {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
 
   .fg-record-focus__facts,
@@ -3092,6 +3260,14 @@ button.fg-product-header__brand {
     justify-content: flex-start;
   }
 
+  .fg-synthetic-record__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .fg-synthetic-pipeline-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .fg-record-focus {
     margin: 0 12px 12px;
   }
@@ -3171,6 +3347,8 @@ button.fg-product-header__brand {
   .fg-management-grid,
   .fg-scenario-grid,
   .fg-management-card__meta,
+  .fg-synthetic-entry-form,
+  .fg-synthetic-pipeline-actions,
   .fg-ops-stats,
   .fg-record-focus__facts,
   .fg-record-focus__actions,

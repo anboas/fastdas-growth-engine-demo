@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { sidebarKpis, surfaces, workflowStages } from "./data.js";
+import { seedOpportunityRows as seedRecords, sidebarKpis, surfaces, workflowStages } from "./data.js";
 import {
   COMMAND_CENTER_DEFAULT_FILTER_ID,
   COMMAND_CENTER_QUICK_FILTERS,
@@ -33,6 +33,232 @@ function toneClass(tone = "neutral") {
 
 function signalIdForLabel(label) {
   return String(label || "signal").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function clampScore(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 82;
+  return Math.min(99, Math.max(50, parsed));
+}
+
+function stateForWorkflowIndex(index) {
+  return PIPELINE_STATE_BY_INDEX[Math.min(PIPELINE_STATE_BY_INDEX.length - 1, Math.max(0, index))] || "Signal";
+}
+
+function confidenceForScore(score) {
+  return (Math.min(0.95, Math.max(0.58, score / 108))).toFixed(2);
+}
+
+function normalizeSyntheticRecord(draft, sequence) {
+  const fallbackName = `Synthetic Prospect ${sequence}`;
+  const name = (draft.name || fallbackName).trim();
+  const score = clampScore(draft.score);
+  const market = (draft.market || "VA / MD / DC").trim();
+  const buildingType = (draft.buildingType || "Commercial property").trim();
+  const signal = (draft.signal || "Synthetic growth signal").trim();
+  const firstOffer = (draft.firstOffer || "Coverage benchmark").trim();
+  const stakeholderPath = (draft.stakeholderPath || "Property manager -> owner rep").trim();
+
+  return {
+    name,
+    market,
+    buildingType,
+    signal,
+    score,
+    confidence: confidenceForScore(score),
+    firstOffer,
+    state: "Signal",
+    stakeholderPath,
+    nextAction: "Run enrichment",
+    why: `${signal} creates a demo-safe reason to offer a bounded ${firstOffer.toLowerCase()} before any larger project ask.`,
+    conversion: `${firstOffer} -> findings -> roadmap -> follow-on work`,
+    syntheticUserRecord: true,
+  };
+}
+
+function generatedSyntheticRecord(sequence, scenarioMode) {
+  const scenarios = {
+    "Closeout Sprint": ["Synthetic Closeout Tower", "Arlington, VA", "High-rise / closeout", "Permit closeout + fire alarm activity", "Public safety radio test", "GC PM -> fire alarm partner -> owner rep", 91],
+    "Property Portfolio": ["Synthetic Portfolio Asset", "Rockville, MD", "Portfolio mixed-use", "Ownership change + multi-site map", "Portfolio risk screen", "Asset manager -> property manager", 84],
+    "Hospitality Coverage": ["Synthetic Hotel Coverage Lead", "Washington, DC", "Hotel / hospitality", "Guest coverage complaints", "Coverage benchmark", "General manager -> ownership group", 83],
+    "Maintenance Wedge": ["Synthetic Health Check Lead", "Alexandria, VA", "Commercial facility", "Existing system age + facilities signal", "System health check", "Facilities director -> property manager", 86],
+  };
+  const [name, market, buildingType, signal, firstOffer, stakeholderPath, score] = scenarios[scenarioMode] || scenarios["Closeout Sprint"];
+  return normalizeSyntheticRecord({
+    name: `${name} ${sequence}`,
+    market,
+    buildingType,
+    signal,
+    firstOffer,
+    stakeholderPath,
+    score: String(score),
+  }, sequence);
+}
+
+function applyPipelineState(record, overrides) {
+  const workflowIndex = overrides[record.name]?.workflowIndex;
+  if (!Number.isFinite(workflowIndex)) return record;
+  const state = stateForWorkflowIndex(workflowIndex);
+  const nextAction = {
+    Signal: "Run enrichment",
+    Enriching: "Score and qualify",
+    Qualified: "Promote to human review",
+    "Human Review": "Approve outreach",
+    "Outreach Ready": "Send approved first touch",
+    "Discovery Call": "Prepare assessment offer",
+    "Paid Assessment": "Deliver diagnostic report",
+    Report: "Frame follow-on roadmap",
+    "Follow-On Opportunity": "Close follow-on scope",
+    "Closed Won": "Log outcome",
+  }[state] || record.nextAction;
+  return { ...record, state, nextAction };
+}
+
+function rowsFromRecords(records, mode) {
+  return records.map((record, index) => {
+    if (mode === "workbench") {
+      return {
+        id: record.name,
+        synthetic: Boolean(record.syntheticUserRecord),
+        cells: [`${record.name}|${record.market}`, record.buildingType, record.signal, String(record.score), record.confidence, record.firstOffer, record.state, record.syntheticUserRecord ? "Demo operator" : "Adam / Research"],
+      };
+    }
+    if (mode === "conversion") {
+      return {
+        id: record.name,
+        synthetic: Boolean(record.syntheticUserRecord),
+        cells: [`${record.name}|${record.market}`, record.signal, record.firstOffer, record.state, record.score >= 85 ? "Candidate" : "Nurture", "-", record.conversion.split(" -> ").slice(-1)[0], record.why],
+      };
+    }
+    return {
+      id: record.name,
+      synthetic: Boolean(record.syntheticUserRecord),
+      cells: [
+        String(index + 1).padStart(2, "0"),
+        `${record.name}|${record.market} / ${record.buildingType}`,
+        record.signal,
+        String(record.score),
+        record.firstOffer,
+        record.stakeholderPath,
+        record.state,
+        record.nextAction,
+      ],
+    };
+  });
+}
+
+function buildRuntimeSurfaces(syntheticRecords, pipelineOverrides) {
+  const runtimeRecords = [...seedRecords, ...syntheticRecords]
+    .map(record => applyPipelineState(record, pipelineOverrides))
+    .sort((a, b) => b.score - a.score);
+  const syntheticRecordCount = syntheticRecords.length;
+  const runtimeSyntheticRecords = runtimeRecords.filter(record => record.syntheticUserRecord);
+  const outreachRows = runtimeSyntheticRecords
+    .filter(record => ["Human Review", "Outreach Ready", "Follow-Up Due", "Discovery Call", "Signal", "Enriching", "Qualified"].includes(record.state))
+    .map(record => ({
+      id: record.name,
+      synthetic: Boolean(record.syntheticUserRecord),
+      cells: [
+        `${record.name}|${record.stakeholderPath}`,
+        "Email + LinkedIn",
+        record.state === "Outreach Ready" ? "Approved first touch" : "First touch",
+        record.firstOffer,
+        record.score >= 85 ? "Low" : "Medium",
+        record.state === "Outreach Ready" ? "Approved" : "Approval",
+        "Today",
+        record.syntheticUserRecord ? "Demo operator" : "Adam",
+      ],
+    }));
+  const evidenceRows = runtimeSyntheticRecords
+    .filter(record => record.score >= 80 || record.syntheticUserRecord)
+    .map(record => ({
+      id: record.name,
+      synthetic: Boolean(record.syntheticUserRecord),
+      cells: [
+        `${record.name}|${record.signal}`,
+        record.syntheticUserRecord ? "Synthetic input" : "System source",
+        String(record.score),
+        "Current",
+        record.state === "Outreach Ready" ? "Approved" : "Internal only",
+        record.why,
+      ],
+    }));
+
+  return surfaces.map(surface => {
+    if (surface.id === "command-center") {
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${runtimeRecords.length} records`,
+          rows: rowsFromRecords(runtimeRecords, "command"),
+        },
+      };
+    }
+    if (surface.id === "opportunity-workbench") {
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${runtimeRecords.length} opportunities`,
+          rows: rowsFromRecords(runtimeRecords, "workbench"),
+        },
+      };
+    }
+    if (surface.id === "evidence-review") {
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${surface.table.rows.length + evidenceRows.length} evidence packets`,
+          rows: [...surface.table.rows, ...evidenceRows],
+        },
+      };
+    }
+    if (surface.id === "outreach-queue") {
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${surface.table.rows.length + outreachRows.length} outreach tasks`,
+          rows: [...surface.table.rows, ...outreachRows],
+        },
+      };
+    }
+    if (surface.id === "conversion-board") {
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${runtimeRecords.length} conversion records`,
+          rows: rowsFromRecords(runtimeRecords, "conversion"),
+        },
+      };
+    }
+    if (surface.id === "synthetic-data") {
+      const rows = syntheticRecordCount
+        ? [
+            [`Entered Opportunity Records|Manual and generated runtime records`, String(syntheticRecordCount), "Demo operator", "Browser-local", "Synthetic / user-entered", "Pass", "All pipeline surfaces"],
+            ...surface.table.rows.map(row => row.cells),
+          ].map((cells, index) => ({ id: cells[0].split("|")[0] || `synthetic-${index}`, cells, synthetic: index === 0 }))
+        : surface.table.rows;
+      return {
+        ...surface,
+        records: runtimeRecords,
+        table: {
+          ...surface.table,
+          count: `${rows.length} managed datasets`,
+          rows,
+        },
+      };
+    }
+    return { ...surface, records: runtimeRecords };
+  });
 }
 
 function useMobileWorkbenchLayout() {
@@ -99,6 +325,29 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
+
+const EMPTY_SYNTHETIC_DRAFT = {
+  name: "",
+  market: "Baltimore, MD",
+  buildingType: "Mixed-use commercial",
+  signal: "Coverage complaint + ownership change",
+  firstOffer: "Coverage benchmark",
+  stakeholderPath: "Property manager -> owner rep",
+  score: "86",
+};
+
+const PIPELINE_STATE_BY_INDEX = [
+  "Signal",
+  "Enriching",
+  "Qualified",
+  "Human Review",
+  "Outreach Ready",
+  "Discovery Call",
+  "Paid Assessment",
+  "Report",
+  "Follow-On Opportunity",
+  "Closed Won",
+];
 
 const PRIMARY_ROUTE_IDS = ["command-center", "signal-intake", "opportunity-workbench"];
 const EXECUTION_ROUTE_IDS = ["evidence-review", "outreach-queue", "agent-operations"];
@@ -1607,6 +1856,121 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
   );
 }
 
+function SyntheticPipelineConsole({
+  visible,
+  draft,
+  syntheticRecords,
+  pipelineOverrides,
+  onDraftChange,
+  onSubmit,
+  onGenerateRecord,
+  onPipelineStep,
+}) {
+  if (!visible) return null;
+
+  return (
+    <section className="if-panel if-operations-section fg-synthetic-console" data-fastdas-synthetic-console>
+      <div className="if-panel__header fg-panel__header">
+        <div>
+          <div className="fg-eyebrow">Runtime Demo Input</div>
+          <h2 className="if-panel__title">Enter Synthetic Opportunity</h2>
+          <p className="if-panel__subtitle">Create browser-local, customer-safe records and push them through the same pipeline surfaces as the seeded demo data.</p>
+        </div>
+        <div className="if-toolbar__group fg-synthetic-console__actions">
+          <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="generate-scenario-record" onClick={onGenerateRecord}>
+            <Icon name="plus" />Generate Scenario Record
+          </button>
+        </div>
+      </div>
+
+      <form className="fg-synthetic-entry-form" data-fastdas-synthetic-entry-form onSubmit={onSubmit}>
+        <label className="if-field">
+          <span className="if-field__label">Opportunity</span>
+          <input className="if-input" data-fastdas-synthetic-input="name" value={draft.name} onChange={event => onDraftChange("name", event.target.value)} placeholder="Example: Metro Center Garage" required />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">Market</span>
+          <input className="if-input" data-fastdas-synthetic-input="market" value={draft.market} onChange={event => onDraftChange("market", event.target.value)} />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">Building Type</span>
+          <input className="if-input" data-fastdas-synthetic-input="buildingType" value={draft.buildingType} onChange={event => onDraftChange("buildingType", event.target.value)} />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">Signal</span>
+          <input className="if-input" data-fastdas-synthetic-input="signal" value={draft.signal} onChange={event => onDraftChange("signal", event.target.value)} />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">First Paid Step</span>
+          <input className="if-input" data-fastdas-synthetic-input="firstOffer" value={draft.firstOffer} onChange={event => onDraftChange("firstOffer", event.target.value)} />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">Stakeholder Path</span>
+          <input className="if-input" data-fastdas-synthetic-input="stakeholderPath" value={draft.stakeholderPath} onChange={event => onDraftChange("stakeholderPath", event.target.value)} />
+        </label>
+        <label className="if-field">
+          <span className="if-field__label">Score</span>
+          <input className="if-input" data-fastdas-synthetic-input="score" type="number" min="50" max="99" value={draft.score} onChange={event => onDraftChange("score", event.target.value)} />
+        </label>
+        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="submit" data-fastdas-action="add-synthetic-record">
+          <Icon name="check" />Add to Pipeline
+        </button>
+      </form>
+
+      <div className="fg-synthetic-runtime" data-fastdas-synthetic-runtime>
+        <div className="fg-synthetic-runtime__summary">
+          <span className="if-route-status"><strong>Runtime records</strong><span data-fastdas-synthetic-record-count>{syntheticRecords.length}</span></span>
+          <span className="if-route-status"><strong>Storage</strong><span>Browser-local</span></span>
+          <span className="if-route-status"><strong>Safety</strong><span>Synthetic only</span></span>
+        </div>
+        {syntheticRecords.length ? (
+          <div className="fg-synthetic-record-list">
+            {syntheticRecords.map(record => {
+              const workflowIndex = pipelineOverrides[record.name]?.workflowIndex ?? 0;
+              const stage = workflowStages[workflowIndex] || workflowStages[0];
+              return (
+                <article className="if-pattern-card if-operations-section fg-synthetic-record" data-fastdas-synthetic-runtime-record={record.name} key={record.name}>
+                  <div className="if-pattern-card__header fg-synthetic-record__header">
+                    <div>
+                      <h3 className="if-card__title">{record.name}</h3>
+                      <p className="if-panel__subtitle">{record.market} / {record.buildingType}</p>
+                    </div>
+                    <Chip tone={workflowIndex >= 4 ? "success" : workflowIndex >= 3 ? "warning" : "blue"}>{stage}</Chip>
+                  </div>
+                  <div className="if-provenance-grid fg-synthetic-record__meta">
+                    <span className="if-provenance-field"><strong className="if-provenance-field__value">{record.score}</strong> Score</span>
+                    <span className="if-provenance-field"><strong className="if-provenance-field__value">{record.firstOffer}</strong> First paid step</span>
+                    <span className="if-provenance-field"><strong className="if-provenance-field__value">{record.signal}</strong> Signal</span>
+                  </div>
+                  <div className="fg-synthetic-pipeline-actions" role="toolbar" aria-label={`${record.name} pipeline controls`}>
+                    {workflowStages.map((stageLabel, index) => (
+                      <button
+                        className={`if-btn if-btn--secondary if-btn--sm fg-btn ${index === workflowIndex ? "is-active" : ""}`}
+                        type="button"
+                        data-fastdas-pipeline-step={stageLabel}
+                        data-fastdas-pipeline-record={record.name}
+                        aria-pressed={index === workflowIndex}
+                        key={stageLabel}
+                        onClick={() => onPipelineStep(record.name, index)}
+                      >
+                        {stageLabel}
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="if-empty-state fg-synthetic-empty" data-fastdas-synthetic-empty>
+            Add or generate a synthetic record to exercise the pipeline.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function OperationsSignalPanels({ metrics = [] }) {
   if (!metrics.length) return null;
   return (
@@ -2255,6 +2619,9 @@ export default function App() {
   const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
   const [activeSavedViewId, setActiveSavedViewId] = useState("");
   const [activeCommandFilterId, setActiveCommandFilterId] = useState(COMMAND_CENTER_DEFAULT_FILTER_ID);
+  const [syntheticRecords, setSyntheticRecords] = useState([]);
+  const [pipelineOverrides, setPipelineOverrides] = useState({});
+  const [syntheticDraft, setSyntheticDraft] = useState(EMPTY_SYNTHETIC_DRAFT);
 
   useEffect(() => {
     const onHashChange = () => setActiveSurfaceId(getInitialSurfaceId());
@@ -2262,9 +2629,14 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  const runtimeSurfaces = useMemo(
+    () => buildRuntimeSurfaces(syntheticRecords, pipelineOverrides),
+    [syntheticRecords, pipelineOverrides],
+  );
+
   const surface = useMemo(
-    () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
-    [activeSurfaceId],
+    () => runtimeSurfaces.find(item => item.id === activeSurfaceId) || runtimeSurfaces[0],
+    [activeSurfaceId, runtimeSurfaces],
   );
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
   const activeMetricSignalId = surface.id === "command-center" ? activeCommandFilterId : signalIdForLabel(surface.metrics[0]?.[0]);
@@ -2285,7 +2657,7 @@ export default function App() {
 
   const applyCommandCenterFilter = useCallback((filterId, shouldRecord = true) => {
     const filter = commandCenterQuickFilter(filterId);
-    const commandSurface = surfaces.find(item => item.id === "command-center") || surfaces[0];
+    const commandSurface = runtimeSurfaces.find(item => item.id === "command-center") || runtimeSurfaces[0];
     const nextRowId = firstCommandCenterRowId(commandSurface, filter.id);
 
     setActiveCommandFilterId(filter.id);
@@ -2300,7 +2672,7 @@ export default function App() {
         tone: "blue",
       });
     }
-  }, [recordOperation]);
+  }, [recordOperation, runtimeSurfaces]);
 
   const handleModeChange = useCallback((mode) => {
     setOperationState(current => appendEvent(current, {
@@ -2311,8 +2683,84 @@ export default function App() {
     }));
   }, []);
 
+  const routeForPipelineIndex = useCallback((workflowIndex) => {
+    if (workflowIndex <= 1) return "signal-intake";
+    if (workflowIndex === 2) return "opportunity-workbench";
+    if (workflowIndex === 3) return "evidence-review";
+    if (workflowIndex <= 5) return "outreach-queue";
+    if (workflowIndex >= 6) return "conversion-board";
+    return "command-center";
+  }, []);
+
+  const focusRecordAcrossPipeline = useCallback((recordName, workflowIndex = operationState.workflowIndex) => {
+    setSelectedRows(current => ({
+      ...current,
+      "command-center": recordName,
+      "opportunity-workbench": recordName,
+      "evidence-review": recordName,
+      "outreach-queue": recordName,
+      "conversion-board": recordName,
+    }));
+    setDetailOpenRows(current => ({
+      ...current,
+      "command-center": "",
+      "opportunity-workbench": "",
+      "evidence-review": "",
+      "outreach-queue": "",
+      "conversion-board": "",
+    }));
+    setPipelineOverrides(current => ({ ...current, [recordName]: { workflowIndex } }));
+  }, [operationState.workflowIndex]);
+
+  const handlePipelineStep = useCallback((recordName, workflowIndex) => {
+    const stage = workflowStages[workflowIndex] || workflowStages[0];
+    focusRecordAcrossPipeline(recordName, workflowIndex);
+    recordOperation({
+      title: "Pipeline stage advanced",
+      body: `${recordName} moved to ${stage} and is now available in the matching work surface.`,
+      tone: workflowIndex >= 4 ? "success" : workflowIndex >= 3 ? "warning" : "blue",
+      workflowIndex,
+    });
+    setSurface(routeForPipelineIndex(workflowIndex));
+  }, [focusRecordAcrossPipeline, recordOperation, routeForPipelineIndex, setSurface]);
+
+  const addSyntheticRecord = useCallback((record, title = "Synthetic record entered", { routeToCommand = false } = {}) => {
+    const names = new Set([...seedRecords, ...syntheticRecords].map(item => item.name));
+    const safeRecord = names.has(record.name)
+      ? { ...record, name: `${record.name} ${syntheticRecords.length + 1}` }
+      : record;
+    setSyntheticRecords(current => [...current, safeRecord]);
+    focusRecordAcrossPipeline(safeRecord.name, 0);
+    setActiveCommandFilterId(COMMAND_CENTER_DEFAULT_FILTER_ID);
+    recordOperation({
+      title,
+      body: `${safeRecord.name} was added to the browser-local synthetic opportunity pipeline.`,
+      tone: "success",
+      workflowIndex: 0,
+      updates: state => ({ generatedRecords: state.generatedRecords + 1 }),
+    });
+    if (routeToCommand) setSurface("command-center");
+    return safeRecord;
+  }, [focusRecordAcrossPipeline, recordOperation, setSurface, syntheticRecords]);
+
+  const handleSyntheticDraftChange = useCallback((field, value) => {
+    setSyntheticDraft(current => ({ ...current, [field]: value }));
+  }, []);
+
+  const handleSyntheticSubmit = useCallback((event) => {
+    event.preventDefault();
+    const record = normalizeSyntheticRecord(syntheticDraft, syntheticRecords.length + 1);
+    addSyntheticRecord(record, "Synthetic record entered", { routeToCommand: true });
+    setSyntheticDraft(EMPTY_SYNTHETIC_DRAFT);
+  }, [addSyntheticRecord, syntheticDraft, syntheticRecords.length]);
+
+  const handleGenerateSyntheticRecord = useCallback(() => {
+    const record = generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode);
+    addSyntheticRecord(record, "Scenario record generated");
+  }, [addSyntheticRecord, operationState.scenarioMode, syntheticRecords.length]);
+
   const handleSavedView = useCallback((view) => {
-    const targetSurface = surfaces.find(item => item.id === view.surfaceId);
+    const targetSurface = runtimeSurfaces.find(item => item.id === view.surfaceId);
     setSurface(view.surfaceId);
     setActiveSavedViewId(view.id);
     setSelectedRows(current => ({ ...current, [view.surfaceId]: view.rowId }));
@@ -2323,7 +2771,7 @@ export default function App() {
       tone: view.tone,
       workflowIndex: view.workflowIndex,
     });
-  }, [recordOperation, setSurface]);
+  }, [recordOperation, runtimeSurfaces, setSurface]);
 
   const handleCommandAction = useCallback((commandId) => {
     const commandEvents = {
@@ -2372,9 +2820,10 @@ export default function App() {
 
     const action = PRIMARY_ACTIONS[surfaceId] || PRIMARY_ACTIONS["command-center"];
     if (surfaceId === "synthetic-data") {
+      const nextVariant = operationState.variantCount + 1;
+      const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
+      addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated");
       setOperationState(current => {
-        const nextVariant = current.variantCount + 1;
-        const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
         return appendEvent(current, {
           ...action,
           body: `${scenarioMode} variant created with source-safe records and complete workflow provenance.`,
@@ -2391,7 +2840,7 @@ export default function App() {
     }
     recordOperation(action);
     if (action.surfaceId) setSurface(action.surfaceId);
-  }, [recordOperation, setSurface]);
+  }, [addSyntheticRecord, operationState.variantCount, recordOperation, setSurface, syntheticRecords.length]);
 
   const handleRecordAction = useCallback((kind, activeSurface, recordDetail) => {
     const recordTitle = recordDetail?.title || activeSurface.expanded.title;
@@ -2464,11 +2913,19 @@ export default function App() {
         workflowIndex: 8,
       },
     };
-    recordOperation(labels[kind]);
-  }, [operationState.workflowIndex, recordOperation]);
+    const event = labels[kind];
+    const isRuntimeRecord = runtimeSurfaces.some(item => item.records?.some(record => record.name === recordTitle));
+    if (event && isRuntimeRecord && Number.isFinite(event.workflowIndex)) {
+      setPipelineOverrides(current => ({ ...current, [recordTitle]: { workflowIndex: event.workflowIndex } }));
+    }
+    recordOperation(event);
+  }, [operationState.workflowIndex, recordOperation, runtimeSurfaces]);
 
   const handleSyntheticAction = useCallback((kind) => {
     if (kind === "reset") {
+      setSyntheticRecords([]);
+      setPipelineOverrides({});
+      setSyntheticDraft(EMPTY_SYNTHETIC_DRAFT);
       setSelectedRows(Object.fromEntries(surfaces.map(item => [item.id, item.selected])));
       setDetailOpenRows(defaultDetailOpenRows());
       setOperationState({
@@ -2496,10 +2953,11 @@ export default function App() {
       return;
     }
 
-    setOperationState(current => {
-      const nextVariant = current.variantCount + 1;
-      const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
-      return appendEvent(current, {
+    const nextVariant = operationState.variantCount + 1;
+    const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
+    addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated");
+    setOperationState(current => (
+      appendEvent(current, {
         title: "Generated demo variant",
         body: `${scenarioMode} variant created with source-safe records and complete workflow provenance.`,
         tone: "purple",
@@ -2511,9 +2969,9 @@ export default function App() {
           scenarioMode,
           generatedRecords: current.generatedRecords + 24,
         },
-      });
-    });
-  }, [recordOperation]);
+      })
+    ));
+  }, [addSyntheticRecord, operationState.variantCount, recordOperation, syntheticRecords.length]);
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
@@ -2705,6 +3163,17 @@ export default function App() {
           <SourceCards cards={surface.sourceCards} />
 
           <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
+
+          <SyntheticPipelineConsole
+            visible={surface.id === "synthetic-data"}
+            draft={syntheticDraft}
+            syntheticRecords={syntheticRecords}
+            pipelineOverrides={pipelineOverrides}
+            onDraftChange={handleSyntheticDraftChange}
+            onSubmit={handleSyntheticSubmit}
+            onGenerateRecord={handleGenerateSyntheticRecord}
+            onPipelineStep={handlePipelineStep}
+          />
 
           <BottomPanels surface={surface} />
 
