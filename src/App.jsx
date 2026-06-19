@@ -586,7 +586,7 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
 
       <div className="if-pattern-grid if-pattern-grid--ops fg-management-grid">
         {management.areas.map(area => (
-          <article className="if-pattern-card if-operations-section fg-management-card" key={area.title}>
+          <article className="if-pattern-card if-operations-section fg-management-card" data-fastdas-management-area key={area.title}>
             <div className="if-pattern-card__header fg-management-card__top">
               <div>
                 <h3 className="if-card__title">{area.title}</h3>
@@ -615,10 +615,24 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
         </div>
         <div className="if-pattern-grid fg-scenario-grid">
           {management.scenarioPacks.map(([title, body, count]) => (
-            <article className="if-pattern-card fg-scenario-card" key={title}>
-              <strong className="if-card__title">{title}</strong>
-              <p>{body}</p>
-              <Chip tone={toneForValue(count)}>{count}</Chip>
+            <article className="if-pattern-card if-operations-section fg-scenario-card" data-fastdas-scenario-pack key={title}>
+              <div className="if-pattern-card__header fg-scenario-card__header">
+                <Icon name="layers" />
+                <div>
+                  <h3 className="if-card__title">{title}</h3>
+                  <p className="if-panel__subtitle">{body}</p>
+                </div>
+              </div>
+              <div className="if-rule-builder-mini">
+                <div className="if-rule-line">
+                  <span>Scenario range</span>
+                  <Chip tone={toneForValue(count)}>{count}</Chip>
+                </div>
+                <div className="if-rule-line">
+                  <span>Synthetic guardrail</span>
+                  <strong>Customer safe</strong>
+                </div>
+              </div>
             </article>
           ))}
         </div>

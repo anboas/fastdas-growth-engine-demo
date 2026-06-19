@@ -216,12 +216,14 @@ try {
   const resetSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
   assert.ok(resetSeedText.includes("FD-GE-DEMO-0619"), "reset should restore the golden seed");
   assert.ok(!resetSeedText.includes("FD-GE-DEMO-0619-V01"), "reset should remove the generated variant seed from the control cards");
-  const managementCards = await desktop.locator(".fg-management-card").count();
+  const managementCards = await desktop.locator("[data-fastdas-management-area].if-pattern-card.if-operations-section").count();
   assert.equal(managementCards, 6, "synthetic data surface should render six management areas");
   const provenanceFields = await desktop.locator("[data-fastdas-data-management] .if-provenance-grid .if-provenance-field").count();
   assert.ok(provenanceFields >= 12, "synthetic data management cards should use framework provenance fields");
-  const scenarioPacks = await desktop.locator("[data-fastdas-scenario-packs] .fg-scenario-card").count();
+  const scenarioPacks = await desktop.locator("[data-fastdas-scenario-pack].if-pattern-card.if-operations-section").count();
   assert.equal(scenarioPacks, 4, "synthetic data surface should render four scenario packs");
+  const scenarioRuleLines = await desktop.locator("[data-fastdas-scenario-pack] .if-rule-builder-mini .if-rule-line").count();
+  assert.equal(scenarioRuleLines, 8, "scenario packs should use framework mini rule lines");
   await assertNoPageOverflow(desktop, "desktop synthetic data");
 
   await desktop.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
@@ -263,7 +265,7 @@ try {
   await mobile.locator('[data-fastdas-action="generate-variant"]').click();
   await assertAuditContains(mobile, "Generated demo variant", "mobile variant generation");
   await assertNoPageOverflow(mobile, "mobile synthetic data");
-  const mobileManagementCards = await mobile.locator(".fg-management-card").count();
+  const mobileManagementCards = await mobile.locator("[data-fastdas-management-area].if-pattern-card.if-operations-section").count();
   assert.equal(mobileManagementCards, 6, "mobile synthetic data surface should keep six management areas");
   await mobile.screenshot({ path: `${OUT_DIR}/fastdas-mobile.png`, fullPage: true });
 

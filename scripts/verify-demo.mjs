@@ -46,6 +46,8 @@ for (const hook of [
   "data-fastdas-human-approval-boundary",
   "data-fastdas-data-management",
   "data-fastdas-scenario-packs",
+  "data-fastdas-management-area",
+  "data-fastdas-scenario-pack",
   "data-fastdas-operational-workflow",
   "data-fastdas-workflow-stage",
   "data-fastdas-audit-log",

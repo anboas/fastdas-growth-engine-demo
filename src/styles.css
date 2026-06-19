@@ -1602,10 +1602,28 @@ button {
   padding: 10px;
 }
 
+.fg-scenario-card__header {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fg-scenario-card__header .if-icon-slot {
+  width: 28px;
+  height: 28px;
+  color: var(--fg-teal-700);
+  background: #e9f7f8;
+  border-color: #b9dfe3;
+}
+
 .fg-scenario-card strong {
   color: #18334e;
   font-size: 13px;
   font-weight: 920;
+}
+
+.fg-scenario-card .if-rule-builder-mini {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .fg-bottom-grid {
