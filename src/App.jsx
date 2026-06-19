@@ -499,9 +499,9 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
         </div>
       </div>
 
-      <div className="fg-management__control-grid">
+      <div className="if-ops-command-strip fg-management__control-grid">
         {management.controls.map(([label, value, body]) => (
-          <article className="if-card fg-management-control-card" key={label}>
+          <article className="if-ops-kpi fg-management-control-card" key={label}>
             <span>{label}</span>
             <strong>{valueOverrides[label] || value}</strong>
             <p>{body}</p>
@@ -509,10 +509,10 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
         ))}
       </div>
 
-      <div className="fg-management-grid">
+      <div className="if-pattern-grid if-pattern-grid--ops fg-management-grid">
         {management.areas.map(area => (
-          <article className="if-card if-operations-section fg-management-card" key={area.title}>
-            <div className="fg-management-card__top">
+          <article className="if-pattern-card if-operations-section fg-management-card" key={area.title}>
+            <div className="if-pattern-card__header fg-management-card__top">
               <div>
                 <h3 className="if-card__title">{area.title}</h3>
                 <p className="if-panel__subtitle">{area.body}</p>
@@ -523,7 +523,7 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
               <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.count}</strong> Records / gates</span>
               <span className="if-provenance-field"><strong className="if-provenance-field__value">{area.owner}</strong> Owner</span>
             </div>
-            <ul>
+            <ul className="if-check-list">
               {area.checks.map(check => <li key={check}>{check}</li>)}
             </ul>
           </article>
@@ -538,9 +538,9 @@ function DataManagement({ management, operationState, onSyntheticAction }) {
           </div>
           <Chip tone="blue">4 packs ready</Chip>
         </div>
-        <div className="fg-scenario-grid">
+        <div className="if-pattern-grid fg-scenario-grid">
           {management.scenarioPacks.map(([title, body, count]) => (
-            <article className="if-card fg-scenario-card" key={title}>
+            <article className="if-pattern-card fg-scenario-card" key={title}>
               <strong className="if-card__title">{title}</strong>
               <p>{body}</p>
               <Chip tone={toneForValue(count)}>{count}</Chip>
@@ -589,49 +589,59 @@ function OperationsSignalPanels({ metrics = [] }) {
 
 function WorkflowStrip({ activeIndex }) {
   return (
-    <section className="fg-workflow" aria-label="FastDAS lifecycle">
+    <ol className="if-stepper if-stepper--semantic if-stepper--boxed if-stepper--compact fg-workflow" aria-label="FastDAS lifecycle" style={{ "--step-count": workflowStages.length }}>
       {workflowStages.map((stage, index) => (
-        <span key={stage} className={index < activeIndex ? "is-complete" : index === activeIndex ? "is-active" : ""}>
-          {stage}
-        </span>
+        <li
+          key={stage}
+          className={`if-stepper__step ${index < activeIndex ? "is-complete" : index === activeIndex ? "is-active" : ""}`}
+          data-if-wizard-state={index < activeIndex ? "complete" : index === activeIndex ? "active" : "pending"}
+        >
+          <span className="if-stepper__item">
+            <span className="if-stepper__dot">{index < activeIndex ? "✓" : index + 1}</span>
+            <span className="if-stepper__label">{stage}</span>
+          </span>
+        </li>
       ))}
-    </section>
+    </ol>
   );
 }
 
 function OperationalWorkflow({ state }) {
   const currentStage = workflowStages[state.workflowIndex] || workflowStages[0];
   return (
-    <section className="if-panel if-operations-panel fg-ops-panel" data-fastdas-operational-workflow>
-      <div className="fg-ops-panel__main">
-        <div className="fg-ops-panel__summary">
+    <section className="if-panel if-operations-panel if-agent-runtime fg-ops-panel" data-fastdas-operational-workflow>
+      <div className="fg-ops-panel__main if-agent-runtime__summary">
+        <div className="fg-ops-panel__summary if-agent-runtime__notice">
           <div className="fg-eyebrow">Operational Runtime</div>
           <h2 className="if-panel__title" data-fastdas-workflow-stage>{currentStage}</h2>
           <p>{state.lastAction}</p>
           {state.toast ? (
-            <div className={`if-alert fg-toast ${toneClass(state.toast.tone)}`} data-fastdas-toast>
-              <strong>{state.toast.title}</strong>
-              <span>{state.toast.body}</span>
+            <div className={`if-toast if-alert fg-toast ${toneClass(state.toast.tone)}`} data-fastdas-toast>
+              <Icon name={state.toast.tone === "warning" ? "warning" : state.toast.tone === "danger" ? "alert" : "check"} />
+              <div>
+                <strong>{state.toast.title}</strong>
+                <span>{state.toast.body}</span>
+              </div>
             </div>
           ) : null}
         </div>
-        <div className="fg-ops-stats" aria-label="Operational counters">
-          <div><span>Active seed</span><strong>{state.activeSeed}</strong></div>
-          <div><span>Scenario</span><strong>{state.scenarioMode}</strong></div>
-          <div><span>Mode</span><strong>{state.operatorMode}</strong></div>
-          <div><span>Signal runs</span><strong>{state.signalRuns}</strong></div>
-          <div><span>Records</span><strong>{state.generatedRecords}</strong></div>
-          <div><span>Approvals due</span><strong>{state.approvalCount}</strong></div>
-          <div><span>Variants</span><strong>{state.variantCount}</strong></div>
-          <div><span>Exports</span><strong>{state.exportCount}</strong></div>
+        <div className="if-agent-runtime__grid fg-ops-stats" aria-label="Operational counters">
+          <div className="if-agent-runtime-kpi if-agent-runtime-kpi--running"><span>Active seed</span><strong>{state.activeSeed}</strong></div>
+          <div className="if-agent-runtime-kpi if-agent-runtime-kpi--queued"><span>Scenario</span><strong>{state.scenarioMode}</strong></div>
+          <div className="if-agent-runtime-kpi"><span>Mode</span><strong>{state.operatorMode}</strong></div>
+          <div className="if-agent-runtime-kpi if-agent-runtime-kpi--running"><span>Signal runs</span><strong>{state.signalRuns}</strong></div>
+          <div className="if-agent-runtime-kpi"><span>Records</span><strong>{state.generatedRecords}</strong></div>
+          <div className="if-agent-runtime-kpi if-agent-runtime-kpi--warning"><span>Approvals due</span><strong>{state.approvalCount}</strong></div>
+          <div className="if-agent-runtime-kpi"><span>Variants</span><strong>{state.variantCount}</strong></div>
+          <div className="if-agent-runtime-kpi"><span>Exports</span><strong>{state.exportCount}</strong></div>
         </div>
       </div>
-      <div className="fg-audit" data-fastdas-audit-log>
-        <div className="fg-audit__header">
+      <div className="if-agent-runtime__log fg-audit" data-fastdas-audit-log>
+        <div className="if-agent-runtime__log-header fg-audit__header">
           <strong>Audit Trail</strong>
           <Chip tone="blue">{state.events.length} events</Chip>
         </div>
-        <ol>
+        <ol className="if-ledger-list if-ledger-list--rich">
           {state.events.map(event => (
             <li key={event.id} className={toneClass(event.tone)}>
               <time>{event.time}</time>
@@ -715,16 +725,26 @@ function CommandDock({ state, onCommandAction, onModeChange }) {
           ))}
         </div>
       </div>
-      <div className="fg-command-grid">
+      <div className="if-pattern-grid if-pattern-grid--ops fg-command-grid">
         {commands.map(command => (
-          <article className="if-card if-operations-section fg-command-card" data-fastdas-command-card key={command.id}>
-            <div className="fg-command-card__icon"><Icon name={command.icon} /></div>
-            <div className="fg-command-card__body">
+          <article className="if-pattern-card if-operations-section fg-command-card" data-fastdas-command-card key={command.id}>
+            <div className="if-pattern-card__header fg-command-card__body">
+              <span className="fg-command-card__icon"><Icon name={command.icon} /></span>
               <div>
                 <h3 className="if-card__title">{command.title}</h3>
+                <p>{command.body}</p>
+              </div>
+              <Chip tone={command.tone}>{command.meta}</Chip>
+            </div>
+            <div className="if-rule-builder-mini">
+              <div className="if-rule-line">
+                <span>Operator command</span>
                 <Chip tone={command.tone}>{command.meta}</Chip>
               </div>
-              <p>{command.body}</p>
+              <div className="if-rule-line">
+                <span>Action gate</span>
+                <strong>{command.action}</strong>
+              </div>
             </div>
             <button
               className="if-btn if-btn--secondary fg-btn"

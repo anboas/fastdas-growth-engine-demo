@@ -125,6 +125,14 @@ try {
   assert.ok(progressBars >= 1, "score cells should use framework progress anatomy");
   const commandCards = await desktop.locator("[data-fastdas-command-card]").count();
   assert.equal(commandCards, 4, "desktop command dock should expose four operator commands");
+  const frameworkStepperSteps = await desktop.locator(".if-stepper .if-stepper__step").count();
+  assert.equal(frameworkStepperSteps, 10, "workflow lifecycle should use the framework stepper contract");
+  const runtimeKpis = await desktop.locator("[data-fastdas-operational-workflow] .if-agent-runtime-kpi").count();
+  assert.ok(runtimeKpis >= 8, "operational runtime should use framework agent-runtime KPIs");
+  const ledgerEvents = await desktop.locator("[data-fastdas-audit-log] .if-ledger-list--rich li").count();
+  assert.ok(ledgerEvents >= 1, "audit trail should use the framework rich ledger contract");
+  const commandPatternCards = await desktop.locator("[data-fastdas-command-card].if-pattern-card").count();
+  assert.equal(commandPatternCards, 4, "operator commands should use framework pattern cards");
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").fill("HarborPoint");
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent === "1");
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-clear]").click();
@@ -153,6 +161,8 @@ try {
 
   await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-data-management]");
+  const managementOpsStrip = await desktop.locator("[data-fastdas-data-management] .if-ops-command-strip .if-ops-kpi").count();
+  assert.ok(managementOpsStrip >= 1, "synthetic data management should use framework ops KPI strips");
   const initialSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
   assert.ok(initialSeedText.includes("FD-GE-DEMO-0619"), "synthetic data should start from the golden seed");
   await desktop.locator('[data-fastdas-action="generate-variant"]').click();

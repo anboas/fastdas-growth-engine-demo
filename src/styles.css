@@ -678,8 +678,8 @@ button {
 
 .fg-command-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   gap: 8px 10px;
   min-width: 0;
   padding: 10px;
@@ -727,8 +727,41 @@ button {
 }
 
 .fg-command-card .fg-btn {
-  grid-column: 1 / -1;
   justify-self: stretch;
+}
+
+.fg-command-card .if-rule-builder-mini {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.fg-command-card .if-pattern-card__header {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.fg-command-card .if-pattern-card__header > div {
+  display: block;
+}
+
+.fg-command-card .if-pattern-card__header > .if-badge {
+  grid-column: 2;
+  justify-self: start;
+  max-width: 100%;
+}
+
+.fg-command-card .if-pattern-card__header h3 {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.fg-command-card .if-rule-line {
+  align-items: center;
+  gap: 8px;
+}
+
+.fg-command-card .if-rule-line strong {
+  max-width: 100%;
+  text-align: right;
 }
 
 .fg-metric-grid {
