@@ -163,10 +163,26 @@ try {
   assert.ok(tableStatusCounters >= 2, "opportunity grid should expose framework status counters");
   const expandControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-expand]").count();
   assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
+  const focusPanel = desktop.locator("[data-fastdas-record-focus-panel]");
+  await focusPanel.waitFor({ timeout: 5000 });
+  let focusText = await focusPanel.textContent();
+  assert.ok(focusText.includes("Capital Ridge Senior Living"), "command-center should start with the selected opportunity in the focus panel");
+  await desktop.locator("[data-fastdas-opportunity-grid] tr[data-if-table-row]", { hasText: "HarborPoint Garage" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-record-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "HarborPoint Garage");
+  focusText = await focusPanel.textContent();
+  assert.ok(focusText.includes("HarborPoint Garage"), "clicking a table row should move the focus panel to that opportunity");
+  assert.ok(focusText.includes("Cellular / DAS benchmark"), "focus panel should show the selected row's first-offer detail");
+  const closedFocusedDetails = await desktop.locator('[data-fastdas-expanded-record-id="HarborPoint Garage"]').count();
+  assert.equal(closedFocusedDetails, 0, "row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="HarborPoint Garage"]', { timeout: 5000 });
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
   const intelligenceDetails = await desktop.locator("[data-fastdas-expanded-record].if-record-detail--intelligence").count();
   assert.ok(intelligenceDetails >= 1, "expanded records should use framework intelligence detail anatomy");
+  const expandedRecordText = await desktop.locator('[data-fastdas-expanded-record-id="HarborPoint Garage"]').textContent();
+  assert.ok(expandedRecordText.includes("HarborPoint Garage"), "opened detail row should match the clicked opportunity");
+  assert.ok(expandedRecordText.includes("below-grade"), "opened detail row should use the selected opportunity's evidence, not static default copy");
   const recordDetailSections = await desktop.locator("[data-fastdas-expanded-record] .if-record-detail__section").count();
   assert.equal(recordDetailSections, 3, "expanded record should expose three framework record-detail sections");
   const recordOperationsSections = await desktop.locator("[data-fastdas-expanded-record].if-operations-section-grid .if-operations-section").count();
@@ -272,6 +288,8 @@ try {
   await assertNoPageOverflow(desktop, "desktop synthetic data");
 
   await desktop.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
+  await desktop.locator('[data-fastdas-action="open-record-details"]').click();
   await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
   await desktop.locator('[data-fastdas-action="approve-record"]').first().click();
   await assertAuditContains(desktop, "Inline record approved", "inline approval");

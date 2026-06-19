@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { sidebarKpis, surfaces, workflowStages } from "./data.js";
+import { opportunityRecords, sidebarKpis, surfaces, workflowStages } from "./data.js";
 
 function Icon({ name }) {
   return <span className="if-icon-slot fg-icon" data-if-icon={name} aria-hidden="true" />;
@@ -73,6 +73,10 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
+
+function defaultDetailOpenRows() {
+  return Object.fromEntries(surfaces.map(surface => [surface.id, surface.id === "command-center" ? "" : surface.selected]));
+}
 
 const PRIMARY_ACTIONS = {
   "command-center": {
@@ -237,6 +241,103 @@ function TableCell({ value, column }) {
   );
 }
 
+function opportunityRecordForId(rowId) {
+  return opportunityRecords.find(record => record.name === rowId);
+}
+
+function recordDetailForSelection(surface, selectedRowId) {
+  const record = opportunityRecordForId(selectedRowId || surface.selected);
+  if (!record) return surface.expanded;
+
+  return {
+    title: record.name,
+    description: record.why,
+    record,
+    evidence: [
+      [record.signal, `Signal / ${record.confidence}`, `${record.market} ${record.buildingType}. ${record.why}`],
+      [record.firstOffer, "First paid step", `Recommended opening offer: ${record.firstOffer}. Conversion path: ${record.conversion}.`],
+      [record.stakeholderPath, "Stakeholder path", `Human review should verify this path before outbound action: ${record.stakeholderPath}.`],
+    ],
+    actions: [
+      record.nextAction,
+      `Validate stakeholder path: ${record.stakeholderPath}`,
+      `Open ${record.firstOffer.toLowerCase()} details for the operator review packet.`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
+function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, onRecordAction }) {
+  if (surface.id !== "command-center") return null;
+  const detail = recordDetailForSelection(surface, selectedRowId);
+  const record = detail.record;
+
+  return (
+    <aside
+      className="if-panel if-record-detail if-operations-section fg-record-focus"
+      data-fastdas-record-focus-panel
+      data-fastdas-record-focus-id={record.name}
+    >
+      <div className="fg-record-focus__header">
+        <div>
+          <div className="if-record-detail__eyebrow fg-eyebrow">Selected Opportunity</div>
+          <h3 className="if-record-detail__title">{record.name}</h3>
+          <p className="if-record-detail__text">{detail.description}</p>
+        </div>
+        <Chip tone={toneForValue(record.state)}>{record.state}</Chip>
+      </div>
+      <dl className="if-provenance-grid fg-record-focus__facts">
+        <div className="if-provenance-field">
+          <dt>Market</dt>
+          <dd className="if-provenance-field__value">{record.market}</dd>
+        </div>
+        <div className="if-provenance-field">
+          <dt>Score</dt>
+          <dd className="if-provenance-field__value">{record.score}</dd>
+        </div>
+        <div className="if-provenance-field">
+          <dt>First Offer</dt>
+          <dd className="if-provenance-field__value">{record.firstOffer}</dd>
+        </div>
+        <div className="if-provenance-field">
+          <dt>Confidence</dt>
+          <dd className="if-provenance-field__value">{record.confidence}</dd>
+        </div>
+      </dl>
+      <div className="if-action-queue if-operations-list fg-record-focus__actions">
+        {detail.actions.slice(0, 2).map(action => (
+          <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+            <Icon name="check" />
+            <span>
+              <strong className="if-operations-list__title">{action}</strong>
+              <em className="if-operations-list__description">Operator-gated action</em>
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="if-toolbar__group fg-record-focus__toolbar">
+        <button
+          className="if-btn if-btn--primary fg-btn fg-btn--primary"
+          type="button"
+          data-fastdas-action="open-record-details"
+          data-fastdas-open-details={record.name}
+          onClick={() => onOpenDetails(record.name)}
+        >
+          <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Details"}
+        </button>
+        <button
+          className="if-btn if-btn--secondary fg-btn"
+          type="button"
+          data-fastdas-action="focus-approve"
+          onClick={() => onRecordAction("approve", surface, detail)}
+        >
+          <Icon name="check" />Approve Gate
+        </button>
+      </div>
+    </aside>
+  );
+}
+
 function SourceCards({ cards = [] }) {
   if (!cards.length) return null;
   return (
@@ -269,12 +370,11 @@ function SourceCards({ cards = [] }) {
   );
 }
 
-function ExpandedRecord({ surface, onRecordAction }) {
-  const detail = surface.expanded;
+function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
   return (
     <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
       <td colSpan={surface.table.columns.length}>
-        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence if-operations-section-grid fg-expanded" data-fastdas-expanded-record>
+        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence if-operations-section-grid fg-expanded" data-fastdas-expanded-record data-fastdas-expanded-record-id={selectedRowId}>
           <section className="if-record-detail__section if-operations-section fg-expanded__section">
             <div className="if-record-detail__eyebrow fg-eyebrow">Selected Record</div>
             <h3 className="if-record-detail__title">{detail.title}</h3>
@@ -324,7 +424,7 @@ function ExpandedRecord({ surface, onRecordAction }) {
                     className="if-btn if-btn--success fg-btn fg-btn--primary"
                     data-if-review-action="approve"
                     data-fastdas-action="approve-record"
-                    onClick={() => onRecordAction("approve", surface)}
+                    onClick={() => onRecordAction("approve", surface, detail)}
                   >
                     <Icon name="check" />Approve
                   </button>
@@ -333,7 +433,7 @@ function ExpandedRecord({ surface, onRecordAction }) {
                     className="if-btn if-btn--secondary fg-btn"
                     data-if-review-action="reopen"
                     data-fastdas-action="edit-record"
-                    onClick={() => onRecordAction("edit", surface)}
+                    onClick={() => onRecordAction("edit", surface, detail)}
                   >
                     <Icon name="edit" />Edit
                   </button>
@@ -342,7 +442,7 @@ function ExpandedRecord({ surface, onRecordAction }) {
                     className="if-btn if-btn--secondary fg-btn"
                     data-if-review-action="assign"
                     data-fastdas-action="assign-record"
-                    onClick={() => onRecordAction("assign", surface)}
+                    onClick={() => onRecordAction("assign", surface, detail)}
                   >
                     <Icon name="users" />Assign
                   </button>
@@ -351,7 +451,7 @@ function ExpandedRecord({ surface, onRecordAction }) {
                     className="if-btn if-btn--danger fg-btn fg-btn--danger"
                     data-if-review-action="snooze"
                     data-fastdas-action="hold-record"
-                    onClick={() => onRecordAction("hold", surface)}
+                    onClick={() => onRecordAction("hold", surface, detail)}
                   >
                     <Icon name="x" />Hold
                   </button>
@@ -366,7 +466,7 @@ function ExpandedRecord({ surface, onRecordAction }) {
                   <button
                     type="button"
                     className="if-review-workflow__item is-selected"
-                    data-if-review-item={surface.selected}
+                    data-if-review-item={selectedRowId}
                     data-if-review-title={detail.title}
                     data-if-review-status="open"
                     data-if-review-severity="high"
@@ -383,12 +483,12 @@ function ExpandedRecord({ surface, onRecordAction }) {
               <aside className="if-review-workflow__detail">
                 <div className="if-review-workflow__detail-header">
                   <div>
-                    <p data-if-review-current-id>{surface.selected}</p>
+                    <p data-if-review-current-id>{selectedRowId}</p>
                     <h4 data-if-review-current-title>{detail.title}</h4>
                   </div>
                   <span className="if-badge if-badge--review-status" data-if-review-current-status>Open</span>
                 </div>
-                <section className="if-review-workflow__panel" data-if-review-panel={surface.selected}>
+                <section className="if-review-workflow__panel" data-if-review-panel={selectedRowId}>
                   <div className="if-action-queue if-operations-list fg-action-list">
                     {detail.actions.map(action => (
                       <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
@@ -421,8 +521,10 @@ function ExpandedRecord({ surface, onRecordAction }) {
   );
 }
 
-function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, onUtilityAction, onRecordAction }) {
+function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
+  const selectedDetail = recordDetailForSelection(surface, selectedRowId);
+  const detailsOpen = detailOpenRowId === selectedRowId;
   return (
     <section className="if-panel if-data-table if-table-shell fg-panel" data-fastdas-opportunity-grid data-if-data-table data-if-table-density="compact">
       <div className="if-panel__header fg-panel__header">
@@ -431,7 +533,7 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
           <p className="if-panel__subtitle">{surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.</p>
         </div>
         <div className="fg-panel__header-actions">
-          <Chip tone="blue">Selected: {surface.selected}</Chip>
+          <Chip tone="blue">Selected: {selectedRowId}</Chip>
           <Chip tone="warning">Human approval</Chip>
         </div>
       </div>
@@ -448,7 +550,7 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
             />
           </label>
           <span className="if-badge fg-counter"><strong data-if-table-status="filtered">{surface.table.rows.length}</strong> visible</span>
-          <span className="if-badge fg-counter"><strong data-if-table-status="selected">0</strong> selected</span>
+          <span className="if-badge fg-counter"><strong data-if-table-status="selected">1</strong> selected</span>
         </div>
         <div className="if-table-command-band__filters fg-command-band__filters">
           {surface.filters.map(filter => (
@@ -491,6 +593,13 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
           </button>
         </div>
       </div>
+      <RecordFocusPanel
+        surface={surface}
+        selectedRowId={selectedRowId}
+        detailsOpen={detailsOpen}
+        onOpenDetails={onOpenDetails}
+        onRecordAction={onRecordAction}
+      />
       <div className="if-table-wrap if-table-scroll fg-table-wrap">
         <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
           <thead>
@@ -502,9 +611,16 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
                 <tr
                   className={row.id === selectedRowId ? "is-selected" : ""}
                   data-if-table-row
-                  data-if-table-expanded={row.id === selectedRowId ? "true" : "false"}
+                  data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
                   data-if-table-search={row.cells.join(" ")}
+                  tabIndex={0}
                   onClick={() => onSelect(row.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(row.id);
+                    }
+                  }}
                 >
                   {row.cells.map((cell, index) => (
                     <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
@@ -514,9 +630,13 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
                             className="if-icon-btn fg-expand-btn"
                             type="button"
                             data-if-table-expand
-                            aria-expanded={row.id === selectedRowId}
+                            aria-expanded={row.id === selectedRowId && detailOpenRowId === row.id}
                             aria-label={`Toggle ${splitCell(cell).primary}`}
-                            onClick={() => onSelect(row.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onSelect(row.id);
+                              onOpenDetails(row.id);
+                            }}
                           >
                             <Icon name="chevronDown" />
                           </button>
@@ -526,7 +646,15 @@ function OpportunityGrid({ surface, selectedRowId, onSelect, onPrimaryAction, on
                     </td>
                   ))}
                 </tr>
-                {row.id === selectedRowId ? <ExpandedRecord key={`${row.id}-expanded`} surface={surface} onRecordAction={onRecordAction} /> : null}
+                {row.id === selectedRowId && detailOpenRowId === row.id ? (
+                  <ExpandedRecord
+                    key={`${row.id}-expanded`}
+                    surface={surface}
+                    selectedRowId={row.id}
+                    detail={selectedDetail}
+                    onRecordAction={onRecordAction}
+                  />
+                ) : null}
               </Fragment>
             ))}
           </tbody>
@@ -1038,6 +1166,7 @@ function ReleaseRail({ surface, operationState }) {
 export default function App() {
   const [activeSurfaceId, setActiveSurfaceId] = useState(getInitialSurfaceId);
   const [selectedRows, setSelectedRows] = useState(() => Object.fromEntries(surfaces.map(surface => [surface.id, surface.selected])));
+  const [detailOpenRows, setDetailOpenRows] = useState(defaultDetailOpenRows);
   const [operationState, setOperationState] = useState(INITIAL_OPERATION_STATE);
 
   useEffect(() => {
@@ -1142,28 +1271,29 @@ export default function App() {
     if (action.surfaceId) setSurface(action.surfaceId);
   }, [recordOperation, setSurface]);
 
-  const handleRecordAction = useCallback((kind, activeSurface) => {
+  const handleRecordAction = useCallback((kind, activeSurface, recordDetail) => {
+    const recordTitle = recordDetail?.title || activeSurface.expanded.title;
     const labels = {
       approve: {
         title: "Inline record approved",
-        body: `${activeSurface.expanded.title} moved through its operator gate and is ready for the next workflow step.`,
+        body: `${recordTitle} moved through its operator gate and is ready for the next workflow step.`,
         tone: "success",
         workflowIndex: Math.min(workflowStages.length - 1, operationState.workflowIndex + 1),
         updates: state => ({ approvalCount: Math.max(0, state.approvalCount - 1) }),
       },
       edit: {
         title: "Draft opened for edit",
-        body: `${activeSurface.expanded.title} is staged for message, evidence, or scoring edits without changing the golden seed.`,
+        body: `${recordTitle} is staged for message, evidence, or scoring edits without changing the golden seed.`,
         tone: "blue",
       },
       assign: {
         title: "Research task assigned",
-        body: `${activeSurface.expanded.title} now has an offshore verification packet and human owner handoff.`,
+        body: `${recordTitle} now has an offshore verification packet and human owner handoff.`,
         tone: "purple",
       },
       hold: {
         title: "Record placed on hold",
-        body: `${activeSurface.expanded.title} is blocked from outbound action until source, role, or technical claim risk is resolved.`,
+        body: `${recordTitle} is blocked from outbound action until source, role, or technical claim risk is resolved.`,
         tone: "danger",
       },
     };
@@ -1173,6 +1303,7 @@ export default function App() {
   const handleSyntheticAction = useCallback((kind) => {
     if (kind === "reset") {
       setSelectedRows(Object.fromEntries(surfaces.map(item => [item.id, item.selected])));
+      setDetailOpenRows(defaultDetailOpenRows());
       setOperationState({
         ...INITIAL_OPERATION_STATE,
         toast: {
@@ -1405,7 +1536,14 @@ export default function App() {
           <OpportunityGrid
             surface={surface}
             selectedRowId={selectedRows[surface.id]}
-            onSelect={rowId => setSelectedRows(current => ({ ...current, [surface.id]: rowId }))}
+            detailOpenRowId={detailOpenRows[surface.id]}
+            onSelect={rowId => {
+              setSelectedRows(current => ({ ...current, [surface.id]: rowId }));
+              setDetailOpenRows(current => ({ ...current, [surface.id]: current[surface.id] === rowId ? current[surface.id] : "" }));
+            }}
+            onOpenDetails={rowId => {
+              setDetailOpenRows(current => ({ ...current, [surface.id]: current[surface.id] === rowId ? "" : rowId }));
+            }}
             onPrimaryAction={handlePrimaryAction}
             onUtilityAction={handleUtilityAction}
             onRecordAction={handleRecordAction}

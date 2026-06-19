@@ -1373,6 +1373,80 @@ button {
   overflow-x: auto;
 }
 
+.fg-record-focus {
+  display: grid;
+  gap: 12px;
+  margin: 0 14px 14px;
+  padding: 14px;
+  border: 1px solid #b9dce4;
+  border-radius: 8px;
+  background: #f8fcfd;
+  box-shadow: inset 3px 0 0 #0a7d83, var(--fg-shadow-soft);
+}
+
+.fg-record-focus__header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fg-record-focus__header h3 {
+  margin: 0;
+  color: #12324d;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.fg-record-focus__header p {
+  margin: 5px 0 0;
+  max-width: 920px;
+  color: #516a80;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.fg-record-focus__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fg-record-focus__facts .if-provenance-field {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #d5e4ee;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.fg-record-focus__facts dt {
+  color: #687b90;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fg-record-focus__facts dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: #163653;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.fg-record-focus__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fg-record-focus__toolbar {
+  justify-content: flex-start;
+}
+
 .fg-table {
   width: 100%;
   min-width: 1080px;
@@ -1406,6 +1480,15 @@ button {
 
 .fg-table tbody tr:not(.fg-expanded-row):hover td {
   background: #f8fbfe;
+}
+
+.fg-table tbody tr[data-if-table-row] {
+  cursor: pointer;
+}
+
+.fg-table tbody tr[data-if-table-row]:focus-visible td {
+  outline: 2px solid #0a7d83;
+  outline-offset: -2px;
 }
 
 .fg-table tr.is-selected td {
@@ -1961,6 +2044,11 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .fg-record-focus__facts,
+  .fg-record-focus__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .fg-ops-panel,
   .fg-ops-panel__main {
     grid-template-columns: 1fr;
@@ -2123,6 +2211,14 @@ button {
   .fg-management__actions {
     justify-content: flex-start;
   }
+
+  .fg-record-focus {
+    margin: 0 12px 12px;
+  }
+
+  .fg-record-focus__header {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 520px) {
@@ -2162,6 +2258,8 @@ button {
   .fg-scenario-grid,
   .fg-management-card__meta,
   .fg-ops-stats,
+  .fg-record-focus__facts,
+  .fg-record-focus__actions,
   .fg-segmented {
     grid-template-columns: 1fr;
   }
