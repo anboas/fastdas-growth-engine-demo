@@ -46,8 +46,77 @@ export const SAVED_VIEWS = [
   },
 ];
 
+export const WORKBENCH_SURFACE_CONFIG = {
+  "command-center": {
+    viewLabel: "Decision view",
+    gridHook: "data-fastdas-command-center-grid",
+    workbenchHook: "data-fastdas-command-center-workbench",
+  },
+  "signal-intake": {
+    viewLabel: "Source health view",
+    gridHook: "data-fastdas-signal-intake-grid",
+    workbenchHook: "data-fastdas-signal-intake-workbench",
+  },
+  "opportunity-workbench": {
+    viewLabel: "Qualification view",
+    gridHook: "data-fastdas-opportunity-workbench-grid",
+    workbenchHook: "data-fastdas-opportunity-workbench-workbench",
+  },
+  "evidence-review": {
+    viewLabel: "Review view",
+    gridHook: "data-fastdas-evidence-review-grid",
+    workbenchHook: "data-fastdas-evidence-review-workbench",
+  },
+  "outreach-queue": {
+    viewLabel: "Approval queue",
+    gridHook: "data-fastdas-outreach-queue-grid",
+    workbenchHook: "data-fastdas-outreach-queue-workbench",
+  },
+  "agent-operations": {
+    viewLabel: "Runtime view",
+    gridHook: "data-fastdas-agent-operations-grid",
+    workbenchHook: "data-fastdas-agent-operations-workbench",
+  },
+  "synthetic-data": {
+    viewLabel: "Dataset control",
+    gridHook: "data-fastdas-synthetic-data-grid",
+    workbenchHook: "data-fastdas-synthetic-data-workbench",
+  },
+  "conversion-board": {
+    viewLabel: "Learning view",
+    gridHook: "data-fastdas-conversion-board-grid",
+    workbenchHook: "data-fastdas-conversion-board-workbench",
+  },
+};
+
+export function isFocusedWorkbenchSurface(surfaceId) {
+  return FOCUSED_WORKBENCH_SURFACES.includes(surfaceId);
+}
+
+export function workbenchSurfaceConfig(surfaceId) {
+  return WORKBENCH_SURFACE_CONFIG[surfaceId] || {};
+}
+
+function namedHookAttribute(hookName) {
+  return hookName ? { [hookName]: "true" } : {};
+}
+
+export function gridSurfaceAttributes(surfaceId) {
+  return {
+    "data-fastdas-grid-surface": surfaceId,
+    ...namedHookAttribute(WORKBENCH_SURFACE_CONFIG[surfaceId]?.gridHook),
+  };
+}
+
+export function workbenchSurfaceAttributes(surfaceId) {
+  return {
+    "data-fastdas-workbench-surface": surfaceId,
+    ...namedHookAttribute(WORKBENCH_SURFACE_CONFIG[surfaceId]?.workbenchHook),
+  };
+}
+
 export function defaultDetailOpenRows() {
-  return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
+  return Object.fromEntries(surfaces.map(surface => [surface.id, isFocusedWorkbenchSurface(surface.id) ? "" : surface.selected]));
 }
 
 export function splitCell(value) {

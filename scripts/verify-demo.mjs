@@ -7,6 +7,7 @@ const app = readFileSync("src/App.jsx", "utf8");
 const data = readFileSync("src/data.js", "utf8");
 const workbenchModel = readFileSync("src/workbenchModel.js", "utf8");
 const css = readFileSync("src/styles.css", "utf8");
+const appContractSource = `${app}\n${workbenchModel}`;
 const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
 const viteConfig = readFileSync("vite.config.js", "utf8");
 const legacyAssets = readFileSync("scripts/patch-legacy-assets.mjs", "utf8");
@@ -33,6 +34,9 @@ assert.equal(app.includes('from "./workbenchModel.js"'), true, "App should consu
 assert.equal(app.includes("opportunityRecords"), false, "App should not own raw opportunity record lookup logic");
 assert.equal(workbenchModel.includes("export const FOCUSED_WORKBENCH_SURFACES"), true, "workbench model should own focused surface config");
 assert.equal(workbenchModel.includes("export const SAVED_VIEWS"), true, "workbench model should own saved-view config");
+assert.equal(workbenchModel.includes("export const WORKBENCH_SURFACE_CONFIG"), true, "workbench model should own per-surface workbench config");
+assert.equal(workbenchModel.includes("export function gridSurfaceAttributes"), true, "workbench model should build per-surface grid hooks");
+assert.equal(workbenchModel.includes("export function workbenchSurfaceAttributes"), true, "workbench model should build per-surface workbench hooks");
 assert.equal(workbenchModel.includes("export function detailForSurfaceSelection"), true, "workbench model should own selected-record detail builders");
 assert.equal(workbenchModel.includes("const detailBuilders"), true, "workbench model should route surface detail builders through a registry");
 
@@ -68,7 +72,10 @@ for (const hook of [
   "data-fastdas-saved-views",
   "data-fastdas-saved-view",
   "data-fastdas-metric-grid",
+  "data-fastdas-grid-surface",
+  "data-fastdas-workbench-surface",
   "data-fastdas-opportunity-grid",
+  "data-fastdas-command-center-grid",
   "data-fastdas-opportunity-workbench-grid",
   "data-fastdas-evidence-review-grid",
   "data-fastdas-outreach-queue-grid",
@@ -110,7 +117,7 @@ for (const hook of [
   "data-fastdas-footer-status",
   "data-fastdas-delivery-readiness",
 ]) {
-  assert.equal(app.includes(hook), true, `app should expose ${hook}`);
+  assert.equal(appContractSource.includes(hook), true, `app contract source should expose ${hook}`);
 }
 
 for (const frameworkClass of [

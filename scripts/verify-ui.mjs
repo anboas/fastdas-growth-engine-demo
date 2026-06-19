@@ -480,6 +480,8 @@ try {
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
+    await desktop.waitForSelector(`[data-fastdas-grid-surface="${surfaceId}"]`, { timeout: 5000 });
+    await desktop.waitForSelector(`[data-fastdas-workbench-surface="${surfaceId}"]`, { timeout: 5000 });
     if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations" || surfaceId === "synthetic-data" || surfaceId === "conversion-board") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });

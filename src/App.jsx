@@ -3,10 +3,13 @@ import { sidebarKpis, surfaces, workflowStages } from "./data.js";
 import {
   detailForSurfaceSelection,
   defaultDetailOpenRows,
-  FOCUSED_WORKBENCH_SURFACES,
+  gridSurfaceAttributes,
+  isFocusedWorkbenchSurface,
   SAVED_VIEWS,
   splitCell,
   toneForValue,
+  workbenchSurfaceAttributes,
+  workbenchSurfaceConfig,
 } from "./workbenchModel.js";
 
 function Icon({ name }) {
@@ -231,7 +234,7 @@ function TableCell({ value, column }) {
 }
 
 function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, onRecordAction }) {
-  if (!FOCUSED_WORKBENCH_SURFACES.includes(surface.id)) return null;
+  if (!isFocusedWorkbenchSurface(surface.id)) return null;
   const detail = detailForSurfaceSelection(surface, selectedRowId);
 
   if (surface.id === "signal-intake") {
@@ -940,19 +943,14 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
   const isCommandCenter = surface.id === "command-center";
-  const isFocusedWorkbench = FOCUSED_WORKBENCH_SURFACES.includes(surface.id);
+  const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
+  const workbenchConfig = workbenchSurfaceConfig(surface.id);
   const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   return (
     <section
       className={`if-panel if-data-table if-table-shell fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
       data-fastdas-opportunity-grid
-      data-fastdas-signal-intake-grid={surface.id === "signal-intake" ? "true" : undefined}
-      data-fastdas-opportunity-workbench-grid={surface.id === "opportunity-workbench" ? "true" : undefined}
-      data-fastdas-evidence-review-grid={surface.id === "evidence-review" ? "true" : undefined}
-      data-fastdas-outreach-queue-grid={surface.id === "outreach-queue" ? "true" : undefined}
-      data-fastdas-agent-operations-grid={surface.id === "agent-operations" ? "true" : undefined}
-      data-fastdas-synthetic-data-grid={surface.id === "synthetic-data" ? "true" : undefined}
-      data-fastdas-conversion-board-grid={surface.id === "conversion-board" ? "true" : undefined}
+      {...gridSurfaceAttributes(surface.id)}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -996,14 +994,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
               {filter}
             </button>
           ))}
-          {isCommandCenter ? <span className="if-badge fg-counter">Decision view</span> : null}
-          {surface.id === "signal-intake" ? <span className="if-badge fg-counter">Source health view</span> : null}
-          {surface.id === "opportunity-workbench" ? <span className="if-badge fg-counter">Qualification view</span> : null}
-          {surface.id === "evidence-review" ? <span className="if-badge fg-counter">Review view</span> : null}
-          {surface.id === "outreach-queue" ? <span className="if-badge fg-counter">Approval queue</span> : null}
-          {surface.id === "agent-operations" ? <span className="if-badge fg-counter">Runtime view</span> : null}
-          {surface.id === "synthetic-data" ? <span className="if-badge fg-counter">Dataset control</span> : null}
-          {surface.id === "conversion-board" ? <span className="if-badge fg-counter">Learning view</span> : null}
+          {workbenchConfig.viewLabel ? <span className="if-badge fg-counter">{workbenchConfig.viewLabel}</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -1037,14 +1028,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       <div
         className={isFocusedWorkbench ? `fg-focused-workbench fg-command-center-workbench ${detailsOpen ? "fg-focused-workbench--details-open fg-command-center-workbench--details-open" : ""}` : ""}
         data-fastdas-record-workbench={isFocusedWorkbench ? "true" : undefined}
-        data-fastdas-command-center-workbench={isCommandCenter ? "true" : undefined}
-        data-fastdas-signal-intake-workbench={surface.id === "signal-intake" ? "true" : undefined}
-        data-fastdas-opportunity-workbench-workbench={surface.id === "opportunity-workbench" ? "true" : undefined}
-        data-fastdas-evidence-review-workbench={surface.id === "evidence-review" ? "true" : undefined}
-        data-fastdas-outreach-queue-workbench={surface.id === "outreach-queue" ? "true" : undefined}
-        data-fastdas-agent-operations-workbench={surface.id === "agent-operations" ? "true" : undefined}
-        data-fastdas-synthetic-data-workbench={surface.id === "synthetic-data" ? "true" : undefined}
-        data-fastdas-conversion-board-workbench={surface.id === "conversion-board" ? "true" : undefined}
+        {...workbenchSurfaceAttributes(surface.id)}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1700,7 +1684,7 @@ export default function App() {
     () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
     [activeSurfaceId],
   );
-  const isFocusedWorkbench = FOCUSED_WORKBENCH_SURFACES.includes(surface.id);
+  const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
   const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
