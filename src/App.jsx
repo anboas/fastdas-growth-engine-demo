@@ -274,8 +274,8 @@ function ExpandedRecord({ surface, onRecordAction }) {
   return (
     <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
       <td colSpan={surface.table.columns.length}>
-        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence fg-expanded" data-fastdas-expanded-record>
-          <section className="if-record-detail__section fg-expanded__section">
+        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence if-operations-section-grid fg-expanded" data-fastdas-expanded-record>
+          <section className="if-record-detail__section if-operations-section fg-expanded__section">
             <div className="if-record-detail__eyebrow fg-eyebrow">Selected Record</div>
             <h3 className="if-record-detail__title">{detail.title}</h3>
             <p className="if-record-detail__text">{detail.description}</p>
@@ -294,19 +294,24 @@ function ExpandedRecord({ surface, onRecordAction }) {
               })}
             </div>
           </section>
-          <section className="if-record-detail__section fg-expanded__section" data-fastdas-provenance>
+          <section className="if-record-detail__section if-operations-section fg-expanded__section" data-fastdas-provenance>
             <div className="if-record-detail__eyebrow fg-eyebrow">Evidence + Provenance</div>
-            {detail.evidence.map(([title, badge, text]) => (
-              <article className="if-evidence-panel if-provenance-layer fg-evidence" key={title}>
-                <div>
-                  <strong>{title}</strong>
-                  <span className={`if-source-badge if-source-badge--${toneForValue(badge) === "success" ? "system" : toneForValue(badge) === "blue" ? "derived" : toneForValue(badge) === "warning" ? "manual" : "compact"} fg-chip ${toneClass(toneForValue(badge))}`}>{badge}</span>
-                </div>
-                <p>{text}</p>
-              </article>
-            ))}
+            <div className="if-source-feed-grid fg-evidence-grid">
+              {detail.evidence.map(([title, badge, text]) => (
+                <article className={`if-evidence-panel if-provenance-layer if-source-feed-card if-source-feed-card--balanced is-${toneForValue(badge) === "danger" ? "error" : toneForValue(badge)} fg-evidence`} key={title}>
+                  <div className="if-source-feed-card__header">
+                    <div>
+                      <strong className="if-source-feed-card__title">{title}</strong>
+                      <span className="if-source-feed-card__meta">Provenance layer</span>
+                    </div>
+                    <span className={`if-source-badge if-source-badge--${toneForValue(badge) === "success" ? "system" : toneForValue(badge) === "blue" ? "derived" : toneForValue(badge) === "warning" ? "manual" : "compact"} fg-chip ${toneClass(toneForValue(badge))}`}>{badge}</span>
+                  </div>
+                  <p className="if-source-feed-card__description">{text}</p>
+                </article>
+              ))}
+            </div>
           </section>
-          <section className="if-record-detail__section fg-expanded__section" data-fastdas-human-approval-boundary>
+          <section className="if-record-detail__section if-operations-section fg-expanded__section" data-fastdas-human-approval-boundary>
             <div className="if-record-detail__eyebrow fg-eyebrow">Operator Workbench</div>
             <div className="if-alert if-alert--info fg-callout">
               <strong>First paid step:</strong> Keep the ask bounded to survey, inspection, benchmark, testing engagement, troubleshooting visit, or system review.
@@ -384,11 +389,14 @@ function ExpandedRecord({ surface, onRecordAction }) {
                   <span className="if-badge if-badge--review-status" data-if-review-current-status>Open</span>
                 </div>
                 <section className="if-review-workflow__panel" data-if-review-panel={surface.selected}>
-                  <div className="if-action-queue fg-action-list">
+                  <div className="if-action-queue if-operations-list fg-action-list">
                     {detail.actions.map(action => (
-                      <div className="if-action-queue__item if-tone-info fg-action-card" key={action}>
+                      <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
                         <Icon name="check" />
-                        <span><strong>{action}</strong></span>
+                        <span>
+                          <strong className="if-operations-list__title">{action}</strong>
+                          <em className="if-operations-list__description">Human-gated next step</em>
+                        </span>
                         <Chip tone="blue">Action</Chip>
                       </div>
                     ))}

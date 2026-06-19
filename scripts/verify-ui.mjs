@@ -169,8 +169,12 @@ try {
   assert.ok(intelligenceDetails >= 1, "expanded records should use framework intelligence detail anatomy");
   const recordDetailSections = await desktop.locator("[data-fastdas-expanded-record] .if-record-detail__section").count();
   assert.equal(recordDetailSections, 3, "expanded record should expose three framework record-detail sections");
+  const recordOperationsSections = await desktop.locator("[data-fastdas-expanded-record].if-operations-section-grid .if-operations-section").count();
+  assert.equal(recordOperationsSections, 3, "expanded record should use framework operations-section grid contracts");
   const statusSteps = await desktop.locator("[data-fastdas-expanded-record] .if-status-timeline .if-status-step").count();
   assert.ok(statusSteps >= 5, "expanded workflow state should use framework status timeline steps");
+  const evidenceSourceCards = await desktop.locator("[data-fastdas-expanded-record] [data-fastdas-provenance] .if-source-feed-grid .if-source-feed-card").count();
+  assert.ok(evidenceSourceCards >= 3, "expanded evidence should use framework source-feed cards");
   const reviewWorkflow = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-workflow].if-review-workflow").count();
   assert.equal(reviewWorkflow, 1, "expanded record actions should use framework review-workflow anatomy");
   const reviewActions = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-action]").count();
@@ -181,6 +185,8 @@ try {
   assert.equal(reviewLedger, 1, "expanded record should expose framework review ledger");
   const actionQueueItems = await desktop.locator("[data-fastdas-expanded-record] .if-action-queue .if-action-queue__item").count();
   assert.ok(actionQueueItems >= 3, "expanded next actions should use the framework action queue contract");
+  const operationsListActions = await desktop.locator("[data-fastdas-expanded-record] .if-operations-list .if-operations-list__item .if-operations-list__title").count();
+  assert.ok(operationsListActions >= 3, "expanded next actions should use framework operations-list rows");
   const tableCellMain = await desktop.locator(".if-table-cell-main .if-table-cell-meta").count();
   assert.ok(tableCellMain >= 1, "table cells should use framework primary/meta anatomy");
   const progressBars = await desktop.locator(".if-table-progress .if-table-progress__track span").count();
