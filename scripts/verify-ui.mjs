@@ -394,9 +394,37 @@ try {
   assert.ok(agentDetailText.includes("Complaint Pattern Agent"), "opened agent detail row should match the clicked workflow");
   assert.ok(agentDetailText.includes("Search/API"), "opened agent detail should use agent-specific toolchain context");
 
+  await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-dataset-focus-panel]", { timeout: 5000 });
+  const datasetWorkbenchColumns = await desktop.locator("[data-fastdas-synthetic-data-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(datasetWorkbenchColumns >= 2, "synthetic data should share the dataset table with a selected-dataset panel on desktop");
+  const datasetDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-synthetic-data-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(datasetDrawerOrder, true, "synthetic data should put managed datasets before operational controls");
+  const datasetFocusPanel = desktop.locator("[data-fastdas-dataset-focus-panel]");
+  let datasetFocusText = await datasetFocusPanel.textContent();
+  assert.ok(datasetFocusText.includes("Opportunity Dataset"), "synthetic data should start with the selected dataset");
+  await desktop.locator("[data-fastdas-synthetic-data-grid] tr[data-if-table-row]", { hasText: "Source Registry Dataset" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-dataset-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Source Registry Dataset");
+  datasetFocusText = await datasetFocusPanel.textContent();
+  assert.ok(datasetFocusText.includes("Source Registry Dataset"), "clicking a dataset row should move the dataset focus panel");
+  assert.ok(datasetFocusText.includes("Synthetic source model"), "dataset focus panel should show the selected row's provenance");
+  await desktop.locator('[data-fastdas-action="focus-validate-dataset"]').click();
+  await assertAuditContains(desktop, "Dataset validation queued", "dataset validation");
+  const closedDatasetDetails = await desktop.locator('[data-fastdas-expanded-record-id="Source Registry Dataset"]').count();
+  assert.equal(closedDatasetDetails, 0, "dataset row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-dataset-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Source Registry Dataset"]', { timeout: 5000 });
+  const datasetDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Source Registry Dataset"]').textContent();
+  assert.ok(datasetDetailText.includes("Source Registry Dataset"), "opened dataset detail row should match the clicked dataset");
+  assert.ok(datasetDetailText.includes("Signal Intake"), "opened dataset detail should use dataset-specific demo-surface context");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations" || surfaceId === "synthetic-data") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
         const openSelector = surfaceId === "signal-intake"
@@ -409,7 +437,9 @@ try {
                 ? '[data-fastdas-action="open-outreach-details"]'
                 : surfaceId === "agent-operations"
                   ? '[data-fastdas-action="open-agent-details"]'
-                  : '[data-fastdas-action="open-record-details"]';
+                  : surfaceId === "synthetic-data"
+                    ? '[data-fastdas-action="open-dataset-details"]'
+                    : '[data-fastdas-action="open-record-details"]';
         await desktop.locator(openSelector).click();
       }
     }

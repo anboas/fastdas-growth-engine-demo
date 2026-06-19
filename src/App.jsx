@@ -73,7 +73,7 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
-const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations", "synthetic-data"];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -417,12 +417,49 @@ function agentDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function datasetDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  if (!row) return surface.expanded;
+
+  const [datasetCell, records, owner, freshness, provenance, qualityGate, demoUse] = row.cells;
+  const { primary: datasetName, secondary: datasetScope } = splitCell(datasetCell);
+  const isRequired = String(qualityGate).toLowerCase().includes("required") || String(qualityGate).toLowerCase().includes("human");
+
+  return {
+    title: datasetName,
+    description: datasetScope || surface.expanded.description,
+    dataset: {
+      name: datasetName,
+      scope: datasetScope || surface.expanded.description,
+      records,
+      owner,
+      freshness,
+      provenance,
+      qualityGate,
+      demoUse,
+      isRequired,
+    },
+    evidence: [
+      [records, `Owner / ${owner}`, datasetScope || "Managed synthetic dataset retained for the customer demo."],
+      [provenance, "Provenance", `Freshness: ${freshness}. Demo surface: ${demoUse}.`],
+      [qualityGate, isRequired ? "Human gate" : "Quality gate", isRequired ? "Keep this dataset behind explicit operator review before customer-facing use." : "Dataset is ready for seeded walkthrough use."],
+    ],
+    actions: [
+      `Validate ${datasetName.toLowerCase()} quality gate: ${qualityGate}.`,
+      `Keep provenance bounded to ${provenance}.`,
+      `Use dataset in ${demoUse}.`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
 function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
   if (surface.id === "evidence-review") return evidenceDetailForSelection(surface, selectedRowId);
   if (surface.id === "outreach-queue") return outreachDetailForSelection(surface, selectedRowId);
   if (surface.id === "agent-operations") return agentDetailForSelection(surface, selectedRowId);
+  if (surface.id === "synthetic-data") return datasetDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
@@ -726,6 +763,79 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
     );
   }
 
+  if (surface.id === "synthetic-data") {
+    const dataset = detail.dataset;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--dataset"
+        data-fastdas-record-focus-panel
+        data-fastdas-dataset-focus-panel
+        data-fastdas-record-focus-id={dataset.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Dataset Focus</div>
+            <h3 className="if-record-detail__title">{dataset.name}</h3>
+            <p className="if-record-detail__text">{dataset.scope}</p>
+          </div>
+          <Chip tone={toneForValue(dataset.qualityGate)}>{dataset.qualityGate}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Records</dt>
+            <dd className="if-provenance-field__value">{dataset.records}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Owner</dt>
+            <dd className="if-provenance-field__value">{dataset.owner}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Freshness</dt>
+            <dd className="if-provenance-field__value">{dataset.freshness}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Provenance</dt>
+            <dd className="if-provenance-field__value">{dataset.provenance}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Demo Use</dt>
+            <dd className="if-provenance-field__value">{dataset.demoUse}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="database" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Dataset-control action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-dataset-details"
+            data-fastdas-open-details={dataset.name}
+            onClick={() => onOpenDetails(dataset.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Dataset Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-validate-dataset"
+            onClick={() => onRecordAction("validate-dataset", surface, detail)}
+          >
+            <Icon name="check" />Validate Dataset
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   const record = detail.record;
   const isQualificationWorkbench = surface.id === "opportunity-workbench";
 
@@ -1001,6 +1111,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       data-fastdas-evidence-review-grid={surface.id === "evidence-review" ? "true" : undefined}
       data-fastdas-outreach-queue-grid={surface.id === "outreach-queue" ? "true" : undefined}
       data-fastdas-agent-operations-grid={surface.id === "agent-operations" ? "true" : undefined}
+      data-fastdas-synthetic-data-grid={surface.id === "synthetic-data" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -1050,6 +1161,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           {surface.id === "evidence-review" ? <span className="if-badge fg-counter">Review view</span> : null}
           {surface.id === "outreach-queue" ? <span className="if-badge fg-counter">Approval queue</span> : null}
           {surface.id === "agent-operations" ? <span className="if-badge fg-counter">Runtime view</span> : null}
+          {surface.id === "synthetic-data" ? <span className="if-badge fg-counter">Dataset control</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -1089,6 +1201,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-evidence-review-workbench={surface.id === "evidence-review" ? "true" : undefined}
         data-fastdas-outreach-queue-workbench={surface.id === "outreach-queue" ? "true" : undefined}
         data-fastdas-agent-operations-workbench={surface.id === "agent-operations" ? "true" : undefined}
+        data-fastdas-synthetic-data-workbench={surface.id === "synthetic-data" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1848,6 +1961,12 @@ export default function App() {
         tone: "blue",
         workflowIndex: 1,
         updates: state => ({ signalRuns: state.signalRuns + 1 }),
+      },
+      "validate-dataset": {
+        title: "Dataset validation queued",
+        body: `${recordTitle} is queued for quality-gate validation with provenance and reset boundaries retained.`,
+        tone: "blue",
+        workflowIndex: 2,
       },
     };
     recordOperation(labels[kind]);
