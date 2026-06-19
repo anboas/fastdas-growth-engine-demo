@@ -292,44 +292,96 @@ function ExpandedRecord({ surface, onRecordAction }) {
             <div className="if-alert if-alert--info fg-callout">
               <strong>First paid step:</strong> Keep the ask bounded to survey, inspection, benchmark, testing engagement, troubleshooting visit, or system review.
             </div>
-            <div className="fg-action-list">
-              {detail.actions.map(action => (
-                <div className="if-card fg-action-card" key={action}>{action}</div>
-              ))}
-            </div>
-            <div className="fg-action-row">
-              <button
-                type="button"
-                className="if-btn if-btn--success fg-btn fg-btn--primary"
-                data-fastdas-action="approve-record"
-                onClick={() => onRecordAction("approve", surface)}
-              >
-                <Icon name="check" />Approve
-              </button>
-              <button
-                type="button"
-                className="if-btn if-btn--secondary fg-btn"
-                data-fastdas-action="edit-record"
-                onClick={() => onRecordAction("edit", surface)}
-              >
-                <Icon name="edit" />Edit
-              </button>
-              <button
-                type="button"
-                className="if-btn if-btn--secondary fg-btn"
-                data-fastdas-action="assign-record"
-                onClick={() => onRecordAction("assign", surface)}
-              >
-                <Icon name="users" />Assign
-              </button>
-              <button
-                type="button"
-                className="if-btn if-btn--danger fg-btn fg-btn--danger"
-                data-fastdas-action="hold-record"
-                onClick={() => onRecordAction("hold", surface)}
-              >
-                <Icon name="x" />Hold
-              </button>
+            <div className="if-review-workflow fg-review-workflow" data-if-review-workflow data-fastdas-review-workflow>
+              <div className="if-review-workflow__main">
+                <div className="if-review-workflow__toolbar fg-action-row" role="toolbar" aria-label={`${detail.title} review actions`}>
+                  <button
+                    type="button"
+                    className="if-btn if-btn--success fg-btn fg-btn--primary"
+                    data-if-review-action="approve"
+                    data-fastdas-action="approve-record"
+                    onClick={() => onRecordAction("approve", surface)}
+                  >
+                    <Icon name="check" />Approve
+                  </button>
+                  <button
+                    type="button"
+                    className="if-btn if-btn--secondary fg-btn"
+                    data-if-review-action="reopen"
+                    data-fastdas-action="edit-record"
+                    onClick={() => onRecordAction("edit", surface)}
+                  >
+                    <Icon name="edit" />Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="if-btn if-btn--secondary fg-btn"
+                    data-if-review-action="assign"
+                    data-fastdas-action="assign-record"
+                    onClick={() => onRecordAction("assign", surface)}
+                  >
+                    <Icon name="users" />Assign
+                  </button>
+                  <button
+                    type="button"
+                    className="if-btn if-btn--danger fg-btn fg-btn--danger"
+                    data-if-review-action="snooze"
+                    data-fastdas-action="hold-record"
+                    onClick={() => onRecordAction("hold", surface)}
+                  >
+                    <Icon name="x" />Hold
+                  </button>
+                </div>
+                <div className="if-review-workflow__summary" aria-label="Selected record review counts">
+                  <span><strong data-if-review-count="open">1</strong><em>Open</em></span>
+                  <span><strong data-if-review-count="approved">0</strong><em>Approved</em></span>
+                  <span><strong data-if-review-count="assigned">0</strong><em>Assigned</em></span>
+                  <span><strong data-if-review-count="snoozed">0</strong><em>Held</em></span>
+                </div>
+                <div className="if-review-workflow__queue" role="listbox" aria-label="Selected record review queue">
+                  <button
+                    type="button"
+                    className="if-review-workflow__item is-selected"
+                    data-if-review-item={surface.selected}
+                    data-if-review-title={detail.title}
+                    data-if-review-status="open"
+                    data-if-review-severity="high"
+                    aria-selected="true"
+                  >
+                    <span>
+                      <strong>{detail.title}</strong>
+                      <em>{detail.description}</em>
+                    </span>
+                    <span className="if-badge if-badge--review-status" data-if-review-item-status>Open</span>
+                  </button>
+                </div>
+              </div>
+              <aside className="if-review-workflow__detail">
+                <div className="if-review-workflow__detail-header">
+                  <div>
+                    <p data-if-review-current-id>{surface.selected}</p>
+                    <h4 data-if-review-current-title>{detail.title}</h4>
+                  </div>
+                  <span className="if-badge if-badge--review-status" data-if-review-current-status>Open</span>
+                </div>
+                <section className="if-review-workflow__panel" data-if-review-panel={surface.selected}>
+                  <div className="fg-action-list">
+                    {detail.actions.map(action => (
+                      <div className="if-card fg-action-card" key={action}>{action}</div>
+                    ))}
+                  </div>
+                </section>
+                <label className="if-field">
+                  <span className="if-field__label">Decision reason</span>
+                  <textarea className="if-textarea" data-if-review-reason defaultValue="Bounded first paid step, source-safe evidence, and human approval retained." />
+                </label>
+                <div className="if-review-workflow__shortcuts" aria-label="Review keyboard shortcuts">
+                  <span><kbd>A</kbd> Approve</span>
+                  <span><kbd>R</kbd> Reopen</span>
+                  <span><kbd>N</kbd> Notes</span>
+                </div>
+                <ol className="if-review-workflow__ledger" data-if-review-ledger aria-label="Inline review action ledger" />
+              </aside>
             </div>
           </section>
         </div>

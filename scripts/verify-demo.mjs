@@ -85,6 +85,12 @@ for (const frameworkClass of [
   "if-rule-line",
   "if-check-list",
   "if-toast",
+  "if-review-workflow",
+  "if-review-workflow__toolbar",
+  "if-review-workflow__summary",
+  "if-review-workflow__queue",
+  "if-review-workflow__detail",
+  "if-review-workflow__ledger",
   "if-balanced-grid",
   "if-card",
   "if-card__title",
@@ -134,6 +140,11 @@ assert.equal(app.includes("data-if-table-filter"), true, "tables should expose f
 assert.equal(app.includes("data-if-table-status"), true, "tables should expose framework status counters");
 assert.equal(app.includes("data-if-table-clear"), true, "tables should expose framework clear controls");
 assert.equal(app.includes("data-if-table-expand"), true, "tables should expose native row expansion controls");
+assert.equal(app.includes("data-if-review-workflow"), true, "inline operator approval should expose framework review workflow roots");
+assert.equal(app.includes("data-if-review-item"), true, "inline operator approval should expose framework review queue items");
+assert.equal(app.includes("data-if-review-action"), true, "inline operator approval should expose framework review actions");
+assert.equal(app.includes("data-if-review-count"), true, "inline operator approval should expose framework review count slots");
+assert.equal(app.includes("data-if-review-ledger"), true, "inline operator approval should expose framework review ledger slots");
 assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");
 assert.equal(app.includes("data-control-segmented-option"), true, "segmented options should be identified by framework hooks");
 assert.equal(app.includes("fg-root fg-shell"), true, "FastDAS customization should layer on top of the framework shell");

@@ -119,6 +119,14 @@ try {
   assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
+  const reviewWorkflow = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-workflow].if-review-workflow").count();
+  assert.equal(reviewWorkflow, 1, "expanded record actions should use framework review-workflow anatomy");
+  const reviewActions = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-action]").count();
+  assert.equal(reviewActions, 4, "expanded record should expose four framework review actions");
+  const reviewCounts = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-count]").count();
+  assert.ok(reviewCounts >= 4, "expanded record should expose framework review count slots");
+  const reviewLedger = await desktop.locator("[data-fastdas-expanded-record] [data-if-review-ledger]").count();
+  assert.equal(reviewLedger, 1, "expanded record should expose framework review ledger");
   const tableCellMain = await desktop.locator(".if-table-cell-main .if-table-cell-meta").count();
   assert.ok(tableCellMain >= 1, "table cells should use framework primary/meta anatomy");
   const progressBars = await desktop.locator(".if-table-progress .if-table-progress__track span").count();

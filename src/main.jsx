@@ -41,6 +41,7 @@ async function hydrateFrameworkDom(root = document) {
   const {
     hydrateIcons,
     hydrateOperationsWorkspaces,
+    hydrateReviewWorkflows,
     refreshBalancedGrids,
   } = await loadControlSurfaceApi();
   const slots = iconSlotsFor(root);
@@ -57,6 +58,7 @@ async function hydrateFrameworkDom(root = document) {
     if (slot.querySelector("svg.if-icon")) slot.dataset.fgIconRendered = slot.dataset.ifIcon;
   });
   hydrateOperationsWorkspaces(root);
+  hydrateReviewWorkflows(root);
   refreshBalancedGrids(root);
 }
 
