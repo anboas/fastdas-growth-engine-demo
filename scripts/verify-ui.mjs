@@ -164,6 +164,10 @@ try {
   assert.equal(operationsHero, 1, "page header should use the framework operations-page hero contract");
   const pageActions = await desktop.locator("[data-fastdas-page-actions].if-toolbar__group .if-btn").count();
   assert.equal(pageActions, 3, "page header actions should use framework toolbar grouping");
+  const guidedRunner = desktop.locator("[data-fastdas-guided-demo-runner]");
+  await guidedRunner.waitFor({ timeout: 5000 });
+  const guidedRunnerActions = await desktop.locator("[data-fastdas-guided-demo-runner] [data-fastdas-action]").count();
+  assert.ok(guidedRunnerActions >= 5, "working demo runner should expose create, advance, input, export, and reset actions");
 
   const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
   assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
@@ -314,6 +318,8 @@ try {
   await assertAuditContains(desktop, "Signal scan completed", "global scan");
   await desktop.waitForSelector("h1", { timeout: 5000 });
   assert.match(await desktop.locator("h1").textContent(), /Signal Intake/, "global scan should move operator to Signal Intake");
+  const scanRuntimeRecords = await desktop.evaluate(() => JSON.parse(window.localStorage.getItem("fastdas.demo.runtimePipeline.v1") || "{}").syntheticRecords?.length || 0);
+  assert.ok(scanRuntimeRecords >= 1, "global scan should create a browser-local synthetic record for the working demo");
   const sourceHealthCards = await desktop.locator("[data-fastdas-source-health] .if-source-health-card .if-ops-meter-list").count();
   assert.ok(sourceHealthCards >= 1, "source cards should use framework source-health meter contracts");
   const signalWorkbenchColumns = await desktop.locator("[data-fastdas-signal-intake-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
@@ -353,7 +359,7 @@ try {
   assert.equal(opportunityDrawerOrder, true, "opportunity workbench should put the qualification table before operational controls");
   const opportunityFocusPanel = desktop.locator("[data-fastdas-opportunity-focus-panel]");
   let opportunityFocusText = await opportunityFocusPanel.textContent();
-  assert.ok(opportunityFocusText.includes("HarborPoint Garage"), "opportunity workbench should start with the selected opportunity in the focus panel");
+  assert.ok(opportunityFocusText.includes("Synthetic Closeout Tower"), "opportunity workbench should keep the scan-created demo record in focus");
   await desktop.locator("[data-fastdas-opportunity-workbench-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
   opportunityFocusText = await opportunityFocusPanel.textContent();
@@ -381,7 +387,7 @@ try {
   assert.equal(evidenceDrawerOrder, true, "evidence review should put evidence packets before operational controls");
   const evidenceFocusPanel = desktop.locator("[data-fastdas-evidence-focus-panel]");
   let evidenceFocusText = await evidenceFocusPanel.textContent();
-  assert.ok(evidenceFocusText.includes("Fire alarm permit pattern"), "evidence review should start with the selected evidence packet");
+  assert.ok(evidenceFocusText.includes("Synthetic Closeout Tower"), "evidence review should keep the scan-created demo evidence in focus");
   await desktop.locator("[data-fastdas-evidence-review-grid] tr[data-if-table-row]", { hasText: "Partner route" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-evidence-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Partner route");
   evidenceFocusText = await evidenceFocusPanel.textContent();
@@ -409,7 +415,7 @@ try {
   assert.equal(outreachDrawerOrder, true, "outreach queue should put outreach tasks before operational controls");
   const outreachFocusPanel = desktop.locator("[data-fastdas-outreach-focus-panel]");
   let outreachFocusText = await outreachFocusPanel.textContent();
-  assert.ok(outreachFocusText.includes("HarborPoint Garage"), "outreach queue should start with the selected outreach task");
+  assert.ok(outreachFocusText.includes("Synthetic Closeout Tower"), "outreach queue should keep the scan-created demo task in focus");
   await desktop.locator("[data-fastdas-outreach-queue-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-outreach-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
   outreachFocusText = await outreachFocusPanel.textContent();
@@ -493,7 +499,7 @@ try {
   assert.equal(conversionDrawerOrder, true, "conversion board should put conversion records before operational controls");
   const conversionFocusPanel = desktop.locator("[data-fastdas-conversion-focus-panel]");
   let conversionFocusText = await conversionFocusPanel.textContent();
-  assert.ok(conversionFocusText.includes("Capital Ridge Senior Living"), "conversion board should start with the selected conversion record");
+  assert.ok(conversionFocusText.includes("Synthetic Closeout Tower"), "conversion board should keep the scan-created demo record in focus");
   await desktop.locator("[data-fastdas-conversion-board-grid] tr[data-if-table-row]", { hasText: "Mosaic West Hotel" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-conversion-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Mosaic West Hotel");
   conversionFocusText = await conversionFocusPanel.textContent();
@@ -542,7 +548,14 @@ try {
   }
 
   await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-synthetic-console]");
   await desktop.waitForSelector("[data-fastdas-data-management]");
+  const syntheticInputOrder = await desktop.evaluate(() => {
+    const consoleNode = document.querySelector("[data-fastdas-synthetic-console]");
+    const managementNode = document.querySelector("[data-fastdas-data-management]");
+    return Boolean(consoleNode && managementNode && (consoleNode.compareDocumentPosition(managementNode) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(syntheticInputOrder, true, "synthetic data page should put runtime input before management inventory");
   const managementOpsStrip = await desktop.locator("[data-fastdas-data-management] .if-ops-command-strip .if-ops-kpi").count();
   assert.ok(managementOpsStrip >= 1, "synthetic data management should use framework ops KPI strips");
   const initialSeedText = await desktop.locator("[data-fastdas-data-management]").textContent();
@@ -569,7 +582,6 @@ try {
   assert.equal(scenarioPacks, 4, "synthetic data surface should render four scenario packs");
   const scenarioRuleLines = await desktop.locator("[data-fastdas-scenario-pack] .if-rule-builder-mini .if-rule-line").count();
   assert.equal(scenarioRuleLines, 8, "scenario packs should use framework mini rule lines");
-  await desktop.waitForSelector("[data-fastdas-synthetic-console]");
   await desktop.locator('[data-fastdas-synthetic-input="name"]').fill("Metro Center Garage");
   await desktop.locator('[data-fastdas-synthetic-input="market"]').fill("Baltimore, MD");
   await desktop.locator('[data-fastdas-synthetic-input="buildingType"]').fill("Parking garage / office");

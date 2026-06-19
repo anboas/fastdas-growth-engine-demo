@@ -337,6 +337,7 @@ const EMPTY_SYNTHETIC_DRAFT = {
 };
 
 const RUNTIME_STORAGE_KEY = "fastdas.demo.runtimePipeline.v1";
+const SAVED_VIEW_STORAGE_KEY = "fastdas.demo.savedView.v1";
 
 const PIPELINE_STATE_BY_INDEX = [
   "Signal",
@@ -385,6 +386,20 @@ function downloadJson(filename, payload) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+function buildRuntimeExportPayload(operationState, syntheticRecords, pipelineOverrides, activeSurfaceId) {
+  return {
+    exportedAt: new Date().toISOString(),
+    activeSurfaceId,
+    activeSeed: operationState.activeSeed,
+    scenarioMode: operationState.scenarioMode,
+    datasetVersion: operationState.datasetVersion,
+    workflowStage: workflowStages[operationState.workflowIndex] || workflowStages[0],
+    operatorMode: operationState.operatorMode,
+    syntheticRecords,
+    pipelineOverrides,
+  };
 }
 
 const PRIMARY_ROUTE_IDS = ["command-center", "signal-intake", "opportunity-workbench"];
@@ -2018,6 +2033,77 @@ function SyntheticPipelineConsole({
   );
 }
 
+function GuidedDemoRunner({
+  activeRecord,
+  workflowIndex,
+  syntheticRecordCount,
+  onCreateRecord,
+  onAdvance,
+  onOpenInput,
+  onExport,
+  onReset,
+}) {
+  const currentStage = workflowStages[workflowIndex] || workflowStages[0];
+  const nextStage = workflowStages[Math.min(workflowStages.length - 1, workflowIndex + 1)] || currentStage;
+  const runnerSteps = [
+    ["Create", syntheticRecordCount > 0],
+    ["Qualify", workflowIndex >= 2],
+    ["Approve", workflowIndex >= 4],
+    ["Sell", workflowIndex >= 6],
+    ["Export", workflowIndex >= 8],
+  ];
+
+  return (
+    <section
+      className="if-panel if-operations-section fg-guided-demo"
+      data-fastdas-guided-demo-runner
+      data-fastdas-guided-record={activeRecord?.name || ""}
+    >
+      <div className="fg-guided-demo__main">
+        <div>
+          <div className="fg-eyebrow">Working Demo Runner</div>
+          <h2 className="if-panel__title">{activeRecord?.name || "Create a demo opportunity"}</h2>
+          <p className="if-panel__subtitle">
+            {activeRecord
+              ? `${activeRecord.market} / ${activeRecord.firstOffer}. Current stage: ${currentStage}.`
+              : "Start with a customer-safe synthetic lead, then push it through the real pipeline controls."}
+          </p>
+        </div>
+        <div className="if-route-demo-controls fg-guided-demo__status">
+          <span className="if-route-status"><strong>Records</strong><span>{syntheticRecordCount}</span></span>
+          <span className="if-route-status"><strong>Stage</strong><span>{currentStage}</span></span>
+          <span className="if-route-status"><strong>Next</strong><span>{activeRecord ? nextStage : "Create"}</span></span>
+        </div>
+      </div>
+      <ol className="fg-guided-demo__steps" aria-label="Working demo milestones">
+        {runnerSteps.map(([label, complete], index) => (
+          <li className={complete ? "is-complete" : index === 0 && !activeRecord ? "is-active" : ""} key={label}>
+            <span>{index + 1}</span>
+            <strong>{label}</strong>
+          </li>
+        ))}
+      </ol>
+      <div className="if-toolbar__group fg-guided-demo__actions">
+        <button className="if-btn if-btn--primary fg-btn fg-btn--primary" type="button" data-fastdas-action="guided-create-record" onClick={onCreateRecord}>
+          <Icon name="plus" />{activeRecord ? "Add Lead" : "Create Lead"}
+        </button>
+        <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="guided-advance-stage" disabled={!activeRecord} onClick={onAdvance}>
+          <Icon name="arrowUp" />Advance Stage
+        </button>
+        <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="guided-open-input" onClick={onOpenInput}>
+          <Icon name="database" />Input
+        </button>
+        <button className="if-btn if-btn--secondary fg-btn" type="button" data-fastdas-action="guided-export-run" onClick={onExport}>
+          <Icon name="download" />Export
+        </button>
+        <button className="if-btn if-btn--danger fg-btn fg-btn--danger" type="button" data-fastdas-action="guided-reset-run" onClick={onReset}>
+          <Icon name="rotate" />Reset
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function OperationsSignalPanels({ metrics = [] }) {
   if (!metrics.length) return null;
   return (
@@ -2629,7 +2715,7 @@ function ReleaseRail({ surface, operationState }) {
         <span className="if-route-status"><strong>Workflow</strong><span>{currentStage}</span></span>
         <span className="if-route-status"><strong>Seed</strong><span>{operationState.activeSeed}</span></span>
         <span className="if-route-status"><strong>Source</strong><span>GitHub canonical</span></span>
-        <span className="if-route-status"><strong>Host</strong><span>GitLab Pages</span></span>
+        <span className="if-route-status"><strong>Host</strong><span>Cloudflare Pages</span></span>
         <span className="if-route-status"><strong>Cloudflare</strong><span>Deploy path ready</span></span>
       </div>
       <section className="if-release-lane-grid fg-release-lanes" aria-label="Release readiness lanes" data-fastdas-delivery-readiness>
@@ -2692,6 +2778,10 @@ export default function App() {
   );
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
   const activeMetricSignalId = surface.id === "command-center" ? activeCommandFilterId : signalIdForLabel(surface.metrics[0]?.[0]);
+  const activeDemoRecord = useMemo(() => (
+    syntheticRecords.find(record => record.name === selectedRows[surface.id]) || syntheticRecords[0] || null
+  ), [selectedRows, surface.id, syntheticRecords]);
+  const activeDemoWorkflowIndex = activeDemoRecord ? pipelineOverrides[activeDemoRecord.name]?.workflowIndex ?? 0 : 0;
 
   const setSurface = useCallback((id) => {
     setActiveSavedViewId("");
@@ -2776,19 +2866,19 @@ export default function App() {
     setSurface(routeForPipelineIndex(workflowIndex));
   }, [focusRecordAcrossPipeline, recordOperation, routeForPipelineIndex, setSurface]);
 
-  const addSyntheticRecord = useCallback((record, title = "Synthetic record entered", { routeToCommand = false } = {}) => {
+  const addSyntheticRecord = useCallback((record, title = "Synthetic record entered", { routeToCommand = false, workflowIndex = 0 } = {}) => {
     const names = new Set([...seedRecords, ...syntheticRecords].map(item => item.name));
     const safeRecord = names.has(record.name)
       ? { ...record, name: `${record.name} ${syntheticRecords.length + 1}` }
       : record;
     setSyntheticRecords(current => [...current, safeRecord]);
-    focusRecordAcrossPipeline(safeRecord.name, 0);
+    focusRecordAcrossPipeline(safeRecord.name, workflowIndex);
     setActiveCommandFilterId(COMMAND_CENTER_DEFAULT_FILTER_ID);
     recordOperation({
       title,
       body: `${safeRecord.name} was added to the browser-local synthetic opportunity pipeline.`,
       tone: "success",
-      workflowIndex: 0,
+      workflowIndex,
       updates: state => ({ generatedRecords: state.generatedRecords + 1 }),
     });
     if (routeToCommand) setSurface("command-center");
@@ -2826,6 +2916,15 @@ export default function App() {
   }, [recordOperation, runtimeSurfaces, setSurface]);
 
   const handleCommandAction = useCallback((commandId) => {
+    if (commandId === "scan") {
+      addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, "Closeout Sprint"), "Command scan captured lead", { workflowIndex: 1 });
+    }
+    if (commandId === "approve" && activeDemoRecord) {
+      focusRecordAcrossPipeline(activeDemoRecord.name, 4);
+    }
+    if (commandId === "export") {
+      downloadJson(`fastdas-command-export-${operationState.activeSeed}.json`, buildRuntimeExportPayload(operationState, syntheticRecords, pipelineOverrides, activeSurfaceId));
+    }
     const commandEvents = {
       scan: {
         title: "Command scan run",
@@ -2855,10 +2954,11 @@ export default function App() {
       },
     };
     recordOperation(commandEvents[commandId]);
-  }, [recordOperation]);
+  }, [activeDemoRecord, activeSurfaceId, addSyntheticRecord, focusRecordAcrossPipeline, operationState, pipelineOverrides, recordOperation, syntheticRecords]);
 
   const handlePrimaryAction = useCallback((surfaceId) => {
     if (surfaceId === "global-signal-scan") {
+      addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, "Closeout Sprint"), "Signal scan captured lead", { workflowIndex: 1 });
       recordOperation({
         title: "Signal scan completed",
         body: "37 synthetic signals captured, 11 routed to enrichment, and 3 high-score records surfaced for review.",
@@ -2874,7 +2974,7 @@ export default function App() {
     if (surfaceId === "synthetic-data") {
       const nextVariant = operationState.variantCount + 1;
       const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
-      addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated");
+      addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated", { workflowIndex: 2 });
       setOperationState(current => {
         return appendEvent(current, {
           ...action,
@@ -2890,9 +2990,14 @@ export default function App() {
       });
       return;
     }
+    const selectedRecordName = selectedRows[surfaceId];
+    const isRuntimeRecord = runtimeSurfaces.some(item => item.records?.some(record => record.name === selectedRecordName));
+    if (isRuntimeRecord && Number.isFinite(action.workflowIndex)) {
+      focusRecordAcrossPipeline(selectedRecordName, action.workflowIndex);
+    }
     recordOperation(action);
     if (action.surfaceId) setSurface(action.surfaceId);
-  }, [addSyntheticRecord, operationState.variantCount, recordOperation, setSurface, syntheticRecords.length]);
+  }, [addSyntheticRecord, focusRecordAcrossPipeline, operationState.variantCount, recordOperation, runtimeSurfaces, selectedRows, setSurface, syntheticRecords.length]);
 
   const handleRecordAction = useCallback((kind, activeSurface, recordDetail) => {
     const recordTitle = recordDetail?.title || activeSurface.expanded.title;
@@ -2997,13 +3102,7 @@ export default function App() {
     }
 
     if (kind === "export") {
-      downloadJson(`fastdas-synthetic-runtime-${operationState.activeSeed}.json`, {
-        activeSeed: operationState.activeSeed,
-        scenarioMode: operationState.scenarioMode,
-        datasetVersion: operationState.datasetVersion,
-        syntheticRecords,
-        pipelineOverrides,
-      });
+      downloadJson(`fastdas-synthetic-runtime-${operationState.activeSeed}.json`, buildRuntimeExportPayload(operationState, syntheticRecords, pipelineOverrides, activeSurfaceId));
       recordOperation({
         title: "Export bundle downloaded",
         body: "Customer-safe JSON runtime bundle downloaded with entered records, pipeline state, scenario manifest, and seed metadata.",
@@ -3015,7 +3114,7 @@ export default function App() {
 
     const nextVariant = operationState.variantCount + 1;
     const scenarioMode = SCENARIO_SEQUENCE[nextVariant % SCENARIO_SEQUENCE.length];
-    addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated");
+    addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, scenarioMode), "Scenario record generated", { workflowIndex: 2 });
     setOperationState(current => (
       appendEvent(current, {
         title: "Generated demo variant",
@@ -3031,7 +3130,34 @@ export default function App() {
         },
       })
     ));
-  }, [addSyntheticRecord, operationState.activeSeed, operationState.datasetVersion, operationState.scenarioMode, operationState.variantCount, pipelineOverrides, recordOperation, syntheticRecords]);
+  }, [activeSurfaceId, addSyntheticRecord, operationState, pipelineOverrides, recordOperation, syntheticRecords]);
+
+  const handleSurfaceExport = useCallback(() => {
+    downloadJson(`fastdas-${surface.id}-export-${operationState.activeSeed}.json`, buildRuntimeExportPayload(operationState, syntheticRecords, pipelineOverrides, surface.id));
+    handleUtilityAction("Surface export downloaded", `${surface.title} export bundle downloaded with source-safe synthetic data only.`, "blue");
+  }, [handleUtilityAction, operationState, pipelineOverrides, surface.id, surface.title, syntheticRecords]);
+
+  const handleSaveCurrentView = useCallback(() => {
+    window.localStorage.setItem(SAVED_VIEW_STORAGE_KEY, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      activeSurfaceId: surface.id,
+      selectedRowId: selectedRows[surface.id],
+      activeCommandFilterId,
+      operationState,
+    }));
+    handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved in this browser.`, "blue");
+  }, [activeCommandFilterId, handleUtilityAction, operationState, selectedRows, surface.id, surface.title]);
+
+  const handleGuidedCreateRecord = useCallback(() => {
+    const record = generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode);
+    addSyntheticRecord(record, "Working demo lead created", { routeToCommand: true, workflowIndex: 1 });
+  }, [addSyntheticRecord, operationState.scenarioMode, syntheticRecords.length]);
+
+  const handleGuidedAdvance = useCallback(() => {
+    const record = activeDemoRecord || addSyntheticRecord(generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode), "Working demo lead created", { routeToCommand: true, workflowIndex: 1 });
+    const currentIndex = pipelineOverrides[record.name]?.workflowIndex ?? 0;
+    handlePipelineStep(record.name, Math.min(workflowStages.length - 1, currentIndex + 1));
+  }, [activeDemoRecord, addSyntheticRecord, handlePipelineStep, operationState.scenarioMode, pipelineOverrides, syntheticRecords.length]);
 
   return (
     <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
@@ -3060,7 +3186,8 @@ export default function App() {
               <button
                 className="if-btn if-btn--secondary fg-btn"
                 type="button"
-                onClick={() => handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved.`, "blue")}
+                data-fastdas-action="save-current-view"
+                onClick={handleSaveCurrentView}
               >
                 <Icon name="save" />Save View
               </button>
@@ -3145,7 +3272,8 @@ export default function App() {
               <button
                 className="if-btn if-btn--secondary fg-btn"
                 type="button"
-                onClick={() => handleUtilityAction("Surface export staged", `${surface.title} export bundle is ready with source-safe synthetic data only.`, "blue")}
+                data-fastdas-action="surface-export"
+                onClick={handleSurfaceExport}
               >
                 <Icon name="download" />Export
               </button>
@@ -3159,6 +3287,30 @@ export default function App() {
               </button>
             </div>
           </header>
+
+          <GuidedDemoRunner
+            activeRecord={activeDemoRecord}
+            workflowIndex={activeDemoWorkflowIndex}
+            syntheticRecordCount={syntheticRecords.length}
+            onCreateRecord={handleGuidedCreateRecord}
+            onAdvance={handleGuidedAdvance}
+            onOpenInput={() => setSurface("synthetic-data")}
+            onExport={() => handleSyntheticAction("export")}
+            onReset={() => handleSyntheticAction("reset")}
+          />
+
+          {surface.id === "synthetic-data" ? (
+            <SyntheticPipelineConsole
+              visible
+              draft={syntheticDraft}
+              syntheticRecords={syntheticRecords}
+              pipelineOverrides={pipelineOverrides}
+              onDraftChange={handleSyntheticDraftChange}
+              onSubmit={handleSyntheticSubmit}
+              onGenerateRecord={handleGenerateSyntheticRecord}
+              onPipelineStep={handlePipelineStep}
+            />
+          ) : null}
 
           {!isFocusedWorkbench ? (
             <>
@@ -3223,17 +3375,6 @@ export default function App() {
           <SourceCards cards={surface.sourceCards} />
 
           <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
-
-          <SyntheticPipelineConsole
-            visible={surface.id === "synthetic-data"}
-            draft={syntheticDraft}
-            syntheticRecords={syntheticRecords}
-            pipelineOverrides={pipelineOverrides}
-            onDraftChange={handleSyntheticDraftChange}
-            onSubmit={handleSyntheticSubmit}
-            onGenerateRecord={handleGenerateSyntheticRecord}
-            onPipelineStep={handlePipelineStep}
-          />
 
           <BottomPanels surface={surface} />
 
