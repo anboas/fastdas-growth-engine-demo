@@ -73,7 +73,7 @@ const SCENARIO_SEQUENCE = [
 ];
 
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
-const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations", "synthetic-data"];
+const FOCUSED_WORKBENCH_SURFACES = ["command-center", "signal-intake", "opportunity-workbench", "evidence-review", "outreach-queue", "agent-operations", "synthetic-data", "conversion-board"];
 
 function defaultDetailOpenRows() {
   return Object.fromEntries(surfaces.map(surface => [surface.id, FOCUSED_WORKBENCH_SURFACES.includes(surface.id) ? "" : surface.selected]));
@@ -453,6 +453,44 @@ function datasetDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function conversionDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  const record = opportunityRecordForId(selectedRowId || surface.selected);
+  if (!row || !record) return surface.expanded;
+
+  const [opportunityCell, signal, firstPaidStep, conversation, assessment, report, followOn, learning] = row.cells;
+  const { primary: opportunityName, secondary: market } = splitCell(opportunityCell);
+  const isAssessmentCandidate = String(assessment).toLowerCase().includes("candidate");
+
+  return {
+    title: opportunityName,
+    description: learning || record.why || surface.expanded.description,
+    conversionRecord: {
+      name: opportunityName,
+      market,
+      signal,
+      firstPaidStep,
+      conversation,
+      assessment,
+      report,
+      followOn,
+      learning,
+      isAssessmentCandidate,
+    },
+    evidence: [
+      [signal, `Conversation / ${conversation}`, `${opportunityName} is tracking toward ${firstPaidStep}.`],
+      [firstPaidStep, "First paid step", `Conversion path: ${record.conversion}. Follow-on target: ${followOn}.`],
+      [assessment, isAssessmentCandidate ? "Assessment candidate" : "Learning signal", learning],
+    ],
+    actions: [
+      isAssessmentCandidate ? `Promote ${opportunityName} into assessment follow-up.` : `Keep ${opportunityName} in learning/nurture state.`,
+      `Tune scoring based on ${firstPaidStep.toLowerCase()} performance.`,
+      `Capture learning: ${learning}`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
 function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "command-center" || surface.id === "opportunity-workbench") return recordDetailForSelection(surface, selectedRowId);
   if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
@@ -460,6 +498,7 @@ function detailForSurfaceSelection(surface, selectedRowId) {
   if (surface.id === "outreach-queue") return outreachDetailForSelection(surface, selectedRowId);
   if (surface.id === "agent-operations") return agentDetailForSelection(surface, selectedRowId);
   if (surface.id === "synthetic-data") return datasetDetailForSelection(surface, selectedRowId);
+  if (surface.id === "conversion-board") return conversionDetailForSelection(surface, selectedRowId);
   return surface.expanded;
 }
 
@@ -836,6 +875,79 @@ function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, 
     );
   }
 
+  if (surface.id === "conversion-board") {
+    const conversion = detail.conversionRecord;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--conversion"
+        data-fastdas-record-focus-panel
+        data-fastdas-conversion-focus-panel
+        data-fastdas-record-focus-id={conversion.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Conversion Focus</div>
+            <h3 className="if-record-detail__title">{conversion.name}</h3>
+            <p className="if-record-detail__text">{detail.description}</p>
+          </div>
+          <Chip tone={toneForValue(conversion.assessment)}>{conversion.assessment}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Market</dt>
+            <dd className="if-provenance-field__value">{conversion.market}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>First Step</dt>
+            <dd className="if-provenance-field__value">{conversion.firstPaidStep}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Conversation</dt>
+            <dd className="if-provenance-field__value">{conversion.conversation}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Follow-On</dt>
+            <dd className="if-provenance-field__value">{conversion.followOn}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Learning</dt>
+            <dd className="if-provenance-field__value">{conversion.learning}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="chart" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Conversion-learning action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-conversion-details"
+            data-fastdas-open-details={conversion.name}
+            onClick={() => onOpenDetails(conversion.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Conversion Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-log-conversion"
+            onClick={() => onRecordAction("log-conversion", surface, detail)}
+          >
+            <Icon name="check" />Log Outcome
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   const record = detail.record;
   const isQualificationWorkbench = surface.id === "opportunity-workbench";
 
@@ -1112,6 +1224,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
       data-fastdas-outreach-queue-grid={surface.id === "outreach-queue" ? "true" : undefined}
       data-fastdas-agent-operations-grid={surface.id === "agent-operations" ? "true" : undefined}
       data-fastdas-synthetic-data-grid={surface.id === "synthetic-data" ? "true" : undefined}
+      data-fastdas-conversion-board-grid={surface.id === "conversion-board" ? "true" : undefined}
       data-if-data-table
       data-if-table-density="compact"
     >
@@ -1162,6 +1275,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
           {surface.id === "outreach-queue" ? <span className="if-badge fg-counter">Approval queue</span> : null}
           {surface.id === "agent-operations" ? <span className="if-badge fg-counter">Runtime view</span> : null}
           {surface.id === "synthetic-data" ? <span className="if-badge fg-counter">Dataset control</span> : null}
+          {surface.id === "conversion-board" ? <span className="if-badge fg-counter">Learning view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -1202,6 +1316,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         data-fastdas-outreach-queue-workbench={surface.id === "outreach-queue" ? "true" : undefined}
         data-fastdas-agent-operations-workbench={surface.id === "agent-operations" ? "true" : undefined}
         data-fastdas-synthetic-data-workbench={surface.id === "synthetic-data" ? "true" : undefined}
+        data-fastdas-conversion-board-workbench={surface.id === "conversion-board" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1967,6 +2082,12 @@ export default function App() {
         body: `${recordTitle} is queued for quality-gate validation with provenance and reset boundaries retained.`,
         tone: "blue",
         workflowIndex: 2,
+      },
+      "log-conversion": {
+        title: "Conversion outcome logged",
+        body: `${recordTitle} learning was captured for first-offer scoring and follow-on path calibration.`,
+        tone: "success",
+        workflowIndex: 8,
       },
     };
     recordOperation(labels[kind]);

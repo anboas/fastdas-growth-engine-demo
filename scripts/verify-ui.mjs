@@ -422,9 +422,37 @@ try {
   assert.ok(datasetDetailText.includes("Source Registry Dataset"), "opened dataset detail row should match the clicked dataset");
   assert.ok(datasetDetailText.includes("Signal Intake"), "opened dataset detail should use dataset-specific demo-surface context");
 
+  await desktop.goto(`${BASE_URL}#/conversion-board`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector("[data-fastdas-conversion-focus-panel]", { timeout: 5000 });
+  const conversionWorkbenchColumns = await desktop.locator("[data-fastdas-conversion-board-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(conversionWorkbenchColumns >= 2, "conversion board should share the conversion table with a selected-conversion panel on desktop");
+  const conversionDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-conversion-board-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(conversionDrawerOrder, true, "conversion board should put conversion records before operational controls");
+  const conversionFocusPanel = desktop.locator("[data-fastdas-conversion-focus-panel]");
+  let conversionFocusText = await conversionFocusPanel.textContent();
+  assert.ok(conversionFocusText.includes("Capital Ridge Senior Living"), "conversion board should start with the selected conversion record");
+  await desktop.locator("[data-fastdas-conversion-board-grid] tr[data-if-table-row]", { hasText: "Mosaic West Hotel" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-conversion-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Mosaic West Hotel");
+  conversionFocusText = await conversionFocusPanel.textContent();
+  assert.ok(conversionFocusText.includes("Mosaic West Hotel"), "clicking a conversion row should move the conversion focus panel");
+  assert.ok(conversionFocusText.includes("Coverage benchmark"), "conversion focus panel should show the selected row's first paid step");
+  await desktop.locator('[data-fastdas-action="focus-log-conversion"]').click();
+  await assertAuditContains(desktop, "Conversion outcome logged", "conversion outcome logging");
+  const closedConversionDetails = await desktop.locator('[data-fastdas-expanded-record-id="Mosaic West Hotel"]').count();
+  assert.equal(closedConversionDetails, 0, "conversion row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-conversion-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Mosaic West Hotel"]', { timeout: 5000 });
+  const conversionDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Mosaic West Hotel"]').textContent();
+  assert.ok(conversionDetailText.includes("Mosaic West Hotel"), "opened conversion detail row should match the clicked record");
+  assert.ok(conversionDetailText.includes("Hospitality pain language"), "opened conversion detail should use conversion-specific learning context");
+
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations" || surfaceId === "synthetic-data") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations" || surfaceId === "synthetic-data" || surfaceId === "conversion-board") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
         const openSelector = surfaceId === "signal-intake"
@@ -439,7 +467,9 @@ try {
                   ? '[data-fastdas-action="open-agent-details"]'
                   : surfaceId === "synthetic-data"
                     ? '[data-fastdas-action="open-dataset-details"]'
-                    : '[data-fastdas-action="open-record-details"]';
+                    : surfaceId === "conversion-board"
+                      ? '[data-fastdas-action="open-conversion-details"]'
+                      : '[data-fastdas-action="open-record-details"]';
         await desktop.locator(openSelector).click();
       }
     }
@@ -510,6 +540,8 @@ try {
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
   assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
   await mobile.locator("[data-control-surface-nav] button", { hasText: "Conversion Board" }).click();
+  await mobile.waitForSelector("[data-fastdas-conversion-focus-panel]");
+  await mobile.locator('[data-fastdas-action="open-conversion-details"]').click();
   await mobile.waitForSelector("[data-fastdas-expanded-record]");
   await assertNoPageOverflow(mobile, "mobile conversion board");
   const mobileMetrics = await mobile.locator("[data-fastdas-metric-grid] .fg-metric").count();
