@@ -1456,6 +1456,10 @@ button {
   grid-column: 1 / -1;
 }
 
+.fg-record-focus--source .fg-record-focus__facts .if-provenance-field:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
 .fg-command-center-drawer {
   overflow: hidden;
 }

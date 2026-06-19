@@ -75,7 +75,7 @@ const SCENARIO_SEQUENCE = [
 const OPERATOR_MODES = ["Live Walkthrough", "Synthetic Variant", "Customer Review"];
 
 function defaultDetailOpenRows() {
-  return Object.fromEntries(surfaces.map(surface => [surface.id, surface.id === "command-center" ? "" : surface.selected]));
+  return Object.fromEntries(surfaces.map(surface => [surface.id, ["command-center", "signal-intake"].includes(surface.id) ? "" : surface.selected]));
 }
 
 const PRIMARY_ACTIONS = {
@@ -267,9 +267,133 @@ function recordDetailForSelection(surface, selectedRowId) {
   };
 }
 
+function tableRowForId(surface, selectedRowId) {
+  return surface.table?.rows.find(row => row.id === selectedRowId) || surface.table?.rows[0];
+}
+
+function sourceDetailForSelection(surface, selectedRowId) {
+  const row = tableRowForId(surface, selectedRowId || surface.selected);
+  if (!row) return surface.expanded;
+
+  const [sourceCell, lane, refresh, trust, signals, exceptions, routedTo, nextRun] = row.cells;
+  const { primary: sourceName, secondary: sourceDescription } = splitCell(sourceCell);
+  const hasException = !String(exceptions).toLowerCase().includes("clean");
+
+  return {
+    title: sourceName,
+    description: sourceDescription || surface.expanded.description,
+    source: {
+      name: sourceName,
+      description: sourceDescription || surface.expanded.description,
+      lane,
+      refresh,
+      trust,
+      signals,
+      exceptions,
+      routedTo,
+      nextRun,
+    },
+    evidence: [
+      [lane, `Trust / ${trust}`, sourceDescription || "Source contract retained for operator review."],
+      [signals, "Signal yield", `Current routing target: ${routedTo}. Next scheduled run: ${nextRun}.`],
+      [exceptions, hasException ? "Needs review" : "Clean", hasException ? "Operator should resolve or classify the exception before trusting automated enrichment." : "No active parser or sampling blocker on this source."],
+    ],
+    actions: [
+      `Run ${sourceName} at ${nextRun}.`,
+      hasException ? `Classify exception: ${exceptions}.` : `Keep ${sourceName} on the current refresh cadence.`,
+      `Route captured signals to ${routedTo}.`,
+    ],
+    gates: surface.expanded.gates,
+  };
+}
+
+function detailForSurfaceSelection(surface, selectedRowId) {
+  if (surface.id === "command-center") return recordDetailForSelection(surface, selectedRowId);
+  if (surface.id === "signal-intake") return sourceDetailForSelection(surface, selectedRowId);
+  return surface.expanded;
+}
+
 function RecordFocusPanel({ surface, selectedRowId, detailsOpen, onOpenDetails, onRecordAction }) {
-  if (surface.id !== "command-center") return null;
-  const detail = recordDetailForSelection(surface, selectedRowId);
+  if (!["command-center", "signal-intake"].includes(surface.id)) return null;
+  const detail = detailForSurfaceSelection(surface, selectedRowId);
+
+  if (surface.id === "signal-intake") {
+    const source = detail.source;
+    return (
+      <aside
+        className="if-panel if-record-detail if-operations-section fg-record-focus fg-record-focus--source"
+        data-fastdas-record-focus-panel
+        data-fastdas-source-focus-panel
+        data-fastdas-record-focus-id={source.name}
+      >
+        <div className="fg-record-focus__header">
+          <div>
+            <div className="if-record-detail__eyebrow fg-eyebrow">Selected Source</div>
+            <h3 className="if-record-detail__title">{source.name}</h3>
+            <p className="if-record-detail__text">{detail.description}</p>
+          </div>
+          <Chip tone={toneForValue(source.exceptions)}>{source.exceptions}</Chip>
+        </div>
+        <dl className="if-provenance-grid fg-record-focus__facts">
+          <div className="if-provenance-field">
+            <dt>Lane</dt>
+            <dd className="if-provenance-field__value">{source.lane}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Trust</dt>
+            <dd className="if-provenance-field__value">{source.trust}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Refresh</dt>
+            <dd className="if-provenance-field__value">{source.refresh}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Signals</dt>
+            <dd className="if-provenance-field__value">{source.signals}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Route</dt>
+            <dd className="if-provenance-field__value">{source.routedTo}</dd>
+          </div>
+          <div className="if-provenance-field">
+            <dt>Next Run</dt>
+            <dd className="if-provenance-field__value">{source.nextRun}</dd>
+          </div>
+        </dl>
+        <div className="if-action-queue if-operations-list fg-record-focus__actions">
+          {detail.actions.slice(0, 2).map(action => (
+            <div className="if-action-queue__item if-operations-list__item if-operations-list__item--success if-tone-info fg-action-card" key={action}>
+              <Icon name="check" />
+              <span>
+                <strong className="if-operations-list__title">{action}</strong>
+                <em className="if-operations-list__description">Source-control action</em>
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="if-toolbar__group fg-record-focus__toolbar">
+          <button
+            className="if-btn if-btn--primary fg-btn fg-btn--primary"
+            type="button"
+            data-fastdas-action="open-source-details"
+            data-fastdas-open-details={source.name}
+            onClick={() => onOpenDetails(source.name)}
+          >
+            <Icon name="arrowUp" />{detailsOpen ? "Details Open" : "Open Source Details"}
+          </button>
+          <button
+            className="if-btn if-btn--secondary fg-btn"
+            type="button"
+            data-fastdas-action="focus-run-source"
+            onClick={() => onRecordAction("run-source", surface, detail)}
+          >
+            <Icon name="refresh" />Run Source
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   const record = detail.record;
 
   return (
@@ -523,17 +647,24 @@ function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
 
 function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
-  const selectedDetail = recordDetailForSelection(surface, selectedRowId);
+  const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
   const detailsOpen = detailOpenRowId === selectedRowId;
   const isCommandCenter = surface.id === "command-center";
-  const visibleFilters = isCommandCenter ? surface.filters.slice(0, 3) : surface.filters;
+  const isFocusedWorkbench = ["command-center", "signal-intake"].includes(surface.id);
+  const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   return (
-    <section className={`if-panel if-data-table if-table-shell fg-panel ${isCommandCenter ? "fg-panel--command-center" : ""}`} data-fastdas-opportunity-grid data-if-data-table data-if-table-density="compact">
+    <section
+      className={`if-panel if-data-table if-table-shell fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
+      data-fastdas-opportunity-grid
+      data-fastdas-signal-intake-grid={surface.id === "signal-intake" ? "true" : undefined}
+      data-if-data-table
+      data-if-table-density="compact"
+    >
       <div className="if-panel__header fg-panel__header">
         <div>
           <h2 className="if-panel__title">{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
           <p className="if-panel__subtitle">
-            {isCommandCenter
+            {isFocusedWorkbench
               ? `${surface.table.count}. Click a row to inspect it, then open full details only when needed.`
               : `${surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.`}
           </p>
@@ -570,6 +701,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
             </button>
           ))}
           {isCommandCenter ? <span className="if-badge fg-counter">Decision view</span> : null}
+          {surface.id === "signal-intake" ? <span className="if-badge fg-counter">Source health view</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
           <button
@@ -601,8 +733,10 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, onSelect, on
         </div>
       </div>
       <div
-        className={isCommandCenter ? `fg-command-center-workbench ${detailsOpen ? "fg-command-center-workbench--details-open" : ""}` : ""}
+        className={isFocusedWorkbench ? `fg-focused-workbench fg-command-center-workbench ${detailsOpen ? "fg-focused-workbench--details-open fg-command-center-workbench--details-open" : ""}` : ""}
+        data-fastdas-record-workbench={isFocusedWorkbench ? "true" : undefined}
         data-fastdas-command-center-workbench={isCommandCenter ? "true" : undefined}
+        data-fastdas-signal-intake-workbench={surface.id === "signal-intake" ? "true" : undefined}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
@@ -1212,7 +1346,7 @@ export default function App() {
     () => surfaces.find(item => item.id === activeSurfaceId) || surfaces[0],
     [activeSurfaceId],
   );
-  const isCommandCenter = surface.id === "command-center";
+  const isFocusedWorkbench = ["command-center", "signal-intake"].includes(surface.id);
   const activeMetricSignalId = signalIdForLabel(surface.metrics[0]?.[0]);
 
   const setSurface = useCallback((id) => {
@@ -1329,6 +1463,13 @@ export default function App() {
         title: "Record placed on hold",
         body: `${recordTitle} is blocked from outbound action until source, role, or technical claim risk is resolved.`,
         tone: "danger",
+      },
+      "run-source": {
+        title: "Selected source run queued",
+        body: `${recordTitle} is queued for a source-safe refresh with parser warnings and routing gates retained.`,
+        tone: "blue",
+        workflowIndex: 1,
+        updates: state => ({ signalRuns: state.signalRuns + 1 }),
       },
     };
     recordOperation(labels[kind]);
@@ -1512,7 +1653,7 @@ export default function App() {
             </div>
           </div>
 
-          <header className={`if-page-header if-operations-page__hero fg-page-header ${isCommandCenter ? "fg-page-header--command-center" : ""}`} data-fastdas-page-header>
+          <header className={`if-page-header if-operations-page__hero fg-page-header ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
             <div className="fg-page-header__copy">
               <div className="if-page-header__eyebrow if-operations-page__eyebrow fg-eyebrow">{surface.eyebrow}</div>
               <h1 className="if-page-header__title if-operations-page__title">{surface.title}</h1>
@@ -1549,7 +1690,7 @@ export default function App() {
             </div>
           </header>
 
-          {!isCommandCenter ? (
+          {!isFocusedWorkbench ? (
             <>
               <WorkflowStrip activeIndex={operationState.workflowIndex} />
               <OperationalWorkflow state={operationState} />
@@ -1558,7 +1699,7 @@ export default function App() {
           ) : null}
 
           <section
-            className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isCommandCenter ? "fg-metric-grid--command-center" : ""}`}
+            className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isFocusedWorkbench ? "fg-metric-grid--focused-workbench fg-metric-grid--command-center" : ""}`}
             data-fastdas-metric-grid
             data-if-balanced-grid
             data-if-balanced-grid-min="168"
@@ -1584,7 +1725,7 @@ export default function App() {
 
           <OperationsSignalPanels metrics={surface.metrics} />
 
-          {isCommandCenter ? (
+          {isFocusedWorkbench ? (
             <CommandCenterOperationsDrawer operationState={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
           ) : null}
 

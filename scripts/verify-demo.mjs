@@ -56,6 +56,8 @@ for (const hook of [
   "data-fastdas-metric-grid",
   "data-fastdas-opportunity-grid",
   "data-fastdas-command-center-workbench",
+  "data-fastdas-signal-intake-workbench",
+  "data-fastdas-source-focus-panel",
   "data-fastdas-record-focus-panel",
   "data-fastdas-open-details",
   "data-fastdas-expanded-record",

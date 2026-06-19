@@ -257,13 +257,37 @@ try {
   assert.match(await desktop.locator("h1").textContent(), /Signal Intake/, "global scan should move operator to Signal Intake");
   const sourceHealthCards = await desktop.locator("[data-fastdas-source-health] .if-source-health-card .if-ops-meter-list").count();
   assert.ok(sourceHealthCards >= 1, "source cards should use framework source-health meter contracts");
+  const signalWorkbenchColumns = await desktop.locator("[data-fastdas-signal-intake-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
+  assert.ok(signalWorkbenchColumns >= 2, "signal intake should share the source table with a selected-source panel on desktop");
+  const signalDrawerOrder = await desktop.evaluate(() => {
+    const grid = document.querySelector("[data-fastdas-signal-intake-grid]");
+    const drawer = document.querySelector("[data-fastdas-command-center-ops-drawer]");
+    return Boolean(grid && drawer && (grid.compareDocumentPosition(drawer) & Node.DOCUMENT_POSITION_FOLLOWING));
+  });
+  assert.equal(signalDrawerOrder, true, "signal intake should put the source registry before operational controls");
+  const sourceFocusPanel = desktop.locator("[data-fastdas-source-focus-panel]");
+  await sourceFocusPanel.waitFor({ timeout: 5000 });
+  let sourceFocusText = await sourceFocusPanel.textContent();
+  assert.ok(sourceFocusText.includes("Arlington County Permit Portal"), "signal intake should start with the selected source in the focus panel");
+  await desktop.locator("[data-fastdas-signal-intake-grid] tr[data-if-table-row]", { hasText: "Google Reviews / Hospitality Coverage" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-source-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Google Reviews / Hospitality Coverage");
+  sourceFocusText = await sourceFocusPanel.textContent();
+  assert.ok(sourceFocusText.includes("Google Reviews / Hospitality Coverage"), "clicking a source row should move the source focus panel");
+  assert.ok(sourceFocusText.includes("Complaint pattern agent"), "source focus panel should show the selected row's routing target");
+  const closedSourceDetails = await desktop.locator('[data-fastdas-expanded-record-id="Google Reviews / Hospitality Coverage"]').count();
+  assert.equal(closedSourceDetails, 0, "source row click should focus the panel before opening full details");
+  await desktop.locator('[data-fastdas-action="open-source-details"]').click();
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="Google Reviews / Hospitality Coverage"]', { timeout: 5000 });
+  const sourceDetailText = await desktop.locator('[data-fastdas-expanded-record-id="Google Reviews / Hospitality Coverage"]').textContent();
+  assert.ok(sourceDetailText.includes("Google Reviews / Hospitality Coverage"), "opened source detail row should match the clicked source");
+  assert.ok(sourceDetailText.includes("Needs sample"), "opened source detail should use source-specific exception context");
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
-    if (surfaceId === "command-center") {
+    if (surfaceId === "command-center" || surfaceId === "signal-intake") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
         await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
-        await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+        await desktop.locator(surfaceId === "signal-intake" ? '[data-fastdas-action="open-source-details"]' : '[data-fastdas-action="open-record-details"]').click();
       }
     }
     await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
