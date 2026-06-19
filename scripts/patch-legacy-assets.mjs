@@ -21,10 +21,20 @@ const staleEntryJsAssets = [
   "assets/index-_WFwFz9J.js",
 ];
 
+const staleChunkJsBridges = {
+  "assets/rolldown-runtime-BpQH8Ho1.js": "assets/rolldown-runtime.js",
+  "assets/react-vendor-DLXOKURV.js": "assets/react-vendor.js",
+  "assets/control-surface-ui-D5nDe8Ch.js": "assets/control-surface-ui.js",
+};
+
 const staleEntryCssAssets = [
   "assets/index-DocpHply.css",
   "assets/index-yDrRylRZ.css",
 ];
+
+const staleChunkCssBridges = {
+  "assets/control-surface-ui-B0ozY_LW.css": "assets/control-surface-ui.css",
+};
 
 await mkdir(path.join(distDir, "assets"), { recursive: true });
 
@@ -43,6 +53,17 @@ await Promise.all(staleEntryJsAssets.map(async staleAsset => {
   await writeFile(path.join(distDir, staleAsset), bridge, "utf8");
 }));
 
+await Promise.all(Object.entries(staleChunkJsBridges).map(async ([staleAsset, targetAsset]) => {
+  const relativeTarget = `./${path.basename(targetAsset)}`;
+  const bridge = [
+    "/* Bridge for GitLab Pages edge nodes that briefly serve stale hashed modulepreload assets. */",
+    `import(${JSON.stringify(relativeTarget)});`,
+    "",
+  ].join("\n");
+
+  await writeFile(path.join(distDir, staleAsset), bridge, "utf8");
+}));
+
 await Promise.all(staleEntryCssAssets.map(async staleAsset => {
   if (staleAsset === currentCss) {
     return;
@@ -51,6 +72,17 @@ await Promise.all(staleEntryCssAssets.map(async staleAsset => {
   const relativeTarget = `./${path.basename(currentCss)}`;
   const bridge = [
     "/* Bridge for GitLab Pages edge nodes that briefly serve stale hashed HTML. */",
+    `@import url(${JSON.stringify(relativeTarget)});`,
+    "",
+  ].join("\n");
+
+  await writeFile(path.join(distDir, staleAsset), bridge, "utf8");
+}));
+
+await Promise.all(Object.entries(staleChunkCssBridges).map(async ([staleAsset, targetAsset]) => {
+  const relativeTarget = `./${path.basename(targetAsset)}`;
+  const bridge = [
+    "/* Bridge for GitLab Pages edge nodes that briefly serve stale hashed stylesheets. */",
     `@import url(${JSON.stringify(relativeTarget)});`,
     "",
   ].join("\n");
