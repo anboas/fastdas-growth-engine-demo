@@ -240,17 +240,29 @@ function TableCell({ value, column }) {
 function SourceCards({ cards = [] }) {
   if (!cards.length) return null;
   return (
-    <section className="if-operations-section-grid fg-source-grid" aria-label="Signal source lanes">
-      {cards.map(([title, status, body]) => (
-        <article className="if-card if-source-card if-operations-section fg-source-card" key={title}>
-          <div className="fg-source-card__top">
-            <span className="if-source-card__icon fg-source-card__mark">{title.slice(0, 1)}</span>
+    <section className="if-pattern-grid if-pattern-grid--ops fg-source-grid" aria-label="Signal source lanes" data-fastdas-source-health>
+      {cards.map(([title, status, body], index) => (
+        <article className="if-pattern-card if-source-health-card if-operations-section fg-source-card" key={title}>
+          <div className="if-pattern-card__header fg-source-card__top">
+            <span className="if-source-card__icon fg-source-card__mark if-icon-slot" data-if-icon={index % 2 === 0 ? "source" : "shield"} aria-hidden="true" />
             <div>
               <h3 className="if-card__title">{title}</h3>
-              <Chip tone={toneForValue(status)}>{status}</Chip>
+              <p>{body}</p>
+            </div>
+            <Chip tone={toneForValue(status)}>{status}</Chip>
+          </div>
+          <div className="if-ops-meter-list">
+            <div>
+              <span>Freshness</span>
+              <strong>{index === 2 ? "Weekly" : "Current"}</strong>
+              <i style={{ width: `${index === 2 ? 68 : 92}%` }} />
+            </div>
+            <div>
+              <span>Source trust</span>
+              <strong>{index === 2 ? "0.68" : index === 1 ? "0.79" : "0.87"}</strong>
+              <i style={{ width: `${index === 2 ? 68 : index === 1 ? 79 : 87}%` }} />
             </div>
           </div>
-          <p>{body}</p>
         </article>
       ))}
     </section>
@@ -848,15 +860,34 @@ function BottomPanels({ surface }) {
   ];
 
   return (
-    <section className="if-operations-section-grid fg-bottom-grid">
-      {activePanels.map(([title, items]) => (
-        <article className="if-panel if-operations-section fg-panel fg-panel--compact" key={title}>
-          <div className="if-panel__header fg-panel__header"><h2 className="if-panel__title">{title}</h2></div>
-          <div className="if-panel__body fg-panel__body">
-            <ul>
-              {items.map(item => <li key={item}>{item}</li>)}
-            </ul>
+    <section className="if-pattern-grid if-pattern-grid--ops fg-bottom-grid" data-fastdas-governance-panels>
+      {activePanels.map(([title, items], index) => (
+        <article
+          className={`if-pattern-card if-operations-section fg-panel fg-panel--compact ${index === 0 ? "if-impact-card" : index === 1 ? "if-ops-runbook-card" : "if-contract-card"}`}
+          key={title}
+        >
+          <div className="if-pattern-card__header fg-panel__header">
+            <span className="if-icon-slot" data-if-icon={index === 0 ? "trend" : index === 1 ? "task" : "database"} aria-hidden="true" />
+            <div>
+              <h2 className="if-panel__title">{title}</h2>
+              <p className="if-panel__subtitle">{index === 0 ? "Impact path" : index === 1 ? "Operator runbook" : "Demo contract"}</p>
+            </div>
           </div>
+          {index === 0 ? (
+            <div className="if-impact-chain">
+              {items.map(item => <span key={item}>{item}</span>)}
+            </div>
+          ) : index === 1 ? (
+            <ol className="if-runbook-list">
+              {items.map((item, itemIndex) => <li key={item}><strong>Step {itemIndex + 1}</strong><span>{item}</span></li>)}
+            </ol>
+          ) : (
+            <div className="if-artifact-row">
+              <Icon name="database" />
+              <strong>{title}</strong>
+              <em>{items.join(" · ")}</em>
+            </div>
+          )}
         </article>
       ))}
     </section>

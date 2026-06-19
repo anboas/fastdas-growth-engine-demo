@@ -153,10 +153,17 @@ try {
   await desktop.locator('[data-fastdas-action="command-export"]').click();
   await assertAuditContains(desktop, "Command export staged", "command dock export");
 
+  const governancePanelCards = await desktop.locator("[data-fastdas-governance-panels] .if-impact-card, [data-fastdas-governance-panels] .if-ops-runbook-card, [data-fastdas-governance-panels] .if-contract-card").count();
+  assert.equal(governancePanelCards, 3, "bottom governance panels should use framework impact, runbook, and contract cards");
+  const impactChain = await desktop.locator("[data-fastdas-governance-panels] .if-impact-chain span").count();
+  assert.ok(impactChain >= 1, "bottom governance panels should expose framework impact chains");
+
   await desktop.locator('[data-fastdas-action="run-signal-scan"]').click();
   await assertAuditContains(desktop, "Signal scan completed", "global scan");
   await desktop.waitForSelector("h1", { timeout: 5000 });
   assert.match(await desktop.locator("h1").textContent(), /Signal Intake/, "global scan should move operator to Signal Intake");
+  const sourceHealthCards = await desktop.locator("[data-fastdas-source-health] .if-source-health-card .if-ops-meter-list").count();
+  assert.ok(sourceHealthCards >= 1, "source cards should use framework source-health meter contracts");
 
   for (const surfaceId of SURFACE_IDS) {
     await desktop.goto(`${BASE_URL}#/${surfaceId}`, { waitUntil: "domcontentloaded" });
