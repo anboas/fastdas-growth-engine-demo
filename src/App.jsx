@@ -1393,11 +1393,12 @@ function SourceCards({ cards = [] }) {
   );
 }
 
-function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
+function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction, columnSpan = surface.table.columns.length }) {
   return (
-    <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail>
-      <td colSpan={surface.table.columns.length}>
-        <div className="if-table-detail__content if-record-detail if-record-detail--intelligence if-operations-section-grid fg-expanded" data-fastdas-expanded-record data-fastdas-expanded-record-id={selectedRowId}>
+    <tr className="if-table-detail is-expanded fg-expanded-row" data-if-table-detail data-opportunity-focus-row>
+      <td colSpan={columnSpan} data-opportunity-focus-card>
+        <div data-opportunity-focus-frame>
+          <div className="if-table-detail__content if-record-detail if-record-detail--intelligence if-operations-section-grid fg-expanded" data-workspace-detail-panel data-fastdas-expanded-record data-fastdas-expanded-record-id={selectedRowId}>
           <section className="if-record-detail__section if-operations-section fg-expanded__section">
             <div className="if-record-detail__eyebrow fg-eyebrow">Selected Record</div>
             <h3 className="if-record-detail__title">{detail.title}</h3>
@@ -1539,6 +1540,7 @@ function ExpandedRecord({ surface, selectedRowId, detail, onRecordAction }) {
             </div>
           </section>
         </div>
+        </div>
       </td>
     </tr>
   );
@@ -1674,6 +1676,11 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   const visibleFilters = isCommandCenter ? [] : isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   const rows = isCommandCenter ? commandCenterRowsForFilter(surface, commandQuickFilterId) : surface.table.rows;
   const activeCommandFilter = isCommandCenter ? commandCenterQuickFilter(commandQuickFilterId) : null;
+  function handleRowActivate(rowId) {
+    onSelect(rowId);
+    if (isCommandCenter) onOpenDetails(rowId);
+  }
+
   return (
     <section
       className={`if-panel if-data-table if-table-shell ci-contract-table-panel ci-page-band ci-page-band--table fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
@@ -1780,7 +1787,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
             <span style={{ fontSize: 12, fontWeight: 900, color: detailOpenRowId ? U.primaryDarker : U.baseDark }}>
-              {detailOpenRowId ? "1 selected" : "0 selected"}
+              {selectedRowId ? "1 selected" : "0 selected"}
             </span>
             <button
               type="button"
@@ -1822,7 +1829,10 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
           <table className="if-table if-table--sticky if-table--public-records if-table--dense ci-contract-table fg-table">
             <thead>
-              <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
+              <tr>
+                {columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}
+                {isCommandCenter ? <th className="fg-table-expand-header" aria-label="Expand row"></th> : null}
+              </tr>
             </thead>
             <tbody>
               {rows.map(row => (
@@ -1831,20 +1841,23 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                     className={`ci-contract-data-row${row.id === selectedRowId ? " is-selected" : ""}${row.id === selectedRowId && detailOpenRowId === row.id ? " is-expanded" : ""}`}
                     data-if-table-row
                     data-fastdas-table-row-id={row.id}
+                    data-opportunity-row-id={row.id}
+                    data-opportunity-row-title={splitCell(row.cells[0]).primary}
                     data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
                     data-if-table-search={row.cells.join(" ")}
+                    aria-selected={row.id === selectedRowId}
                     tabIndex={0}
-                    onClick={() => onSelect(row.id)}
+                    onClick={() => handleRowActivate(row.id)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        onSelect(row.id);
+                        handleRowActivate(row.id);
                       }
                     }}
                   >
                     {row.cells.map((cell, index) => (
                       <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
-                        {index === 0 ? (
+                        {index === 0 && !isCommandCenter ? (
                           <span className="if-table-actions fg-table-record-cell">
                             <button
                               className="if-icon-btn fg-expand-btn"
@@ -1865,6 +1878,24 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                         ) : <TableCell value={cell} column={columns[index]} />}
                       </td>
                     ))}
+                    {isCommandCenter ? (
+                      <td className="fg-table-expand-cell" data-if-table-cell="row-actions">
+                        <button
+                          className="if-table-expand if-icon-btn fg-expand-btn"
+                          type="button"
+                          data-if-table-expand
+                          aria-expanded={row.id === selectedRowId && detailOpenRowId === row.id}
+                          aria-label={`Toggle ${splitCell(row.cells[0]).primary}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSelect(row.id);
+                            onOpenDetails(row.id);
+                          }}
+                        >
+                          <Icon name="chevronDown" />
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                   {!isMobileWorkbench && row.id === selectedRowId && detailOpenRowId === row.id ? (
                     <ExpandedRecord
@@ -1873,6 +1904,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
                       selectedRowId={row.id}
                       detail={selectedDetail}
                       onRecordAction={onRecordAction}
+                      columnSpan={columns.length + (isCommandCenter ? 1 : 0)}
                     />
                   ) : null}
                 </Fragment>

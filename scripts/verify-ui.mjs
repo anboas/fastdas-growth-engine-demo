@@ -291,8 +291,36 @@ try {
   const commandFocusPanels = await desktop.locator("[data-fastdas-record-focus-panel]:visible").count();
   assert.equal(commandFocusPanels, 0, "command center should not show a persistent selected-record side panel");
   await desktop.locator("[data-fastdas-opportunity-grid] tr[data-if-table-row]", { hasText: "HarborPoint Garage" }).click();
-  const closedFocusedDetails = await desktop.locator('[data-fastdas-expanded-record-id="HarborPoint Garage"]').count();
-  assert.equal(closedFocusedDetails, 0, "row click should select without opening full details");
+  await desktop.waitForSelector('[data-fastdas-expanded-record-id="HarborPoint Garage"]', { timeout: 5000 });
+  assert.equal(await desktop.locator('[data-fastdas-table-row-id="HarborPoint Garage"]').getAttribute("aria-selected"), "true", "row click should select the clicked opportunity");
+  assert.equal(await desktop.locator('[data-fastdas-table-row-id="HarborPoint Garage"]').getAttribute("data-if-table-expanded"), "true", "row click should expand the embedded OIP focus row");
+  const rowExpansionGeometry = await desktop.locator('[data-fastdas-table-row-id="HarborPoint Garage"]').evaluate((row) => {
+    const detailRow = row.nextElementSibling;
+    const focusCard = detailRow?.querySelector("[data-opportunity-focus-card]");
+    const focusFrame = detailRow?.querySelector("[data-opportunity-focus-frame]");
+    const detailPanel = detailRow?.querySelector("[data-workspace-detail-panel]");
+    const rowRect = row.getBoundingClientRect();
+    const detailRect = detailRow?.getBoundingClientRect();
+    const frameRect = focusFrame?.getBoundingClientRect();
+    return {
+      nextIsDetail: detailRow?.matches("[data-if-table-detail][data-opportunity-focus-row]") || false,
+      hasFocusCard: Boolean(focusCard),
+      hasFocusFrame: Boolean(focusFrame),
+      hasWorkspacePanel: Boolean(detailPanel),
+      detailBelowRow: detailRect ? detailRect.top >= rowRect.bottom - 1 : false,
+      frameInsideViewport: frameRect ? frameRect.left >= -1 && frameRect.right <= window.innerWidth + 1 : false,
+      detailHeight: detailRect?.height || 0,
+    };
+  });
+  assert.equal(rowExpansionGeometry.nextIsDetail, true, `row click should render the detail row immediately after the clicked row: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.equal(rowExpansionGeometry.hasFocusCard, true, `embedded row should expose OIP focus-card anatomy: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.equal(rowExpansionGeometry.hasFocusFrame, true, `embedded row should expose OIP focus-frame anatomy: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.equal(rowExpansionGeometry.hasWorkspacePanel, true, `embedded row should expose the OIP workspace detail panel: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.equal(rowExpansionGeometry.detailBelowRow, true, `embedded focus row should sit below the clicked row: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.equal(rowExpansionGeometry.frameInsideViewport, true, `embedded focus frame should stay inside the viewport: ${JSON.stringify(rowExpansionGeometry)}`);
+  assert.ok(rowExpansionGeometry.detailHeight > 120, "embedded focus row should have visible panel height");
+  await desktop.locator("[data-fastdas-opportunity-grid] tr[data-if-table-row]", { hasText: "HarborPoint Garage" }).click();
+  await desktop.waitForFunction(() => !document.querySelector('[data-fastdas-expanded-record-id="HarborPoint Garage"]'));
   await desktop.locator('[data-fastdas-table-row-id="HarborPoint Garage"] [data-if-table-expand]').click();
   await desktop.waitForSelector('[data-fastdas-expanded-record-id="HarborPoint Garage"]', { timeout: 5000 });
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
