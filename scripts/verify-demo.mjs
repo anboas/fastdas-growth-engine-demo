@@ -1,20 +1,22 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readFileSync } from "node:fs";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 const html = readFileSync("index.html", "utf8");
 const app = readFileSync("src/App.jsx", "utf8");
-const data = readFileSync("src/data.js", "utf8");
-const workbenchModel = readFileSync("src/workbenchModel.js", "utf8");
+const main = readFileSync("src/main.jsx", "utf8");
 const css = readFileSync("src/styles.css", "utf8");
-const appContractSource = `${app}\n${workbenchModel}`;
 const gitlabCi = readFileSync(".gitlab-ci.yml", "utf8");
 const viteConfig = readFileSync("vite.config.js", "utf8");
 const legacyAssets = readFileSync("scripts/patch-legacy-assets.mjs", "utf8");
 const wranglerConfig = readFileSync("wrangler.toml", "utf8");
 const cloudflareHeaders = readFileSync("public/_headers", "utf8");
 
-assert.equal(pkg.name, "fastdas-growth-engine-demo", "package should identify the new repo");
+assert.equal(existsSync("src/data.js"), false, "baseline should not keep the old FastDAS data model");
+assert.equal(existsSync("src/workbenchModel.js"), false, "baseline should not keep the old FastDAS workbench model");
+
+assert.equal(pkg.name, "fastdas-growth-engine-demo", "package should identify the FastDAS repo");
 assert.equal(html.includes("<title>FastDAS Growth Engine</title>"), true, "HTML title should identify FastDAS");
 assert.equal(viteConfig.includes('base: "./"'), true, "Vite should use relative assets for GitLab Pages project paths");
 assert.equal(gitlabCi.includes("pages:"), true, "GitLab Pages job should exist");
@@ -30,80 +32,85 @@ assert.equal(legacyAssets.includes("assets/control-surface-ui-B0ozY_LW.css"), tr
 assert.equal(legacyAssets.includes("assets/react-vendor-DLXOKURV.js"), true, "legacy patch should bridge stale vendor modulepreload assets");
 assert.equal(viteConfig.includes('entryFileNames: "assets/[name].js"'), true, "Vite should use stable entry asset names for GitLab Pages");
 assert.equal(viteConfig.includes('chunkFileNames: "assets/[name].js"'), true, "Vite should use stable chunk asset names for GitLab Pages");
-assert.equal(app.includes('from "./workbenchModel.js"'), true, "App should consume workbench state through the workbench model module");
-assert.equal(app.includes("opportunityRecords"), false, "App should not own raw opportunity record lookup logic");
-assert.equal(workbenchModel.includes("export const FOCUSED_WORKBENCH_SURFACES"), true, "workbench model should own focused surface config");
-assert.equal(workbenchModel.includes("export const SAVED_VIEWS"), true, "workbench model should own saved-view config");
-assert.equal(workbenchModel.includes("export const WORKBENCH_SURFACE_CONFIG"), true, "workbench model should own per-surface workbench config");
-assert.equal(workbenchModel.includes("export function gridSurfaceAttributes"), true, "workbench model should build per-surface grid hooks");
-assert.equal(workbenchModel.includes("export function workbenchSurfaceAttributes"), true, "workbench model should build per-surface workbench hooks");
-assert.equal(workbenchModel.includes("export const COMMAND_CENTER_QUICK_FILTERS"), true, "workbench model should own command-center quick filter config");
-assert.equal(workbenchModel.includes("export function commandCenterRowsForFilter"), true, "workbench model should own command-center filtered row selection");
-assert.equal(workbenchModel.includes("export function detailForSurfaceSelection"), true, "workbench model should own selected-record detail builders");
-assert.equal(workbenchModel.includes("const detailBuilders"), true, "workbench model should route surface detail builders through a registry");
+assert.equal(main.includes('import "control-surface-ui/css"'), true, "app should keep the OIP/control-surface stylesheet");
+assert.equal(main.includes('import("control-surface-ui")'), true, "app should hydrate OIP/control-surface primitives");
 
-for (const surface of [
-  "command-center",
-  "signal-intake",
-  "opportunity-workbench",
-  "evidence-review",
-  "outreach-queue",
-  "agent-operations",
-  "synthetic-data",
-  "conversion-board",
-]) {
-  assert.equal(data.includes(`id: "${surface}"`), true, `data should include ${surface}`);
-}
-
-for (const hook of [
+for (const requiredHook of [
   "data-fastdas-demo-app",
+  "data-fastdas-baseline-app",
   "data-fastdas-shell-header",
-  "data-fastdas-simplified-shell",
   "data-fastdas-header-route",
   "data-fastdas-header-surface",
-  "data-fastdas-header-secondary-toggle",
-  "data-fastdas-header-secondary-menu",
-  "data-fastdas-header-secondary-item",
   "data-fastdas-header-utilities",
   "data-fastdas-profile-menu",
+  "data-profile-menu-trigger",
+  "data-profile-menu-surface",
+  "data-profile-setting",
+  "data-fastdas-baseline-canvas",
+  "data-fastdas-release-rail",
+  "data-fastdas-footer-status",
+]) {
+  assert.equal(app.includes(requiredHook), true, `baseline app should expose ${requiredHook}`);
+}
+
+for (const frameworkClass of [
+  "if-main",
+  "if-operations-app",
+  "if-product-header",
+  "if-product-header--sticky",
+  "if-product-header--compact",
+  "if-product-header--masthead",
+  "if-product-header__inner",
+  "if-product-header__brand",
+  "if-operations-topnav",
+  "if-operations-topnav__link",
+  "if-account-menu",
+  "if-avatar",
+  "if-account-surface",
+  "if-content",
+  "if-page",
+  "if-operations-workspace",
+  "if-release-rail",
+]) {
+  assert.equal(app.includes(frameworkClass), true, `baseline shell should keep OIP class ${frameworkClass}`);
+}
+
+for (const baselineStyle of [
+  ".fg-baseline-root",
+  ".fg-baseline-content",
+  ".fg-baseline-canvas",
+  ".fg-baseline-footer",
+]) {
+  assert.equal(css.includes(baselineStyle), true, `baseline stylesheet should define ${baselineStyle}`);
+}
+
+for (const removedAppContract of [
+  "from \"./data.js\"",
+  "from \"./workbenchModel.js\"",
+  "CommandCenterOipTable",
+  "OpportunityGrid",
+  "DataManagement",
+  "CommandDock",
+  "WorkflowStrip",
+  "OperationalWorkflow",
+  "GuidedDemoRunner",
+  "WorkspaceRail",
+  "WorkingSetRibbon",
+  "PageHeader",
+  "data-fastdas-simplified-shell",
   "data-fastdas-workspace-rail",
   "data-fastdas-working-set-ribbon",
   "data-fastdas-page-header",
-  "data-fastdas-page-meta",
   "data-fastdas-page-actions",
   "data-control-surface-nav",
-  "data-fastdas-nav-surface",
   "data-fastdas-saved-views",
-  "data-fastdas-saved-view",
   "data-fastdas-metric-grid",
   "data-fastdas-command-filter-card",
-  "data-fastdas-command-filter-label",
+  "data-fastdas-command-center-nav",
   "data-fastdas-grid-surface",
   "data-fastdas-workbench-surface",
   "data-fastdas-opportunity-grid",
   "data-fastdas-command-center-grid",
-  "data-fastdas-opportunity-workbench-grid",
-  "data-fastdas-evidence-review-grid",
-  "data-fastdas-outreach-queue-grid",
-  "data-fastdas-agent-operations-grid",
-  "data-fastdas-synthetic-data-grid",
-  "data-fastdas-conversion-board-grid",
-  "data-fastdas-command-center-workbench",
-  "data-fastdas-signal-intake-workbench",
-  "data-fastdas-opportunity-workbench-workbench",
-  "data-fastdas-evidence-review-workbench",
-  "data-fastdas-outreach-queue-workbench",
-  "data-fastdas-agent-operations-workbench",
-  "data-fastdas-synthetic-data-workbench",
-  "data-fastdas-conversion-board-workbench",
-  "data-fastdas-source-focus-panel",
-  "data-fastdas-opportunity-focus-panel",
-  "data-fastdas-evidence-focus-panel",
-  "data-fastdas-outreach-focus-panel",
-  "data-fastdas-agent-focus-panel",
-  "data-fastdas-dataset-focus-panel",
-  "data-fastdas-conversion-focus-panel",
-  "data-fastdas-record-focus-panel",
   "data-fastdas-open-details",
   "data-fastdas-expanded-record",
   "data-fastdas-provenance",
@@ -113,263 +120,15 @@ for (const hook of [
   "data-fastdas-data-management",
   "data-fastdas-scenario-packs",
   "data-fastdas-management-area",
-  "data-fastdas-scenario-pack",
   "data-fastdas-operational-workflow",
   "data-fastdas-workflow-stage",
   "data-fastdas-audit-log",
   "data-fastdas-toast",
   "data-fastdas-command-dock",
-  "data-fastdas-operator-mode",
   "data-fastdas-command-card",
-  "data-fastdas-release-rail",
-  "data-fastdas-footer-status",
   "data-fastdas-delivery-readiness",
 ]) {
-  assert.equal(appContractSource.includes(hook), true, `app contract source should expose ${hook}`);
+  assert.equal(app.includes(removedAppContract), false, `baseline App.jsx should not include ${removedAppContract}`);
 }
 
-for (const frameworkClass of [
-  "if-sidebar",
-  "if-sidebar__section",
-  "if-sidebar__group-header",
-  "if-product-header",
-  "if-product-header--sticky",
-  "if-product-header--compact",
-  "if-product-header--masthead",
-  "if-product-header__inner",
-  "if-product-header__brand",
-  "if-product-header__eyebrow",
-  "if-product-header__title",
-  "if-operations-topnav",
-  "if-operations-topnav__link",
-  "if-operations-topnav__secondary-button",
-  "if-operations-topnav__menu",
-  "if-operations-page",
-  "if-operations-page__topbar",
-  "if-breadcrumbs",
-  "if-breadcrumbs__current",
-  "if-operations-page__hero",
-  "if-operations-page__title",
-  "if-operations-section-grid",
-  "if-account-menu",
-  "if-avatar",
-  "if-account-surface",
-  "if-content",
-  "if-page-header",
-  "if-page-header__eyebrow",
-  "if-page-header__title",
-  "if-page-header__actions",
-  "if-metric-grid",
-  "if-operations-workspace",
-  "if-operations-signal-grid",
-  "if-operations-metric-grid",
-  "if-operations-signal",
-  "ci-page-band",
-  "ci-page-band--dashboard",
-  "ci-page-band--table",
-  "ci-signal-card",
-  "ci-opportunity-bulk-toolbar",
-  "ci-contract-table-panel",
-  "ci-contract-data-row",
-  "if-operations-panel-shell",
-  "if-operations-section",
-  "if-operations-panel",
-  "if-operations-summary-grid",
-  "if-operations-insight",
-  "if-agent-runtime",
-  "if-agent-runtime__summary",
-  "if-agent-runtime-kpi",
-  "if-agent-runtime__log",
-  "if-ledger-list",
-  "if-record-detail--intelligence",
-  "if-record-detail__eyebrow",
-  "if-record-detail__section",
-  "if-record-detail__title",
-  "if-record-detail__text",
-  "if-stepper",
-  "if-stepper__step",
-  "if-stepper__label",
-  "if-status-timeline",
-  "if-status-step",
-  "if-pattern-grid",
-  "if-pattern-card",
-  "if-pattern-card__header",
-  "if-ops-command-strip",
-  "if-ops-kpi",
-  "if-claim-toolbar",
-  "if-claim-summary-card",
-  "if-source-health-card",
-  "if-ops-meter-list",
-  "if-impact-card",
-  "if-impact-chain",
-  "if-ops-runbook-card",
-  "if-runbook-list",
-  "if-contract-card",
-  "if-artifact-row",
-  "if-rule-builder-mini",
-  "if-rule-line",
-  "if-check-list",
-  "if-toast",
-  "if-review-workflow",
-  "if-review-workflow__toolbar",
-  "if-review-workflow__summary",
-  "if-review-workflow__queue",
-  "if-review-workflow__detail",
-  "if-review-workflow__ledger",
-  "if-action-queue",
-  "if-action-queue__item",
-  "if-operations-list",
-  "if-operations-list__item",
-  "if-operations-list__title",
-  "if-source-feed-grid",
-  "if-source-feed-card",
-  "if-source-feed-card__header",
-  "if-source-feed-card__description",
-  "if-balanced-grid",
-  "if-card",
-  "if-card__title",
-  "if-metric",
-  "if-panel",
-  "if-panel__title",
-  "if-panel__subtitle",
-  "if-toolbar",
-  "if-toolbar__group",
-  "if-table-command-band__leading",
-  "if-table-command-band__filters",
-  "if-table-command-band__actions",
-  "if-table-shell",
-  "if-table-wrap",
-  "if-table-actions",
-  "if-table",
-  "if-data-table",
-  "if-pagination",
-  "if-table-detail",
-  "if-table-detail__content",
-  "if-table-cell-main",
-  "if-table-cell-meta",
-  "if-table-progress",
-  "if-table-progress__track",
-  "if-provenance-grid",
-  "if-provenance-field",
-  "if-provenance-field__value",
-  "if-source-badge",
-  "if-panel__footer",
-  "if-release-controls",
-  "if-release-summary",
-  "if-release-lane-grid",
-  "if-release-lane",
-  "if-release-lane__icon",
-  "if-release-lane__kv",
-  "if-route-demo-controls",
-  "if-route-status",
-  "if-segmented-control",
-  "if-segmented-control__item",
-  "if-btn",
-  "if-badge",
-  "if-icon-slot",
-]) {
-  assert.equal(app.includes(frameworkClass), true, `app should use Control Surface UI class ${frameworkClass}`);
-}
-
-assert.equal(app.includes("data-if-data-table"), true, "tables should expose Control Surface UI data-table behavior hooks");
-assert.equal(app.includes("data-if-operations-workspace"), true, "app content should expose the operations workspace contract");
-assert.equal(app.includes("data-if-operations-signal"), true, "metrics should expose operations signal contracts");
-assert.equal(app.includes("data-if-operations-focus-panel"), true, "metrics should target operations drilldown panels");
-assert.equal(app.includes("data-if-operations-panel"), true, "operations signals should have matching framework panels");
-assert.equal(app.includes("data-if-operations-current-label"), true, "operations panels should expose current-label slots");
-assert.equal(app.includes("data-if-operations-reset"), true, "operations panels should expose reset controls");
-assert.equal(app.includes("data-if-balanced-grid"), true, "metric grids should expose balanced-grid behavior hooks");
-assert.equal(app.includes("data-if-table-detail"), true, "expanded rows should expose framework table-detail hooks");
-assert.equal(app.includes("data-if-table-filter"), true, "tables should expose framework search/filter controls");
-assert.equal(app.includes("data-if-table-status"), true, "tables should expose framework status counters");
-assert.equal(app.includes("data-if-table-clear"), true, "tables should expose framework clear controls");
-assert.equal(app.includes("data-if-table-expand"), true, "tables should expose native row expansion controls");
-assert.equal(app.includes("data-if-review-workflow"), true, "inline operator approval should expose framework review workflow roots");
-assert.equal(app.includes("data-if-review-item"), true, "inline operator approval should expose framework review queue items");
-assert.equal(app.includes("data-if-review-action"), true, "inline operator approval should expose framework review actions");
-assert.equal(app.includes("data-if-review-count"), true, "inline operator approval should expose framework review count slots");
-assert.equal(app.includes("data-if-review-ledger"), true, "inline operator approval should expose framework review ledger slots");
-assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");
-assert.equal(app.includes("data-control-segmented-option"), true, "segmented options should be identified by framework hooks");
-assert.equal(app.includes("ci-opportunity-app fg-root"), true, "FastDAS customization should layer on top of the OIP operations app shell");
-
-for (const phrase of [
-  "first paid step",
-  "No auto-send",
-  "Source tracking",
-  "Human approval",
-  "Agent Operations",
-  "Synthetic Data Management",
-  "Golden demo state",
-  "Scenario Packs",
-  "Enter Synthetic Opportunity",
-  "Add to Pipeline",
-  "Pipeline stage advanced",
-  "Generated demo variant",
-  "Reset demo state",
-  "Export bundle downloaded",
-  "fastdas.demo.runtimePipeline.v1",
-  "fastdas.demo.operatorSession.v1",
-  "Working Demo Runner",
-  "Working demo lead created",
-  "Demo scenario selected",
-  "Guided walkthrough completed",
-  "Assessment offer ready",
-  "Surface export downloaded",
-  "Runtime record opened",
-  "Runtime record removed",
-  "Signal scan completed",
-  "Operator Control Dock",
-  "Command export staged",
-  "Operator mode changed",
-  "Conversion Board",
-  "Deploy path ready",
-  "Cloudflare Pages direct upload",
-]) {
-  assert.equal(app.includes(phrase) || data.includes(phrase), true, `demo should include ${phrase}`);
-}
-
-for (const handler of [
-  "handlePrimaryAction",
-  "handleSyntheticAction",
-  "handleSyntheticSubmit",
-  "handlePipelineStep",
-  "handleGuidedAdvance",
-  "handleGuidedCreateRecord",
-  "handleGuidedWalkthrough",
-  "handleOpenRuntimeRecord",
-  "handleRemoveRuntimeRecord",
-  "handleRecordAction",
-  "appendEvent",
-]) {
-  assert.equal(app.includes(handler), true, `demo should include operational handler ${handler}`);
-}
-
-for (const actionHook of [
-  'data-fastdas-action="surface-export"',
-  'data-fastdas-action="guided-create-record"',
-  'data-fastdas-action="guided-advance-stage"',
-  'data-fastdas-action="guided-run-walkthrough"',
-  'data-fastdas-action="guided-export-run"',
-  'data-fastdas-action="select-scenario-preset"',
-  'data-fastdas-scenario-presets',
-  'data-fastdas-stage-artifacts',
-  'data-fastdas-output-brief',
-  'data-fastdas-action="open-runtime-record"',
-  'data-fastdas-action="remove-runtime-record"',
-  'data-fastdas-action="page-primary"',
-  'data-fastdas-action="approve-record"',
-  'data-fastdas-action="generate-variant"',
-  'data-fastdas-action="add-synthetic-record"',
-  'data-fastdas-pipeline-step',
-  'data-fastdas-action="export-bundle"',
-  'data-fastdas-action="reset-demo"',
-  'data-fastdas-action={`command-${command.id}`}',
-]) {
-  assert.equal(app.includes(actionHook), true, `demo should expose action hook ${actionHook}`);
-}
-
-assert.equal(css.includes("linear-gradient"), false, "demo CSS should avoid gradient-heavy UI surfaces");
-assert.equal(css.includes(".fg-shell"), true, "demo CSS should define the FastDAS shell");
-
-console.log("Verified FastDAS demo identity, routes, provenance hooks, synthetic data management, human gates, and GitLab Pages config.");
+console.log("Verified FastDAS OIP baseline static contract.");

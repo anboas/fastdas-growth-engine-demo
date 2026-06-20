@@ -872,6 +872,53 @@ button.fg-product-header__brand {
   padding: clamp(10px, 1.2vw, 16px) clamp(12px, 1.8vw, 32px) 28px;
 }
 
+.fg-baseline-root {
+  min-height: 100dvh;
+  background: #f8fafc;
+}
+
+.fg-baseline-root .fg-product-header {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  border-bottom: 1px solid #dfe1e2;
+  background: #ffffff;
+}
+
+.fg-baseline-content {
+  flex: 1 1 auto;
+  min-height: calc(100dvh - 190px);
+  padding: clamp(14px, 1.8vw, 28px);
+  background: #f8fafc;
+}
+
+.fg-baseline-canvas {
+  display: grid;
+  min-height: clamp(380px, calc(100dvh - 260px), 760px);
+  place-items: center;
+  border: 1px dashed #c7d2df;
+  border-radius: 4px;
+  background:
+    linear-gradient(#eef2f6 1px, transparent 1px),
+    linear-gradient(90deg, #eef2f6 1px, transparent 1px),
+    #ffffff;
+  background-size: 24px 24px;
+  color: #8b98a7;
+}
+
+.fg-baseline-canvas .if-icon-slot {
+  width: 28px;
+  height: 28px;
+  opacity: 0.58;
+}
+
+.fg-baseline-footer {
+  margin: 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .ci-page-band--dashboard {
   display: grid;
   gap: 12px;
@@ -3552,6 +3599,20 @@ button.fg-product-header__brand {
   color: #6c7f93;
   font-size: 10px;
   letter-spacing: 0.06em;
+}
+
+.fg-footer__brand > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.fg-footer__brand em {
+  color: #6c7f93;
+  font-style: italic;
+  font-weight: 850;
 }
 
 .fg-footer__status {
