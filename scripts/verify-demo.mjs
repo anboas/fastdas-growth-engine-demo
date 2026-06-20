@@ -46,9 +46,17 @@ for (const requiredHook of [
   "data-profile-menu-trigger",
   "data-profile-menu-surface",
   "data-profile-setting",
+  "data-profile-lead-list",
+  "data-profile-manage-leads",
+  "data-response-assets-menu-button",
+  "data-platform-admin-menu-button",
+  "data-mobile-more-menu-button",
   "data-fastdas-baseline-canvas",
   "data-fastdas-release-rail",
   "data-fastdas-footer-status",
+  "data-opportunity-footer",
+  "data-footer-lockup",
+  "data-footer-release",
 ]) {
   assert.equal(app.includes(requiredHook), true, `baseline app should expose ${requiredHook}`);
 }
@@ -62,15 +70,20 @@ for (const frameworkClass of [
   "if-product-header--masthead",
   "if-product-header__inner",
   "if-product-header__brand",
+  "ci-sticky-header",
+  "ci-header-nav",
   "if-operations-topnav",
   "if-operations-topnav__link",
+  "if-operations-topnav__secondary-button",
+  "if-operations-topnav__menu",
   "if-account-menu",
   "if-avatar",
   "if-account-surface",
   "if-content",
   "if-page",
   "if-operations-workspace",
-  "if-release-rail",
+  "if-panel__footer",
+  "ci-opportunity-footer",
 ]) {
   assert.equal(app.includes(frameworkClass), true, `baseline shell should keep OIP class ${frameworkClass}`);
 }
@@ -79,9 +92,26 @@ for (const baselineStyle of [
   ".fg-baseline-root",
   ".fg-baseline-content",
   ".fg-baseline-canvas",
-  ".fg-baseline-footer",
+  ".ci-sticky-header",
+  ".ci-header-nav__menu-trigger",
+  ".ci-profile-menu",
+  ".ci-opportunity-footer",
 ]) {
   assert.equal(css.includes(baselineStyle), true, `baseline stylesheet should define ${baselineStyle}`);
+}
+
+for (const forbiddenShellClass of [
+  "fg-product-header",
+  "fg-product-header__inner",
+  "fg-product-header__brand",
+  "fg-operations-topnav",
+  "fg-profile-menu",
+  "fg-profile-menu__surface",
+  "fg-footer",
+  "fg-baseline-footer",
+  "if-release-rail",
+]) {
+  assert.equal(app.includes(forbiddenShellClass), false, `baseline App.jsx should not keep FastDAS shell class ${forbiddenShellClass}`);
 }
 
 for (const removedAppContract of [

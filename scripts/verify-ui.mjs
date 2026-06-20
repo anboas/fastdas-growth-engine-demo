@@ -94,11 +94,31 @@ async function assertNoPageOverflow(page, label) {
 
 async function assertBaselineOnly(page, label) {
   assert.equal(await page.locator("[data-fastdas-baseline-app]").count(), 1, `${label} should render the baseline app`);
-  assert.equal(await page.locator("[data-fastdas-shell-header].if-product-header").count(), 1, `${label} should keep the OIP product header`);
-  assert.equal(await page.locator("[data-fastdas-header-route] .if-operations-topnav__link").count(), 3, `${label} should keep only the header primary nav`);
-  assert.equal(await page.locator("[data-fastdas-profile-menu] [data-profile-menu-trigger]").count(), 1, `${label} should keep the main profile dropdown trigger`);
+  assert.equal(await page.locator("[data-fastdas-shell-header].if-product-header.ci-sticky-header").count(), 1, `${label} should keep the OIP product header`);
+  assert.equal(await page.locator("[data-fastdas-header-route].ci-header-nav .if-operations-topnav__link").count(), 3, `${label} should keep OIP primary nav links`);
+  assert.equal(await page.locator("[data-response-assets-menu-button].ci-header-nav__menu-trigger").count(), 1, `${label} should keep the OIP Response Assets nav group`);
+  assert.equal(await page.locator("[data-platform-admin-menu-button].ci-header-nav__menu-trigger").count(), 1, `${label} should keep the OIP Admin nav group`);
+  assert.equal(await page.locator("[data-mobile-more-menu-button]").count(), 1, `${label} should keep the OIP mobile More nav trigger`);
+  assert.equal(await page.locator("[data-fastdas-profile-menu].ci-profile-menu [data-profile-menu-trigger]").count(), 1, `${label} should keep the main profile dropdown trigger`);
   assert.equal(await page.locator("[data-fastdas-baseline-canvas]").count(), 1, `${label} should expose an empty OIP baseline canvas`);
-  assert.equal(await page.locator("[data-fastdas-release-rail]").count(), 1, `${label} should keep the footer/release rail`);
+  assert.equal(await page.locator("[data-opportunity-footer].ci-opportunity-footer.if-panel__footer").count(), 1, `${label} should keep the OIP footer`);
+  assert.equal(await page.locator("[data-fastdas-release-rail].ci-opportunity-footer").count(), 1, `${label} should map FastDAS footer hook onto the OIP footer`);
+  assert.equal(await page.locator(".fg-footer, .if-release-rail, .fg-product-header, .fg-operations-topnav").count(), 0, `${label} should not render old FastDAS shell classes`);
+  const headerStyle = await page.locator("[data-fastdas-shell-header]").evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderBottomColor: style.borderBottomColor,
+      borderBottomWidth: style.borderBottomWidth,
+    };
+  });
+  assert.deepEqual(
+    headerStyle,
+    { backgroundColor: "rgb(22, 46, 81)", borderBottomColor: "rgb(0, 94, 162)", borderBottomWidth: "3px" },
+    `${label} header should use OIP dark masthead colors`,
+  );
+  const footerRelease = await page.locator("[data-footer-release] span").evaluateAll(nodes => nodes.map(node => node.textContent.trim()));
+  assert.deepEqual(footerRelease, ["Version v0.1.0", "control-surface-ui", "Browser-local"], `${label} footer release metadata should match OIP`);
   for (const selector of REMOVED_SURFACES) {
     assert.equal(await page.locator(selector).count(), 0, `${label} should not render removed surface ${selector}`);
   }
@@ -123,9 +143,41 @@ async function assertProfileMenu(page, label) {
   await profileTrigger.click();
   assert.equal(await profileTrigger.getAttribute("aria-expanded"), "true", `${label} profile menu should open`);
   assert.equal(await page.locator("[data-profile-menu-surface]").count(), 1, `${label} profile surface should mount`);
-  assert.equal(await page.locator("[data-profile-menu-surface] [data-profile-setting]").count(), 3, `${label} profile menu should keep three settings`);
+  assert.equal(await page.locator("[data-profile-menu-surface] [data-profile-lead-list]").count(), 1, `${label} profile menu should keep OIP Active Profile section`);
+  assert.equal(await page.locator("[data-profile-menu-surface] [data-profile-setting]").count(), 6, `${label} profile menu should keep OIP workspace-display settings`);
+  assert.equal(await page.locator("[data-profile-menu-surface] [data-profile-manage-leads]").count(), 1, `${label} profile menu should keep OIP profile actions`);
+  assert.equal(await page.locator("[data-profile-menu-surface] .ci-profile-setting-toggle").count(), 6, `${label} profile settings should use OIP state toggles`);
   await page.keyboard.press("Escape");
   assert.equal(await profileTrigger.getAttribute("aria-expanded"), "false", `${label} Escape should close profile menu`);
+}
+
+async function assertHeaderMenus(page, label) {
+  if (label === "mobile") {
+    const mobileMore = page.locator("[data-mobile-more-menu-button]");
+    await mobileMore.click();
+    assert.equal(await mobileMore.getAttribute("aria-expanded"), "true", `${label} More menu should open`);
+    assert.equal(await page.locator("[data-mobile-more-menu] .if-operations-topnav__menu-label").count(), 3, `${label} More menu should group Primary, Response Assets, and Platform Admin`);
+    assert.equal(await page.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item").count(), 7, `${label} More menu should expose OIP baseline routes`);
+    await page.keyboard.press("Escape");
+    assert.equal(await mobileMore.getAttribute("aria-expanded"), "false", `${label} Escape should close More menu`);
+    return;
+  }
+
+  const responseAssets = page.locator("[data-response-assets-menu-button]");
+  await responseAssets.click();
+  assert.equal(await responseAssets.getAttribute("aria-expanded"), "true", `${label} Response Assets menu should open`);
+  assert.equal(await page.locator("[data-response-assets-menu] .if-operations-topnav__menu-label").textContent(), "Response Assets", `${label} Response Assets menu should use the OIP menu label`);
+  assert.equal(await page.locator("[data-response-assets-menu] .if-operations-topnav__menu-item").count(), 2, `${label} Response Assets menu should expose two rows`);
+  await page.keyboard.press("Escape");
+  assert.equal(await responseAssets.getAttribute("aria-expanded"), "false", `${label} Escape should close Response Assets menu`);
+
+  const admin = page.locator("[data-platform-admin-menu-button]");
+  await admin.click();
+  assert.equal(await admin.getAttribute("aria-expanded"), "true", `${label} Admin menu should open`);
+  assert.equal(await page.locator("[data-platform-admin-menu] .if-operations-topnav__menu-label").textContent(), "Platform Admin", `${label} Admin menu should use the OIP menu label`);
+  assert.equal(await page.locator("[data-platform-admin-menu] .if-operations-topnav__menu-item").count(), 2, `${label} Admin menu should expose baseline admin rows`);
+  await page.keyboard.press("Escape");
+  assert.equal(await admin.getAttribute("aria-expanded"), "false", `${label} Escape should close Admin menu`);
 }
 
 try {
@@ -135,6 +187,7 @@ try {
   await desktop.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(desktop, "desktop");
   await assertBaselineOnly(desktop, "desktop");
+  await assertHeaderMenus(desktop, "desktop");
   await assertProfileMenu(desktop, "desktop");
   await desktop.screenshot({ path: `${OUT_DIR}/fastdas-baseline-desktop.png`, fullPage: true });
   await desktop.close();
@@ -145,6 +198,7 @@ try {
   await mobile.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(mobile, "mobile");
   await assertBaselineOnly(mobile, "mobile");
+  await assertHeaderMenus(mobile, "mobile");
   await assertProfileMenu(mobile, "mobile");
   await mobile.screenshot({ path: `${OUT_DIR}/fastdas-baseline-mobile.png`, fullPage: true });
   await mobile.close();
