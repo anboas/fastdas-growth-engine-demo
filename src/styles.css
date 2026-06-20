@@ -951,6 +951,52 @@ button.fg-product-header__brand {
   padding: 8px 10px;
 }
 
+.fg-oip-command-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #dfe1e2;
+  background: #f8fbfe;
+  flex-wrap: wrap;
+}
+
+.fg-oip-command-toolbar:has([data-close-focus-rows]:not(:disabled)) {
+  background: #dbeaf8;
+}
+
+.fg-oip-command-toolbar__selection {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fg-oip-command-toolbar__count {
+  color: #12365f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fg-oip-command-toolbar__filter {
+  flex: 0 0 auto;
+}
+
+.fg-oip-command-grid {
+  table-layout: fixed;
+  min-width: 1420px;
+}
+
+.fg-oip-command-grid__select-col {
+  width: 44px;
+}
+
+.fg-oip-command-grid__expand-col {
+  width: 44px;
+}
+
 [data-fastdas-simplified-shell] .fg-page-topbar,
 [data-fastdas-simplified-shell] .fg-working-set-ribbon,
 [data-fastdas-simplified-shell] .fg-bottom-grid,
@@ -2729,7 +2775,9 @@ button.fg-product-header__brand {
 }
 
 .fg-table .fg-table-expand-header,
-.fg-table .fg-table-expand-cell {
+.fg-table .fg-table-expand-cell,
+.fg-table .fg-table-select-header,
+.fg-table .fg-table-select-cell {
   width: 56px;
   min-width: 56px;
   text-align: center;
@@ -2740,6 +2788,13 @@ button.fg-product-header__brand {
   right: 0;
   z-index: 4;
   box-shadow: -1px 0 0 #e1e9f2;
+}
+
+.fg-table .fg-table-select-cell input {
+  width: 15px;
+  height: 15px;
+  accent-color: #0a7d83;
+  cursor: pointer;
 }
 
 .fg-table tr.is-selected .fg-table-expand-cell {
@@ -2824,7 +2879,7 @@ button.fg-product-header__brand {
   left: 0;
   display: block;
   box-sizing: border-box;
-  width: calc(100vw - 32px);
+  width: calc(100vw - 88px);
   max-width: 100%;
 }
 

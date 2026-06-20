@@ -1665,6 +1665,178 @@ function MobileWorkbenchCards({ surface, rows, selectedRowId, detailOpenRowId, o
   );
 }
 
+const COMMAND_CENTER_COLUMN_WIDTHS = [72, 260, 220, 92, 180, 190, 150, 210];
+
+function CommandCenterOipTable({ surface, selectedRowId, detailOpenRowId, commandQuickFilterId, onSelect, onOpenDetails, onRecordAction }) {
+  const columns = surface.table.columns;
+  const rows = commandCenterRowsForFilter(surface, commandQuickFilterId);
+  const activeCommandFilter = commandCenterQuickFilter(commandQuickFilterId);
+  const isMobileWorkbench = useMobileWorkbenchLayout();
+  const tableMinWidth = COMMAND_CENTER_COLUMN_WIDTHS.reduce((sum, width) => sum + width, 0) + 82;
+
+  function toggleRow(rowId) {
+    onSelect(rowId);
+    onOpenDetails(rowId);
+  }
+
+  return (
+    <section
+      className="if-panel if-data-table if-table-shell ci-contract-table-panel ci-page-band ci-page-band--table fg-panel fg-panel--command-center fg-oip-command-table"
+      data-fastdas-opportunity-grid
+      data-page-band="opportunities-table"
+      {...gridSurfaceAttributes(surface.id)}
+      data-fastdas-active-command-filter={activeCommandFilter.id}
+      data-if-data-table
+      data-if-table-density="compact"
+      data-opportunity-table-focus
+    >
+      <div data-bulk-state-toolbar className="ci-opportunity-bulk-toolbar fg-oip-command-toolbar">
+        <div className="fg-oip-command-toolbar__selection">
+          <span className="fg-oip-command-toolbar__count">{selectedRowId ? "1 selected" : "0 selected"}</span>
+          <button type="button" className="if-btn if-btn--sm" onClick={() => rows[0] && onSelect(rows[0].id)}>
+            Select filtered
+          </button>
+          <button
+            type="button"
+            className="if-btn if-btn--sm"
+            data-close-focus-rows
+            onClick={() => detailOpenRowId && onOpenDetails(detailOpenRowId)}
+            disabled={!detailOpenRowId}
+            title={detailOpenRowId ? "Close the embedded focus row in the datatable" : "No embedded focus row is open"}
+          >
+            Close Focus
+          </button>
+        </div>
+        <span className="if-badge fg-oip-command-toolbar__filter" data-fastdas-command-filter-label>{activeCommandFilter.label}</span>
+      </div>
+
+      <div
+        className={`fg-focused-workbench fg-command-center-workbench fg-command-center-workbench--oip ${detailOpenRowId ? "fg-focused-workbench--details-open fg-command-center-workbench--details-open" : ""}`}
+        data-fastdas-record-workbench="true"
+        {...workbenchSurfaceAttributes(surface.id)}
+      >
+        <div className="if-table-wrap if-table-scroll fg-table-wrap">
+          <table className="if-table if-table--sticky if-table--public-records if-table--dense ci-contract-table fg-table fg-oip-command-grid" style={{ minWidth: `${tableMinWidth}px` }}>
+            <colgroup>
+              <col className="fg-oip-command-grid__select-col" />
+              {columns.map((column, index) => <col key={column} style={{ width: COMMAND_CENTER_COLUMN_WIDTHS[index] }} />)}
+              <col className="fg-oip-command-grid__expand-col" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className="fg-table-select-header" aria-label="Select row"></th>
+                {columns.map(column => <th key={column}>{column}</th>)}
+                <th className="fg-table-expand-header" aria-label="Expand row"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => {
+                const selected = row.id === selectedRowId;
+                const expanded = selected && detailOpenRowId === row.id;
+                const title = splitCell(row.cells[1] || row.id);
+                const selectedDetail = detailForSurfaceSelection(surface, row.id);
+                return (
+                  <Fragment key={row.id}>
+                    <tr
+                      className={`ci-contract-data-row ${rowIndex % 2 === 0 ? "is-even" : "is-odd"}${selected ? " is-selected" : ""}${expanded ? " is-expanded" : ""}`}
+                      data-if-table-row
+                      data-fastdas-table-row-id={row.id}
+                      data-opportunity-row-id={row.id}
+                      data-opportunity-row-title={title.primary}
+                      data-if-table-expanded={expanded ? "true" : "false"}
+                      data-if-table-search={row.cells.join(" ")}
+                      aria-selected={selected}
+                      tabIndex={0}
+                      onClick={() => toggleRow(row.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleRow(row.id);
+                        }
+                      }}
+                    >
+                      <td className="fg-table-select-cell" data-if-table-cell="select">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          aria-label={`Select ${title.primary}`}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={() => onSelect(row.id)}
+                        />
+                      </td>
+                      {row.cells.map((cell, index) => (
+                        <td key={`${row.id}-${columns[index]}`} data-if-table-cell={columns[index].toLowerCase().replace(/[^a-z0-9]+/g, "-")}>
+                          <TableCell value={cell} column={columns[index]} />
+                        </td>
+                      ))}
+                      <td className="fg-table-expand-cell" data-if-table-cell="row-actions">
+                        <button
+                          className="if-table-expand if-icon-btn fg-expand-btn"
+                          type="button"
+                          data-if-table-expand
+                          aria-expanded={expanded}
+                          aria-label={`${expanded ? "Collapse" : "Expand"} ${title.primary}`}
+                          title={expanded ? "Collapse embedded focus" : "Expand embedded focus"}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleRow(row.id);
+                          }}
+                        >
+                          {expanded ? "▲" : "▼"}
+                        </button>
+                      </td>
+                    </tr>
+                    {!isMobileWorkbench && expanded ? (
+                      <ExpandedRecord
+                        key={`${row.id}-expanded`}
+                        surface={surface}
+                        selectedRowId={row.id}
+                        detail={selectedDetail}
+                        onRecordAction={onRecordAction}
+                        columnSpan={columns.length + 2}
+                      />
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {isMobileWorkbench ? (
+          <MobileWorkbenchCards
+            surface={surface}
+            rows={rows}
+            selectedRowId={selectedRowId}
+            detailOpenRowId={detailOpenRowId}
+            onSelect={onSelect}
+            onOpenDetails={onOpenDetails}
+            onRecordAction={onRecordAction}
+          />
+        ) : null}
+      </div>
+
+      <nav className="if-pagination if-pagination--full fg-command-pagination" data-ui-pagination aria-label="Command Center rows pagination">
+        <div className="if-pagination__summary" aria-live="polite">Showing 1-{rows.length} of {rows.length} records</div>
+        <div className="if-pagination__controls">
+          <label className="if-pagination__label">
+            Rows
+            <select className="if-select if-pagination__select" aria-label="Command Center rows per page" value={10} onChange={() => {}}>
+              <option value={10}>10</option>
+            </select>
+          </label>
+          <div className="if-pagination__pages">
+            <button type="button" className="if-btn if-btn--sm" disabled>First</button>
+            <button type="button" className="if-btn if-btn--sm" disabled>Prev</button>
+            <span className="if-pagination__page" aria-label="Page 1 of 1">1 / 1</span>
+            <button type="button" className="if-btn if-btn--sm" disabled>Next</button>
+            <button type="button" className="if-btn if-btn--sm" disabled>Last</button>
+          </div>
+        </div>
+      </nav>
+    </section>
+  );
+}
+
 function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuickFilterId, onSelect, onOpenDetails, onPrimaryAction, onUtilityAction, onRecordAction }) {
   const columns = surface.table.columns;
   const selectedDetail = detailForSurfaceSelection(surface, selectedRowId);
@@ -1679,6 +1851,20 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   function handleRowActivate(rowId) {
     onSelect(rowId);
     if (isCommandCenter) onOpenDetails(rowId);
+  }
+
+  if (isCommandCenter) {
+    return (
+      <CommandCenterOipTable
+        surface={surface}
+        selectedRowId={selectedRowId}
+        detailOpenRowId={detailOpenRowId}
+        commandQuickFilterId={commandQuickFilterId}
+        onSelect={onSelect}
+        onOpenDetails={onOpenDetails}
+        onRecordAction={onRecordAction}
+      />
+    );
   }
 
   return (
