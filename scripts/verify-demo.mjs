@@ -65,8 +65,6 @@ for (const hook of [
   "data-fastdas-header-secondary-menu",
   "data-fastdas-header-secondary-item",
   "data-fastdas-header-utilities",
-  "data-fastdas-header-status",
-  "data-fastdas-header-actions",
   "data-fastdas-profile-menu",
   "data-fastdas-workspace-rail",
   "data-fastdas-working-set-ribbon",
@@ -131,13 +129,9 @@ for (const hook of [
 }
 
 for (const frameworkClass of [
-  "if-shell",
   "if-sidebar",
   "if-sidebar__section",
   "if-sidebar__group-header",
-  "if-topbar",
-  "if-topbar__nav",
-  "if-topbar__actions",
   "if-product-header",
   "if-product-header--sticky",
   "if-product-header--compact",
@@ -157,8 +151,6 @@ for (const frameworkClass of [
   "if-operations-page__hero",
   "if-operations-page__title",
   "if-operations-section-grid",
-  "if-main--with-sidebar",
-  "if-utility-cluster",
   "if-account-menu",
   "if-avatar",
   "if-account-surface",
@@ -291,7 +283,7 @@ assert.equal(app.includes("data-if-review-count"), true, "inline operator approv
 assert.equal(app.includes("data-if-review-ledger"), true, "inline operator approval should expose framework review ledger slots");
 assert.equal(app.includes('data-control-segmented="fastdas-operator-mode"'), true, "operator mode should use the framework segmented-control contract");
 assert.equal(app.includes("data-control-segmented-option"), true, "segmented options should be identified by framework hooks");
-assert.equal(app.includes("fg-root fg-shell"), true, "FastDAS customization should layer on top of the framework shell");
+assert.equal(app.includes("ci-opportunity-app fg-root"), true, "FastDAS customization should layer on top of the OIP operations app shell");
 
 for (const phrase of [
   "first paid step",
@@ -310,7 +302,6 @@ for (const phrase of [
   "Export bundle downloaded",
   "fastdas.demo.runtimePipeline.v1",
   "fastdas.demo.operatorSession.v1",
-  "fastdas.demo.savedView.v1",
   "Working Demo Runner",
   "Working demo lead created",
   "Demo scenario selected",
@@ -347,8 +338,6 @@ for (const handler of [
 }
 
 for (const actionHook of [
-  'data-fastdas-action="run-signal-scan"',
-  'data-fastdas-action="save-current-view"',
   'data-fastdas-action="surface-export"',
   'data-fastdas-action="guided-create-record"',
   'data-fastdas-action="guided-advance-stage"',

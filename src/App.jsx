@@ -351,7 +351,6 @@ const EMPTY_SYNTHETIC_DRAFT = {
 
 const RUNTIME_STORAGE_KEY = "fastdas.demo.runtimePipeline.v1";
 const DEMO_SESSION_STORAGE_KEY = "fastdas.demo.operatorSession.v1";
-const SAVED_VIEW_STORAGE_KEY = "fastdas.demo.savedView.v1";
 
 const PIPELINE_STATE_BY_INDEX = [
   "Signal",
@@ -1620,14 +1619,16 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   const activeCommandFilter = isCommandCenter ? commandCenterQuickFilter(commandQuickFilterId) : null;
   return (
     <section
-      className={`if-panel if-data-table if-table-shell fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
+      className={`if-panel if-data-table if-table-shell ci-contract-table-panel ci-page-band ci-page-band--table fg-panel ${isFocusedWorkbench ? "fg-panel--focused-workbench" : ""} ${isCommandCenter ? "fg-panel--command-center" : ""}`}
       data-fastdas-opportunity-grid
+      data-page-band="opportunities-table"
       {...gridSurfaceAttributes(surface.id)}
       data-fastdas-active-command-filter={isCommandCenter ? activeCommandFilter.id : undefined}
       data-if-data-table
       data-if-table-density="compact"
+      data-opportunity-table-focus
     >
-      <div className="if-panel__header fg-panel__header">
+      {!isCommandCenter ? <div className="if-panel__header fg-panel__header">
         <div>
           <h2 className="if-panel__title">{surface.title === "Command Center" ? "Top Opportunities" : surface.title}</h2>
           <p className="if-panel__subtitle">
@@ -1642,8 +1643,8 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             <Chip tone="warning">Human approval</Chip>
           </div>
         )}
-      </div>
-      <div className="if-table-command-band if-toolbar fg-command-band">
+      </div> : null}
+      {!isCommandCenter ? <div className="if-table-command-band if-toolbar fg-command-band">
         <div className="if-table-command-band__leading fg-command-band__leading">
           <label className="if-search fg-table-search">
             <Icon name="search" />
@@ -1704,14 +1705,14 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             </>
           )}
         </div>
-      </div>
+      </div> : null}
       <div
         className={isFocusedWorkbench ? `fg-focused-workbench fg-command-center-workbench ${detailsOpen ? "fg-focused-workbench--details-open fg-command-center-workbench--details-open" : ""}` : ""}
         data-fastdas-record-workbench={isFocusedWorkbench ? "true" : undefined}
         {...workbenchSurfaceAttributes(surface.id)}
       >
         <div className="if-table-wrap if-table-scroll fg-table-wrap">
-          <table className="if-table if-table--sticky if-table--public-records if-table--dense fg-table">
+          <table className="if-table if-table--sticky if-table--public-records if-table--dense ci-contract-table fg-table">
             <thead>
               <tr>{columns.map((column, index) => <th key={column} data-if-table-width={index === 1 ? "16rem" : undefined}>{column}</th>)}</tr>
             </thead>
@@ -2576,7 +2577,7 @@ function HeaderSurfaceNav({ surface, onSelect }) {
 
   return (
     <nav
-      className="if-topbar__nav if-operations-topnav ci-header-nav fg-operations-topnav"
+      className="if-operations-topnav ci-header-nav fg-operations-topnav"
       data-fastdas-header-route
       data-fastdas-active-route={surface.id}
       aria-label="FastDAS operations surfaces"
@@ -3249,17 +3250,6 @@ export default function App() {
     handleUtilityAction("Surface export downloaded", `${surface.title} export bundle downloaded with source-safe synthetic data only.`, "blue");
   }, [handleUtilityAction, operationState, pipelineOverrides, surface.id, surface.title, syntheticRecords]);
 
-  const handleSaveCurrentView = useCallback(() => {
-    window.localStorage.setItem(SAVED_VIEW_STORAGE_KEY, JSON.stringify({
-      savedAt: new Date().toISOString(),
-      activeSurfaceId: surface.id,
-      selectedRowId: selectedRows[surface.id],
-      activeCommandFilterId,
-      operationState,
-    }));
-    handleUtilityAction("View saved", `${surface.title} filters, selected record, and workflow focus were saved in this browser.`, "blue");
-  }, [activeCommandFilterId, handleUtilityAction, operationState, selectedRows, surface.id, surface.title]);
-
   const handleGuidedCreateRecord = useCallback(() => {
     const record = generatedSyntheticRecord(syntheticRecords.length + 1, operationState.scenarioMode);
     addSyntheticRecord(record, "Working demo lead created", { routeToCommand: true, workflowIndex: 1 });
@@ -3331,10 +3321,14 @@ export default function App() {
   }, [recordOperation]);
 
   return (
-    <div className="if-shell if-operations-app if-operations-app--wide fg-root fg-shell" data-theme="light" data-density="compact" data-fastdas-demo-app>
-      <main className="if-main if-main--with-sidebar fg-main">
-        <header className="if-topbar if-product-header if-product-header--sticky if-product-header--compact if-product-header--masthead fg-topbar fg-product-header" data-fastdas-shell-header>
-          <div className="if-product-header__inner if-utility-cluster fg-product-header__inner" data-fastdas-header-utilities>
+    <div
+      className="if-main if-operations-app if-operations-app--wide if-operations-app--sticky-header ci-opportunity-app fg-root"
+      data-theme="light"
+      data-density="compact"
+      data-fastdas-demo-app
+    >
+        <header className="if-product-header if-product-header--masthead if-product-header--compact if-product-header--sticky ci-sticky-header fg-product-header" data-fastdas-shell-header>
+          <div className="if-product-header__inner fg-product-header__inner" data-fastdas-header-utilities>
             <button
               type="button"
               className="if-brand if-product-header__brand fg-product-header__brand"
@@ -3349,39 +3343,18 @@ export default function App() {
               </div>
             </button>
             <HeaderSurfaceNav surface={surface} onSelect={setSurface} />
-            <div className="if-route-demo-controls fg-header-status" data-fastdas-header-status>
-              <Chip tone="blue">VA / MD / DC</Chip>
-              <Chip tone="warning">{operationState.approvalCount} approvals</Chip>
-            </div>
-            <div className="if-topbar__actions if-utility-cluster if-toolbar__group fg-header-actions" data-fastdas-header-actions>
-              <button
-                className="if-btn if-btn--secondary fg-btn"
-                type="button"
-                data-fastdas-action="save-current-view"
-                onClick={handleSaveCurrentView}
-              >
-                <Icon name="save" />Save View
-              </button>
-              <button
-                className="if-btn if-btn--primary fg-btn fg-btn--primary"
-                type="button"
-                data-fastdas-action="run-signal-scan"
-                onClick={() => handlePrimaryAction("global-signal-scan")}
-              >
-                <Icon name="refresh" />Run Signal Scan
-              </button>
-            </div>
             <FastDasProfileMenu operationState={operationState} onSurfaceSelect={setSurface} onUtilityAction={handleUtilityAction} />
           </div>
         </header>
 
         <section
-          className="if-content if-page if-operations-page if-operations-workspace if-operations-workspace--compact fg-content"
+          className="if-content if-page if-operations-workspace if-operations-workspace--compact ci-opportunity-content fg-content"
           data-if-operations-workspace
-          data-fastdas-simplified-shell
+          data-fastdas-simplified-shell={surface.id === "command-center" ? "command-center" : "route"}
+          data-visual-density="compact"
           data-if-operations-current={activeMetricSignalId}
         >
-          <div className="if-operations-page__topbar fg-page-topbar">
+          {surface.id === "command-center" ? null : <div className="if-operations-page__topbar fg-page-topbar">
             <nav className="if-breadcrumbs" aria-label="Current route">
               <span>FastDAS</span>
               <span className="if-breadcrumbs__separator">/</span>
@@ -3394,7 +3367,7 @@ export default function App() {
               <span className="if-badge if-badge--status-needs-review">Human approval</span>
               <span className="if-badge if-badge--status-on-track">{operationState.operatorMode}</span>
             </div>
-          </div>
+          </div>}
 
           {surface.id === "command-center" ? null : (
             <WorkspaceRail
@@ -3405,7 +3378,7 @@ export default function App() {
             />
           )}
 
-          <WorkingSetRibbon
+          {surface.id === "command-center" ? null : <WorkingSetRibbon
             surface={surface}
             selectedRowId={selectedRows[surface.id]}
             operationState={operationState}
@@ -3417,9 +3390,9 @@ export default function App() {
               handleUtilityAction("Working set reset", `${surface.title} returned to its default FastDAS working set.`, "blue");
             }}
             onRunScan={() => handlePrimaryAction("global-signal-scan")}
-          />
+          />}
 
-          <header className={`if-page-header if-operations-page__hero fg-page-header ${surface.id === "command-center" ? "fg-page-header--command-only" : ""} ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
+          {surface.id === "command-center" ? null : <header className={`if-page-header if-operations-page__hero fg-page-header ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
             <div className="fg-page-header__copy">
               <div className="if-page-header__eyebrow if-operations-page__eyebrow fg-eyebrow">{surface.eyebrow}</div>
               <h1 className="if-page-header__title if-operations-page__title">{surface.title}</h1>
@@ -3460,7 +3433,7 @@ export default function App() {
                 <Icon name="check" />{surface.primaryAction}
               </button>
             </div>
-          </header>
+          </header>}
 
           {surface.id === "command-center" ? null : (
             <GuidedDemoRunner
@@ -3544,15 +3517,14 @@ export default function App() {
             <CommandCenterOperationsDrawer operationState={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
           ) : null}
 
-          <SourceCards cards={surface.sourceCards} />
+          {surface.id === "command-center" ? null : <SourceCards cards={surface.sourceCards} />}
 
-          <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />
+          {surface.id === "command-center" ? null : <DataManagement management={surface.management} operationState={operationState} onSyntheticAction={handleSyntheticAction} />}
 
-          <BottomPanels surface={surface} />
+          {surface.id === "command-center" ? null : <BottomPanels surface={surface} />}
 
-          <ReleaseRail surface={surface} operationState={operationState} />
+          {surface.id === "command-center" ? null : <ReleaseRail surface={surface} operationState={operationState} />}
         </section>
-      </main>
     </div>
   );
 }

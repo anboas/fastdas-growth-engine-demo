@@ -3641,6 +3641,23 @@ button.fg-product-header__brand {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  [data-fastdas-simplified-shell] .fg-metric-grid--command-center {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric {
+    min-height: 92px;
+    align-content: center;
+  }
+
+  [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__label {
+    max-width: none;
+    font-size: 10px;
+    line-height: 1.25;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
   .fg-ops-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
