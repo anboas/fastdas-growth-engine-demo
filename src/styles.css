@@ -26,6 +26,12 @@
   --fg-shadow: 0 10px 30px rgba(8, 27, 54, 0.14);
   --fg-shadow-soft: 0 4px 12px rgba(8, 27, 54, 0.06);
   --fg-focus: #0a7d83;
+  --ci-radius-dense-card: 4px;
+  --opportunity-pipeline: #005ea2;
+  --opportunity-active-bg: #f7fbff;
+  --opportunity-hover-bg: #f8fbfe;
+  --opportunity-focus-ring: #73b3e7;
+  --opportunity-focus-shadow: rgba(0, 94, 162, 0.16);
 }
 
 * {
@@ -40,9 +46,9 @@ body,
 
 body {
   margin: 0;
-  background: #dbe7f2;
+  background: #f8fafc;
   color: var(--fg-slate-900);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: "Public Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   line-height: 1.28;
 }
 
@@ -660,14 +666,14 @@ button.fg-product-header__brand {
   min-width: 0;
   min-height: 36px;
   max-width: min(220px, 24vw);
-  border-color: rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.07);
-  color: #ffffff;
+  border-color: #dfe1e2;
+  background: #ffffff;
+  color: #1b1b1b;
 }
 
 .fg-profile-menu .if-account-menu.is-active {
-  border-color: rgba(127, 202, 210, 0.58);
-  background: rgba(10, 125, 131, 0.32);
+  border-color: #73b3e7;
+  background: #f7fbff;
 }
 
 .fg-profile-menu__surface {
@@ -856,6 +862,95 @@ button.fg-product-header__brand {
   padding: 12px 16px 18px;
 }
 
+.ci-opportunity-app {
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #1b1b1b;
+}
+
+.ci-opportunity-content {
+  padding: clamp(10px, 1.2vw, 16px) clamp(12px, 1.8vw, 32px) 28px;
+}
+
+.ci-page-band--dashboard {
+  display: grid;
+  gap: 12px;
+}
+
+.ci-page-band--table {
+  margin-top: 12px;
+}
+
+.ci-opportunity-app :where(.if-card, .ci-signal-card, .ci-contract-table-panel) {
+  border-radius: var(--ci-radius-dense-card) !important;
+}
+
+.fg-command-dashboard {
+  margin-bottom: 0;
+}
+
+.fg-command-dashboard__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+  margin: 0 0 2px 2px;
+}
+
+.fg-command-dashboard__heading .if-page-header__eyebrow {
+  font-size: 10px;
+  color: #565c65;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ci-contract-table-panel,
+.ci-contract-table-panel :where(.if-table-wrap, .ci-contract-table) {
+  min-width: 0;
+}
+
+.ci-contract-table-panel {
+  overflow: hidden;
+  border: 1px solid #dfe1e2;
+  border-left: 4px solid var(--opportunity-pipeline);
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.ci-contract-table-panel .if-table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ci-contract-table-panel .ci-contract-table {
+  table-layout: fixed;
+}
+
+.ci-contract-table-panel .ci-contract-table :where(th, td) {
+  min-width: 0;
+  vertical-align: top;
+}
+
+.ci-opportunity-app :where(.ci-contract-table-panel .ci-contract-data-row):hover {
+  background: var(--opportunity-hover-bg);
+  box-shadow: inset 3px 0 0 rgba(0, 94, 162, 0.58);
+}
+
+.ci-opportunity-app :where(.ci-contract-table-panel .ci-contract-data-row.is-selected, .ci-contract-table-panel .ci-contract-data-row.is-expanded):hover {
+  background: var(--opportunity-active-bg);
+  box-shadow: inset 3px 0 0 var(--opportunity-pipeline), 0 8px 18px rgba(15, 42, 68, 0.08);
+}
+
+.fg-command-pagination {
+  border-top: 1px solid #dfe1e2;
+  padding: 8px 10px;
+}
+
 [data-fastdas-simplified-shell] .fg-page-topbar,
 [data-fastdas-simplified-shell] .fg-working-set-ribbon,
 [data-fastdas-simplified-shell] .fg-bottom-grid,
@@ -915,35 +1010,36 @@ button.fg-product-header__brand {
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric {
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 58px;
-  gap: 6px 8px;
-  align-items: center;
-  padding: 8px;
+  grid-template-columns: 1fr;
+  min-height: 112px;
+  gap: 5px;
+  align-items: flex-start;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__top {
-  display: contents;
+  display: grid;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__icon {
-  grid-row: 1 / span 3;
-  width: 30px;
-  height: 30px;
+  width: 0;
+  height: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__label {
-  font-size: 9px;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__value {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__change {

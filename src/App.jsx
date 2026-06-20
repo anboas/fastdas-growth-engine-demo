@@ -17,9 +17,38 @@ import {
   workbenchSurfaceConfig,
 } from "./workbenchModel.js";
 
+const U = {
+  primaryDarker: "#162e51",
+  primaryDark: "#1a4480",
+  primary: "#005ea2",
+  primaryLight: "#73b3e7",
+  primaryLighter: "#d9e8f6",
+  baseDarkest: "#1b1b1b",
+  baseDarker: "#3d4551",
+  baseDark: "#565c65",
+  base: "#71767a",
+  baseLighter: "#dfe1e2",
+  baseLightest: "#f8fafc",
+  white: "#ffffff",
+  success: "#00a91c",
+  successDark: "#008817",
+  accentWarmDark: "#c05600",
+  accentCoolDarker: "#07648d",
+  error: "#d83933",
+};
+
 function Icon({ name }) {
   return <span className="if-icon-slot fg-icon" data-if-icon={name} aria-hidden="true" />;
 }
+
+const safeText = (extra = {}) => ({
+  minWidth: 0,
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  ...extra,
+});
 
 function getInitialSurfaceId() {
   const fromHash = window.location.hash.replace(/^#\/?/, "");
@@ -576,26 +605,54 @@ function appendEvent(state, { title, body, tone = "blue", workflowIndex, updates
 function MetricCard({ metric, selected = false, onSelect }) {
   const [label, value, change, meta, tone, icon] = metric;
   const signalId = signalIdForLabel(label);
+  const accent = {
+    blue: U.primary,
+    success: U.success,
+    warning: U.accentWarmDark,
+    danger: U.error,
+    purple: U.accentCoolDarker,
+    neutral: U.primaryDark,
+  }[tone] || U.primary;
   return (
     <button
       type="button"
-      className={`if-card if-metric if-operations-signal fg-card fg-metric ${selected ? "is-selected" : ""} ${toneClass(tone)}`}
+      className={`if-card if-metric if-operations-signal if-operations-signal--compact ci-signal-card fg-metric ${selected ? "is-active is-selected" : ""} ${toneClass(tone)}`}
       data-if-operations-signal={signalId}
       data-if-operations-label={label}
       data-if-operations-focus-panel={signalId}
       data-fastdas-command-filter-card={signalId}
       data-fastdas-command-filter-active={selected ? "true" : "false"}
+      data-signal-widget-card={signalId}
+      data-visual-surface="metric"
       aria-pressed={selected}
+      aria-label={`${label}: ${value}. ${change}`}
+      title={`${label}: ${value} · ${change}${meta ? ` · ${meta}` : ""}`}
       onClick={onSelect}
+      style={{
+        background: selected ? "#f7fbff" : U.white,
+        borderLeft: `4px solid ${accent}`,
+        borderTop: selected ? `1px solid ${accent}` : "1px solid transparent",
+        borderRight: selected ? `1px solid ${accent}` : "1px solid transparent",
+        borderBottom: selected ? `1px solid ${accent}` : "1px solid transparent",
+        borderRadius: 4,
+        padding: "12px 14px",
+        flex: 1,
+        minWidth: 150,
+        maxWidth: "100%",
+        overflow: "hidden",
+        boxShadow: selected ? "0 0 0 1px rgba(0,94,162,0.10), 0 2px 6px rgba(0,0,0,0.10)" : "0 1px 3px rgba(0,0,0,0.08)",
+        textAlign: "left",
+        fontFamily: "inherit",
+      }}
     >
       <div className="if-metric__top fg-metric__top">
-        <span className="if-metric__icon fg-metric__icon"><Icon name={icon} /></span>
-        <p className="if-metric__label fg-metric__label">{label}</p>
+        <span className="if-metric__icon if-icon-slot fg-metric__icon" data-if-icon={icon} aria-hidden="true" />
+        <p className="if-metric__label fg-metric__label" style={safeText({ fontSize: 10, color: U.baseDark, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 800, marginBottom: 5, lineHeight: 1.2, minHeight: 24 })}>{label}</p>
       </div>
       <div className="if-metric__main fg-metric__main">
-        <p className="if-metric__value fg-metric__value">{value}</p>
+        <p className="if-metric__value fg-metric__value" style={safeText({ fontSize: 24, fontWeight: 900, color: accent, fontFamily: "'Roboto Mono', monospace", lineHeight: 1 })}>{value}</p>
       </div>
-      <span className="if-metric__change fg-metric__change">{change}</span>
+      <span className="if-metric__change fg-metric__change" style={safeText({ fontSize: 11, color: U.baseDark, marginTop: 5 })}>{change}</span>
       <div className="if-metric__meta fg-metric__meta"><span>{meta}</span></div>
     </button>
   );
@@ -1706,6 +1763,57 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
           )}
         </div>
       </div> : null}
+      {isCommandCenter ? (
+        <div
+          data-bulk-state-toolbar
+          className="ci-opportunity-bulk-toolbar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            padding: "8px 10px",
+            borderBottom: `1px solid ${U.baseLighter}`,
+            background: detailOpenRowId ? U.primaryLighter : U.baseLightest,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 900, color: detailOpenRowId ? U.primaryDarker : U.baseDark }}>
+              {detailOpenRowId ? "1 selected" : "0 selected"}
+            </span>
+            <button
+              type="button"
+              title={`Select all ${rows.length} command-center rows matching the current filter`}
+              style={{ border: `1px solid ${U.baseLighter}`, background: U.white, color: U.primary, borderRadius: 4, padding: "5px 8px", fontSize: 11, fontWeight: 900, cursor: "pointer" }}
+              onClick={() => rows[0] && onSelect(rows[0].id)}
+            >
+              Select filtered
+            </button>
+            <button
+              type="button"
+              data-close-focus-rows
+              onClick={() => detailOpenRowId && onOpenDetails(detailOpenRowId)}
+              disabled={!detailOpenRowId}
+              title={detailOpenRowId ? "Close the embedded focus row in the datatable" : "No embedded focus row is open"}
+              style={{
+                border: `1px solid ${U.baseLighter}`,
+                background: U.white,
+                color: detailOpenRowId ? U.primary : U.base,
+                borderRadius: 4,
+                padding: "5px 8px",
+                fontSize: 11,
+                fontWeight: 900,
+                cursor: detailOpenRowId ? "pointer" : "not-allowed",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Close Focus
+            </button>
+          </div>
+          <span className="if-badge" data-fastdas-command-filter-label>{activeCommandFilter?.label}</span>
+        </div>
+      ) : null}
       <div
         className={isFocusedWorkbench ? `fg-focused-workbench fg-command-center-workbench ${detailsOpen ? "fg-focused-workbench--details-open fg-command-center-workbench--details-open" : ""}` : ""}
         data-fastdas-record-workbench={isFocusedWorkbench ? "true" : undefined}
@@ -1720,7 +1828,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
               {rows.map(row => (
                 <Fragment key={row.id}>
                   <tr
-                    className={row.id === selectedRowId ? "is-selected" : ""}
+                    className={`ci-contract-data-row${row.id === selectedRowId ? " is-selected" : ""}${row.id === selectedRowId && detailOpenRowId === row.id ? " is-expanded" : ""}`}
                     data-if-table-row
                     data-fastdas-table-row-id={row.id}
                     data-if-table-expanded={row.id === selectedRowId && detailOpenRowId === row.id ? "true" : "false"}
@@ -1772,6 +1880,32 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             </tbody>
           </table>
         </div>
+        {isCommandCenter ? (
+          <nav
+            className="if-pagination if-pagination--full fg-command-pagination"
+            data-ui-pagination
+            aria-label="Command Center rows pagination"
+          >
+            <div className="if-pagination__summary" aria-live="polite">
+              Showing 1-{rows.length} of {rows.length} records
+            </div>
+            <div className="if-pagination__controls">
+              <label className="if-pagination__label">
+                Rows
+                <select className="if-select if-pagination__select" aria-label="Command Center rows per page" value={10} onChange={() => {}}>
+                  <option value={10}>10</option>
+                </select>
+              </label>
+              <div className="if-pagination__pages">
+                <button type="button" className="if-btn if-btn--sm" disabled>First</button>
+                <button type="button" className="if-btn if-btn--sm" disabled>Prev</button>
+                <span className="if-pagination__page" aria-label="Page 1 of 1">1 / 1</span>
+                <button type="button" className="if-btn if-btn--sm" disabled>Next</button>
+                <button type="button" className="if-btn if-btn--sm" disabled>Last</button>
+              </div>
+            </div>
+          </nav>
+        ) : null}
         {isFocusedWorkbench && isMobileWorkbench ? (
           <MobileWorkbenchCards
             surface={surface}
@@ -3474,25 +3608,32 @@ export default function App() {
             </>
           ) : null}
 
-          <section
-            className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isFocusedWorkbench ? "fg-metric-grid--focused-workbench fg-metric-grid--command-center" : ""}`}
-            data-fastdas-metric-grid
-            data-if-balanced-grid
-            data-if-balanced-grid-min="168"
-          >
-            {(surface.id === "command-center" ? surface.metrics.slice(0, 4) : surface.metrics).map((metric, index) => {
-              const metricFilterId = commandCenterFilterIdForMetric(metric[0]);
-              const selected = surface.id === "command-center" ? activeCommandFilterId === metricFilterId : index === 0;
-              return (
-                <MetricCard
-                  key={metric[0]}
-                  metric={metric}
-                  selected={selected}
-                  onSelect={surface.id === "command-center" ? () => applyCommandCenterFilter(metricFilterId) : undefined}
-                />
-              );
-            })}
-          </section>
+          <div className={`if-operations-signal-section ci-page-band ci-page-band--dashboard ${surface.id === "command-center" ? "fg-command-dashboard" : ""}`} data-page-band={surface.id === "command-center" ? "command-center-dashboard" : undefined}>
+            {surface.id === "command-center" ? (
+              <div className="fg-command-dashboard__heading">
+                <div className="if-page-header__eyebrow">FastDAS Growth Summary</div>
+              </div>
+            ) : null}
+            <section
+              className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isFocusedWorkbench ? "fg-metric-grid--focused-workbench fg-metric-grid--command-center" : ""}`}
+              data-fastdas-metric-grid
+              data-if-balanced-grid
+              data-if-balanced-grid-min="168"
+            >
+              {(surface.id === "command-center" ? surface.metrics.slice(0, 4) : surface.metrics).map((metric, index) => {
+                const metricFilterId = commandCenterFilterIdForMetric(metric[0]);
+                const selected = surface.id === "command-center" ? activeCommandFilterId === metricFilterId : index === 0;
+                return (
+                  <MetricCard
+                    key={metric[0]}
+                    metric={metric}
+                    selected={selected}
+                    onSelect={surface.id === "command-center" ? () => applyCommandCenterFilter(metricFilterId) : undefined}
+                  />
+                );
+              })}
+            </section>
+          </div>
 
           <OpportunityGrid
             surface={surface}

@@ -148,6 +148,8 @@ try {
   const accountMenu = await desktop.locator(".if-product-header .if-account-menu .if-avatar").count();
   assert.equal(accountMenu, 1, "topbar identity should use framework account-menu and avatar anatomy");
   const profileTrigger = desktop.locator("[data-profile-menu-trigger]");
+  const profileBackground = await profileTrigger.evaluate(element => getComputedStyle(element).backgroundColor);
+  assert.equal(profileBackground, "rgb(255, 255, 255)", "profile trigger should match OIP's white account button");
   assert.equal(await profileTrigger.getAttribute("aria-expanded"), "false", "profile menu should start closed");
   await profileTrigger.click();
   assert.equal(await profileTrigger.getAttribute("aria-expanded"), "true", "profile menu should open from the account control");
@@ -177,6 +179,10 @@ try {
   assert.equal(retiredRecordText.includes("Synthetic Closeout Tower 1"), false, "retired generated record name should be gone from the UI");
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
   assert.equal(frameworkSignals, 4, "command center should show only four top decision cards");
+  const dashboardBand = await desktop.locator('[data-page-band="command-center-dashboard"].ci-page-band--dashboard').count();
+  assert.equal(dashboardBand, 1, "command center metric cards should sit inside an OIP dashboard page band");
+  const oipSignalCards = await desktop.locator(".if-operations-signal-grid .ci-signal-card").count();
+  assert.equal(oipSignalCards, 4, "command center cards should use OIP signal-card anatomy");
   const frameworkSignalButtons = await desktop.locator(".if-operations-signal-grid button.if-operations-signal").count();
   assert.equal(frameworkSignalButtons, 4, "command center metric cards should remain native framework signal buttons");
   const visibleSignalPanels = await desktop.locator(".if-operations-panel-shell .if-operations-panel:visible").count();
@@ -204,6 +210,14 @@ try {
   assert.equal(segmentedOptions, 0, "command center should not show the operator dock segmented controls");
   const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
   assert.ok(dataTableShells >= 1, "workspace grid should use the framework data-table shell contract");
+  const oipTablePanel = await desktop.locator("[data-fastdas-opportunity-grid].ci-contract-table-panel.ci-page-band--table").count();
+  assert.equal(oipTablePanel, 1, "command center table should use the OIP contract table panel");
+  const oipBulkToolbar = await desktop.locator("[data-fastdas-opportunity-grid] .ci-opportunity-bulk-toolbar[data-bulk-state-toolbar]").count();
+  assert.equal(oipBulkToolbar, 1, "command center table should use the OIP bulk toolbar frame");
+  const oipContractRows = await desktop.locator("[data-fastdas-opportunity-grid] .ci-contract-data-row").count();
+  assert.ok(oipContractRows >= 1, "command center table rows should use OIP contract-data row classes");
+  const oipPagination = await desktop.locator("[data-fastdas-opportunity-grid] .if-pagination[data-ui-pagination]").count();
+  assert.equal(oipPagination, 1, "command center table should expose OIP pagination frame");
   const commandCenterOrder = await desktop.evaluate(() => {
     const grid = document.querySelector("[data-fastdas-opportunity-grid]");
     const dock = document.querySelector("[data-fastdas-command-dock]");
