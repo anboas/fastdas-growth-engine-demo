@@ -2,7 +2,6 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { seedOpportunityRows as seedRecords, sidebarKpis, surfaces, workflowStages } from "./data.js";
 import {
   COMMAND_CENTER_DEFAULT_FILTER_ID,
-  COMMAND_CENTER_QUICK_FILTERS,
   commandCenterFilterIdForMetric,
   commandCenterQuickFilter,
   commandCenterRowsForFilter,
@@ -50,7 +49,7 @@ function confidenceForScore(score) {
 }
 
 function normalizeSyntheticRecord(draft, sequence) {
-  const fallbackName = `Synthetic Prospect ${sequence}`;
+  const fallbackName = `Demo Prospect ${sequence}`;
   const name = (draft.name || fallbackName).trim();
   const score = clampScore(draft.score);
   const market = (draft.market || "VA / MD / DC").trim();
@@ -78,10 +77,10 @@ function normalizeSyntheticRecord(draft, sequence) {
 
 function generatedSyntheticRecord(sequence, scenarioMode) {
   const scenarios = {
-    "Closeout Sprint": ["Synthetic Closeout Tower", "Arlington, VA", "High-rise / closeout", "Permit closeout + fire alarm activity", "Public safety radio test", "GC PM -> fire alarm partner -> owner rep", 91],
-    "Property Portfolio": ["Synthetic Portfolio Asset", "Rockville, MD", "Portfolio mixed-use", "Ownership change + multi-site map", "Portfolio risk screen", "Asset manager -> property manager", 84],
-    "Hospitality Coverage": ["Synthetic Hotel Coverage Lead", "Washington, DC", "Hotel / hospitality", "Guest coverage complaints", "Coverage benchmark", "General manager -> ownership group", 83],
-    "Maintenance Wedge": ["Synthetic Health Check Lead", "Alexandria, VA", "Commercial facility", "Existing system age + facilities signal", "System health check", "Facilities director -> property manager", 86],
+    "Closeout Sprint": ["Arlington Permit Lead", "Arlington, VA", "High-rise / closeout", "Permit closeout + fire alarm activity", "Public safety radio test", "GC PM -> fire alarm partner -> owner rep", 91],
+    "Property Portfolio": ["Rockville Portfolio Asset", "Rockville, MD", "Portfolio mixed-use", "Ownership change + multi-site map", "Portfolio risk screen", "Asset manager -> property manager", 84],
+    "Hospitality Coverage": ["DC Hotel Coverage Lead", "Washington, DC", "Hotel / hospitality", "Guest coverage complaints", "Coverage benchmark", "General manager -> ownership group", 83],
+    "Maintenance Wedge": ["Alexandria Health Check Lead", "Alexandria, VA", "Commercial facility", "Existing system age + facilities signal", "System health check", "Facilities director -> property manager", 86],
   };
   const [name, market, buildingType, signal, firstOffer, stakeholderPath, score] = scenarios[scenarioMode] || scenarios["Closeout Sprint"];
   return normalizeSyntheticRecord({
@@ -93,6 +92,20 @@ function generatedSyntheticRecord(sequence, scenarioMode) {
     stakeholderPath,
     score: String(score),
   }, sequence);
+}
+
+function isRetiredDemoRecordName(name = "") {
+  return /^Synthetic Closeout Tower\b/i.test(String(name));
+}
+
+function sanitizeRuntimeRecords(records = []) {
+  return records.filter(record => !isRetiredDemoRecordName(record?.name));
+}
+
+function sanitizePipelineOverrides(overrides = {}) {
+  return Object.fromEntries(
+    Object.entries(overrides).filter(([recordName]) => !isRetiredDemoRecordName(recordName)),
+  );
 }
 
 function applyPipelineState(record, overrides) {
@@ -356,9 +369,18 @@ const PIPELINE_STATE_BY_INDEX = [
 function readRuntimePipelineState() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(RUNTIME_STORAGE_KEY) || "{}");
+    const syntheticRecords = sanitizeRuntimeRecords(Array.isArray(parsed.syntheticRecords) ? parsed.syntheticRecords : []);
+    const pipelineOverrides = sanitizePipelineOverrides(parsed.pipelineOverrides && typeof parsed.pipelineOverrides === "object" ? parsed.pipelineOverrides : {});
+    if (syntheticRecords.length !== (Array.isArray(parsed.syntheticRecords) ? parsed.syntheticRecords.length : 0)) {
+      window.localStorage.setItem(RUNTIME_STORAGE_KEY, JSON.stringify({
+        syntheticRecords,
+        pipelineOverrides,
+        savedAt: new Date().toISOString(),
+      }));
+    }
     return {
-      syntheticRecords: Array.isArray(parsed.syntheticRecords) ? parsed.syntheticRecords : [],
-      pipelineOverrides: parsed.pipelineOverrides && typeof parsed.pipelineOverrides === "object" ? parsed.pipelineOverrides : {},
+      syntheticRecords,
+      pipelineOverrides,
     };
   } catch {
     return { syntheticRecords: [], pipelineOverrides: {} };
@@ -384,6 +406,14 @@ function defaultSelectedRows() {
 function readDemoSessionState() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(DEMO_SESSION_STORAGE_KEY) || "{}");
+    const selectedRows = parsed.selectedRows && typeof parsed.selectedRows === "object" ? { ...defaultSelectedRows(), ...parsed.selectedRows } : defaultSelectedRows();
+    const detailOpenRows = parsed.detailOpenRows && typeof parsed.detailOpenRows === "object" ? { ...defaultDetailOpenRows(), ...parsed.detailOpenRows } : defaultDetailOpenRows();
+    for (const [surfaceId, rowId] of Object.entries(selectedRows)) {
+      if (isRetiredDemoRecordName(rowId)) selectedRows[surfaceId] = surfaces.find(surface => surface.id === surfaceId)?.selected || "";
+    }
+    for (const [surfaceId, rowId] of Object.entries(detailOpenRows)) {
+      if (isRetiredDemoRecordName(rowId)) detailOpenRows[surfaceId] = "";
+    }
     return {
       operationState: parsed.operationState && typeof parsed.operationState === "object"
         ? {
@@ -392,8 +422,8 @@ function readDemoSessionState() {
             events: Array.isArray(parsed.operationState.events) ? parsed.operationState.events : INITIAL_OPERATION_STATE.events,
           }
         : INITIAL_OPERATION_STATE,
-      selectedRows: parsed.selectedRows && typeof parsed.selectedRows === "object" ? { ...defaultSelectedRows(), ...parsed.selectedRows } : defaultSelectedRows(),
-      detailOpenRows: parsed.detailOpenRows && typeof parsed.detailOpenRows === "object" ? { ...defaultDetailOpenRows(), ...parsed.detailOpenRows } : defaultDetailOpenRows(),
+      selectedRows,
+      detailOpenRows,
       activeCommandFilterId: parsed.activeCommandFilterId || COMMAND_CENTER_DEFAULT_FILTER_ID,
     };
   } catch {
@@ -750,86 +780,6 @@ function TableCell({ value, column }) {
       <strong>{primary}</strong>
       {secondary ? <small className="if-table-cell-meta">{secondary}</small> : null}
     </span>
-  );
-}
-
-function CommandCenterControlNav({ activeFilterId, selectedRowId, onFilterChange, onUtilityAction }) {
-  const activeFilter = commandCenterQuickFilter(activeFilterId);
-  return (
-    <section
-      className="if-toolbar fg-command-center-nav"
-      data-fastdas-command-center-nav
-      data-fastdas-command-center-active-filter={activeFilter.id}
-      aria-label="Command Center view controls"
-    >
-      <div className="fg-command-center-nav__tabs" role="tablist" aria-label="Command Center quick views">
-        {COMMAND_CENTER_QUICK_FILTERS.slice(0, 4).map(filter => (
-          <button
-            className={`if-btn if-btn--secondary if-btn--sm fg-command-center-nav__tab ${filter.id === activeFilter.id ? "is-active" : ""}`}
-            type="button"
-            role="tab"
-            aria-selected={filter.id === activeFilter.id}
-            data-fastdas-command-filter-tab={filter.id}
-            key={filter.id}
-            onClick={() => onFilterChange(filter.id)}
-          >
-            {filter.navLabel}
-          </button>
-        ))}
-      </div>
-      <div className="fg-command-center-nav__selects">
-        <label className="if-field fg-command-center-select">
-          <span className="if-field__label">View</span>
-          <select
-            className="if-select"
-            value={activeFilter.id}
-            data-fastdas-command-filter-select
-            onChange={(event) => onFilterChange(event.target.value)}
-          >
-            {COMMAND_CENTER_QUICK_FILTERS.map(filter => (
-              <option value={filter.id} key={filter.id}>{filter.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="if-field fg-command-center-select">
-          <span className="if-field__label">Segment</span>
-          <select
-            className="if-select"
-            defaultValue="va-md-dc"
-            data-fastdas-command-segment-select
-            onChange={(event) => onUtilityAction("Command segment changed", `${event.target.selectedOptions[0].text} is staged for the Command Center view.`, "blue")}
-          >
-            <option value="va-md-dc">VA / MD / DC</option>
-            <option value="healthcare">Healthcare-adjacent</option>
-            <option value="hospitality">Hospitality</option>
-            <option value="portfolio">Portfolio risk</option>
-          </select>
-        </label>
-        <label className="if-field fg-command-center-select">
-          <span className="if-field__label">Owner</span>
-          <select
-            className="if-select"
-            defaultValue="operator-review"
-            data-fastdas-command-owner-select
-            onChange={(event) => onUtilityAction("Command owner changed", `${event.target.selectedOptions[0].text} is staged for the Command Center view.`, "purple")}
-          >
-            <option value="operator-review">Operator review</option>
-            <option value="outreach">Outreach queue</option>
-            <option value="research">Research handoff</option>
-          </select>
-        </label>
-      </div>
-      <div className="fg-command-center-nav__status">
-        <span className="if-route-status">
-          <strong>Filter</strong>
-          <span>{activeFilter.description}</span>
-        </span>
-        <span className="if-route-status">
-          <strong>Focus</strong>
-          <span>{selectedRowId}</span>
-        </span>
-      </div>
-    </section>
   );
 }
 
@@ -1625,7 +1575,7 @@ function MobileWorkbenchCards({ surface, rows, selectedRowId, detailOpenRowId, o
                 {detailsOpen ? "Collapse" : "Details"}
               </button>
             </div>
-            {selected && !detailsOpen ? (
+            {selected && !detailsOpen && surface.id !== "command-center" ? (
               <div className="fg-mobile-record-card__focus" data-fastdas-mobile-focus-card data-fastdas-mobile-focus-card-id={row.id}>
                 <RecordFocusPanel
                   surface={surface}
@@ -1665,7 +1615,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
   const isCommandCenter = surface.id === "command-center";
   const isFocusedWorkbench = isFocusedWorkbenchSurface(surface.id);
   const workbenchConfig = workbenchSurfaceConfig(surface.id);
-  const visibleFilters = isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
+  const visibleFilters = isCommandCenter ? [] : isFocusedWorkbench ? surface.filters.slice(0, 3) : surface.filters;
   const rows = isCommandCenter ? commandCenterRowsForFilter(surface, commandQuickFilterId) : surface.table.rows;
   const activeCommandFilter = isCommandCenter ? commandCenterQuickFilter(commandQuickFilterId) : null;
   return (
@@ -1686,10 +1636,12 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
               : `${surface.table.count}. Selected records expand inline for evidence, provenance, scoring, actions, and approval gates.`}
           </p>
         </div>
-        <div className="fg-panel__header-actions">
-          <Chip tone="blue">Selected: {selectedRowId}</Chip>
-          <Chip tone="warning">Human approval</Chip>
-        </div>
+        {isCommandCenter ? null : (
+          <div className="fg-panel__header-actions">
+            <Chip tone="blue">Selected: {selectedRowId}</Chip>
+            <Chip tone="warning">Human approval</Chip>
+          </div>
+        )}
       </div>
       <div className="if-table-command-band if-toolbar fg-command-band">
         <div className="if-table-command-band__leading fg-command-band__leading">
@@ -1717,7 +1669,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
               {filter}
             </button>
           ))}
-          {workbenchConfig.viewLabel ? <span className="if-badge fg-counter">{workbenchConfig.viewLabel}</span> : null}
+          {!isCommandCenter && workbenchConfig.viewLabel ? <span className="if-badge fg-counter">{workbenchConfig.viewLabel}</span> : null}
           {activeCommandFilter ? <span className="if-badge fg-counter" data-fastdas-command-filter-label>{activeCommandFilter.label}</span> : null}
         </div>
         <div className="if-table-command-band__actions if-toolbar__group fg-command-band__actions">
@@ -1732,21 +1684,25 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
           >
             <Icon name="rotate" />Clear
           </button>
-          <button
-            className="if-btn if-btn--secondary fg-btn"
-            type="button"
-            onClick={() => onUtilityAction("Column layout saved", "Decision-view columns are locked for this walkthrough.", "blue")}
-          >
-            <Icon name="columns" />Columns
-          </button>
-          <button
-            className="if-btn if-btn--primary fg-btn fg-btn--primary"
-            type="button"
-            data-fastdas-action="grid-primary"
-            onClick={() => onPrimaryAction(surface.id)}
-          >
-            <Icon name="arrowUp" />{surface.primaryAction}
-          </button>
+          {isCommandCenter ? null : (
+            <>
+              <button
+                className="if-btn if-btn--secondary fg-btn"
+                type="button"
+                onClick={() => onUtilityAction("Column layout saved", "Decision-view columns are locked for this walkthrough.", "blue")}
+              >
+                <Icon name="columns" />Columns
+              </button>
+              <button
+                className="if-btn if-btn--primary fg-btn fg-btn--primary"
+                type="button"
+                data-fastdas-action="grid-primary"
+                onClick={() => onPrimaryAction(surface.id)}
+              >
+                <Icon name="arrowUp" />{surface.primaryAction}
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div
@@ -1826,7 +1782,7 @@ function OpportunityGrid({ surface, selectedRowId, detailOpenRowId, commandQuick
             onRecordAction={onRecordAction}
           />
         ) : null}
-        {!detailsOpen && !isMobileWorkbench ? (
+        {!detailsOpen && !isMobileWorkbench && !isCommandCenter ? (
           <RecordFocusPanel
             surface={surface}
             selectedRowId={selectedRowId}
@@ -3440,12 +3396,14 @@ export default function App() {
             </div>
           </div>
 
-          <WorkspaceRail
-            surface={surface}
-            activeSavedViewId={activeSavedViewId}
-            onSurfaceSelect={setSurface}
-            onSavedView={handleSavedView}
-          />
+          {surface.id === "command-center" ? null : (
+            <WorkspaceRail
+              surface={surface}
+              activeSavedViewId={activeSavedViewId}
+              onSurfaceSelect={setSurface}
+              onSavedView={handleSavedView}
+            />
+          )}
 
           <WorkingSetRibbon
             surface={surface}
@@ -3461,7 +3419,7 @@ export default function App() {
             onRunScan={() => handlePrimaryAction("global-signal-scan")}
           />
 
-          <header className={`if-page-header if-operations-page__hero fg-page-header ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
+          <header className={`if-page-header if-operations-page__hero fg-page-header ${surface.id === "command-center" ? "fg-page-header--command-only" : ""} ${isFocusedWorkbench ? "fg-page-header--focused-workbench fg-page-header--command-center" : ""}`} data-fastdas-page-header>
             <div className="fg-page-header__copy">
               <div className="if-page-header__eyebrow if-operations-page__eyebrow fg-eyebrow">{surface.eyebrow}</div>
               <h1 className="if-page-header__title if-operations-page__title">{surface.title}</h1>
@@ -3504,19 +3462,21 @@ export default function App() {
             </div>
           </header>
 
-          <GuidedDemoRunner
-            activeRecord={activeDemoRecord}
-            workflowIndex={activeDemoWorkflowIndex}
-            syntheticRecordCount={syntheticRecords.length}
-            scenarioMode={operationState.scenarioMode}
-            onCreateRecord={handleGuidedCreateRecord}
-            onAdvance={handleGuidedAdvance}
-            onRunWalkthrough={handleGuidedWalkthrough}
-            onScenarioSelect={handleScenarioPreset}
-            onOpenInput={() => setSurface("synthetic-data")}
-            onExport={() => handleSyntheticAction("export")}
-            onReset={() => handleSyntheticAction("reset")}
-          />
+          {surface.id === "command-center" ? null : (
+            <GuidedDemoRunner
+              activeRecord={activeDemoRecord}
+              workflowIndex={activeDemoWorkflowIndex}
+              syntheticRecordCount={syntheticRecords.length}
+              scenarioMode={operationState.scenarioMode}
+              onCreateRecord={handleGuidedCreateRecord}
+              onAdvance={handleGuidedAdvance}
+              onRunWalkthrough={handleGuidedWalkthrough}
+              onScenarioSelect={handleScenarioPreset}
+              onOpenInput={() => setSurface("synthetic-data")}
+              onExport={() => handleSyntheticAction("export")}
+              onReset={() => handleSyntheticAction("reset")}
+            />
+          )}
 
           {surface.id === "synthetic-data" ? (
             <SyntheticPipelineConsole
@@ -3541,22 +3501,13 @@ export default function App() {
             </>
           ) : null}
 
-          {surface.id === "command-center" ? (
-            <CommandCenterControlNav
-              activeFilterId={activeCommandFilterId}
-              selectedRowId={selectedRows[surface.id]}
-              onFilterChange={(filterId) => applyCommandCenterFilter(filterId)}
-              onUtilityAction={handleUtilityAction}
-            />
-          ) : null}
-
           <section
             className={`if-metric-grid if-operations-metric-grid if-operations-signal-grid if-operations-signal-grid--balanced if-balanced-grid fg-metric-grid ${isFocusedWorkbench ? "fg-metric-grid--focused-workbench fg-metric-grid--command-center" : ""}`}
             data-fastdas-metric-grid
             data-if-balanced-grid
             data-if-balanced-grid-min="168"
           >
-            {surface.metrics.map((metric, index) => {
+            {(surface.id === "command-center" ? surface.metrics.slice(0, 4) : surface.metrics).map((metric, index) => {
               const metricFilterId = commandCenterFilterIdForMetric(metric[0]);
               const selected = surface.id === "command-center" ? activeCommandFilterId === metricFilterId : index === 0;
               return (
@@ -3587,9 +3538,9 @@ export default function App() {
             onRecordAction={handleRecordAction}
           />
 
-          <OperationsSignalPanels metrics={surface.metrics} />
+          {surface.id === "command-center" ? null : <OperationsSignalPanels metrics={surface.metrics} />}
 
-          {isFocusedWorkbench ? (
+          {isFocusedWorkbench && surface.id !== "command-center" ? (
             <CommandCenterOperationsDrawer operationState={operationState} onCommandAction={handleCommandAction} onModeChange={handleModeChange} />
           ) : null}
 

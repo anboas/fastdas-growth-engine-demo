@@ -387,6 +387,9 @@ button {
 
 .fg-topbar {
   display: block;
+  position: relative;
+  z-index: 300;
+  overflow: visible;
   min-width: 0;
   margin: 0;
   padding: 10px 16px;
@@ -401,6 +404,7 @@ button {
 
 .fg-product-header__inner {
   display: flex;
+  overflow: visible;
   width: 100%;
   max-width: none;
   align-items: center;
@@ -480,10 +484,12 @@ button.fg-product-header__brand {
 
 .fg-operations-topnav .if-operations-topnav__menu {
   position: absolute;
+  z-index: 520;
   top: calc(100% + 7px);
   left: 0;
   display: grid;
   gap: 4px;
+  min-width: 280px;
   padding: 8px;
   border: 1px solid #d4e0eb;
   border-radius: 8px;
@@ -894,6 +900,10 @@ button.fg-product-header__brand {
   padding: 10px 12px;
 }
 
+[data-fastdas-simplified-shell] .fg-page-header--command-only {
+  display: none;
+}
+
 [data-fastdas-simplified-shell] .fg-page-header h1 {
   font-size: 20px;
 }
@@ -904,6 +914,7 @@ button.fg-product-header__brand {
 }
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -941,6 +952,22 @@ button.fg-product-header__brand {
 
 [data-fastdas-simplified-shell] .fg-metric-grid--command-center .fg-metric__meta {
   display: none;
+}
+
+[data-fastdas-simplified-shell] .fg-panel--command-center .fg-panel__header {
+  padding-block: 8px;
+}
+
+[data-fastdas-simplified-shell] .fg-panel--command-center .fg-command-band {
+  padding: 8px 12px;
+}
+
+[data-fastdas-simplified-shell] .fg-panel--command-center .fg-command-center-workbench {
+  grid-template-columns: 1fr;
+}
+
+[data-fastdas-simplified-shell] .fg-panel--command-center .fg-table-wrap {
+  border-right: 0;
 }
 
 .fg-page-topbar {

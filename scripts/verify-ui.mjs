@@ -84,21 +84,14 @@ try {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await desktop.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await desktop.waitForSelector("[data-fastdas-demo-app]");
-  await desktop.waitForSelector("[data-fastdas-command-center-ops-drawer]");
   await desktop.waitForSelector("[data-if-operations-workspace]");
   await desktop.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(desktop, "desktop");
 
   const shellMain = await desktop.locator(".if-main.if-main--with-sidebar").count();
   assert.equal(shellMain, 1, "app shell should use the framework main-with-sidebar contract");
-  const sidebarSections = await desktop.locator(".if-sidebar .if-sidebar__section").count();
-  assert.ok(sidebarSections >= 2, "sidebar should use framework sidebar sections");
-  const sidebarCounts = await desktop.locator(".if-sidebar .if-sidebar__count").count();
-  assert.ok(sidebarCounts >= 2, "sidebar should expose framework count slots");
-  const sidebarClaimCards = await desktop.locator(".if-sidebar .if-claim-toolbar .if-claim-summary-card").count();
-  assert.equal(sidebarClaimCards, 2, "sidebar trial model should use framework claim summary cards");
-  const sidebarAlert = await desktop.locator(".if-sidebar .if-alert.if-alert--info").count();
-  assert.equal(sidebarAlert, 1, "sidebar automation boundary should use the framework alert contract");
+  const commandWorkspaceRail = await desktop.locator("[data-fastdas-workspace-rail]").count();
+  assert.equal(commandWorkspaceRail, 0, "command center should not render duplicate workspace/saved-view chrome");
   const utilityCluster = await desktop.locator(".if-topbar__actions.if-utility-cluster").count();
   assert.equal(utilityCluster, 1, "topbar should use the framework utility cluster");
   const shellHeader = await desktop.locator("[data-fastdas-shell-header].if-topbar").count();
@@ -129,8 +122,8 @@ try {
   await desktop.keyboard.press("Escape");
   assert.equal(await desktop.locator('[data-fastdas-nav-surface="agent-operations"]').getAttribute("data-fastdas-nav-active"), "true", "sidebar nav should mirror secondary header navigation state");
   await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
-  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
-  assert.equal(await desktop.locator("[data-control-surface-nav]").getAttribute("data-fastdas-active-route"), "command-center", "sidebar nav should expose the active route");
+  await desktop.waitForFunction(() => document.querySelector("[data-active-page-title]")?.textContent?.includes("Command Center"));
+  assert.equal(await desktop.locator("[data-control-surface-nav]").count(), 0, "command center should not depend on sidebar navigation");
   assert.equal(await desktop.locator('[data-fastdas-header-surface="command-center"]').getAttribute("data-fastdas-header-surface-active"), "true", "primary header nav should expose active route state");
   const adminToggle = desktop.locator("[data-fastdas-header-admin-toggle]");
   assert.equal(await adminToggle.getAttribute("aria-expanded"), "false", "admin dropdown should start closed");
@@ -138,6 +131,14 @@ try {
   assert.equal(await adminToggle.getAttribute("aria-expanded"), "true", "admin dropdown should expose open state");
   const visibleAdminItems = await desktop.locator("[data-fastdas-header-admin-menu] .if-operations-topnav__menu-item:visible").count();
   assert.equal(visibleAdminItems, 2, "admin topnav menu should expose admin surfaces");
+  await desktop.locator('[data-fastdas-header-secondary-item="synthetic-data"]').click();
+  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Synthetic Data Management"));
+  assert.equal(await adminToggle.getAttribute("aria-expanded"), "false", "selecting an admin surface should close the admin dropdown");
+  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
+  await desktop.waitForFunction(() => document.querySelector("[data-active-page-title]")?.textContent?.includes("Command Center"));
+  assert.equal(await desktop.locator("[data-fastdas-shell-header]").textContent(), await desktop.locator("[data-fastdas-shell-header]").textContent(), "header should stay readable after admin routing");
+  assert.equal(await desktop.locator("[data-fastdas-shell-header]").textContent().then(text => text.includes("Synthetic Closeout Tower 1")), false, "retired generated record name should not appear in the header");
+  await adminToggle.click();
   await desktop.keyboard.press("Escape");
   assert.equal(await adminToggle.getAttribute("aria-expanded"), "false", "Escape should close the admin dropdown");
   const headerStatusControls = await desktop.locator("[data-fastdas-header-status].if-route-demo-controls .if-badge").count();
@@ -164,56 +165,31 @@ try {
   assert.equal(operationsPage, 1, "content should use the framework operations-page topbar and breadcrumbs");
   const operationsHero = await desktop.locator("[data-fastdas-page-header].if-operations-page__hero .if-operations-page__title").count();
   assert.equal(operationsHero, 1, "page header should use the framework operations-page hero contract");
+  const visibleCommandHero = await desktop.locator("[data-fastdas-page-header]:visible").count();
+  assert.equal(visibleCommandHero, 0, "command center should hide page hero chrome");
   const pageActions = await desktop.locator("[data-fastdas-page-actions].if-toolbar__group .if-btn").count();
   assert.equal(pageActions, 3, "page header actions should use framework toolbar grouping");
   const simplifiedShell = await desktop.locator("[data-fastdas-simplified-shell]").count();
   assert.equal(simplifiedShell, 1, "demo should use the simplified shell contract");
-  const guidedRunner = desktop.locator("[data-fastdas-guided-demo-runner]");
-  await guidedRunner.waitFor({ timeout: 5000 });
-  const guidedRunnerActions = await desktop.locator("[data-fastdas-guided-demo-runner] [data-fastdas-action]").count();
-  assert.ok(guidedRunnerActions >= 6, "working demo runner should expose create, walkthrough, advance, input, export, and reset actions");
-  await desktop.locator("[data-fastdas-stage-artifacts]").waitFor({ timeout: 5000 });
-  const scenarioPresetButtons = await desktop.locator("[data-fastdas-scenario-presets] [data-fastdas-action='select-scenario-preset']").count();
-  assert.equal(scenarioPresetButtons, 4, "working demo runner should expose the four concrete scenario presets");
-  await desktop.locator('[data-fastdas-scenario-preset="Hospitality Coverage"]').click();
-  await assertAuditContains(desktop, "Demo scenario selected", "guided scenario preset");
-  const selectedScenarioSession = await desktop.evaluate(() => JSON.parse(window.localStorage.getItem("fastdas.demo.operatorSession.v1") || "{}"));
-  assert.equal(selectedScenarioSession.operationState?.scenarioMode, "Hospitality Coverage", "scenario preset should persist into the operator session");
-  const outputBrief = await desktop.locator("[data-fastdas-output-brief]").inputValue();
-  assert.ok(outputBrief.includes("Scenario: Hospitality Coverage"), "guided runner should generate a readable output brief for the selected scenario");
-
-  const surfaceButtons = await desktop.locator("[data-control-surface-nav] button").count();
-  assert.equal(surfaceButtons, 8, "desktop nav should expose eight control surfaces");
-  const surfaceRouteButtons = await desktop.locator("[data-control-surface-nav] [data-fastdas-nav-surface]").count();
-  assert.equal(surfaceRouteButtons, 8, "desktop nav should expose route-state hooks for every surface");
-  const savedViewButtons = await desktop.locator("[data-fastdas-saved-views] [data-fastdas-saved-view]").count();
-  assert.equal(savedViewButtons, 4, "sidebar should expose four functional saved views");
-  await desktop.locator('[data-fastdas-saved-view="paid-assessment-fit"]').click();
-  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Conversion Board"));
-  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-conversion-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
-  const paidAssessmentSavedViewActive = await desktop.locator('[data-fastdas-saved-view="paid-assessment-fit"]').getAttribute("data-fastdas-saved-view-active");
-  assert.equal(paidAssessmentSavedViewActive, "true", "selected saved view should expose active state");
-  const paidAssessmentSavedViewText = await desktop.locator("[data-fastdas-conversion-focus-panel]").textContent();
-  assert.ok(paidAssessmentSavedViewText.includes("Public safety radio testing"), "saved view should select the configured conversion row");
-  await assertAuditContains(desktop, "Saved view loaded", "saved view selection");
-  await desktop.locator("[data-fastdas-header-route] .if-operations-topnav__link", { hasText: "Command Center" }).click();
-  await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Command Center"));
+  const visibleGuidedRunner = await desktop.locator("[data-fastdas-guided-demo-runner]:visible").count();
+  assert.equal(visibleGuidedRunner, 0, "command center should not show the guided runner");
+  const retiredRecordText = await desktop.locator("[data-fastdas-demo-app]").textContent();
+  assert.equal(retiredRecordText.includes("Synthetic Closeout Tower 1"), false, "retired generated record name should be gone from the UI");
   const frameworkSignals = await desktop.locator(".if-operations-signal-grid .if-operations-signal").count();
-  assert.equal(frameworkSignals, 6, "desktop metric strip should use framework operations signal cards");
+  assert.equal(frameworkSignals, 4, "command center should show only four top decision cards");
   const frameworkSignalButtons = await desktop.locator(".if-operations-signal-grid button.if-operations-signal").count();
-  assert.equal(frameworkSignalButtons, 6, "desktop metric signals should be native framework signal buttons");
+  assert.equal(frameworkSignalButtons, 4, "command center metric cards should remain native framework signal buttons");
   const visibleSignalPanels = await desktop.locator(".if-operations-panel-shell .if-operations-panel:visible").count();
-  assert.equal(visibleSignalPanels, 1, "operations workspace should show one framework drilldown panel");
+  assert.equal(visibleSignalPanels, 0, "command center should not show metric drilldown panels");
   const commandCenterNav = await desktop.locator("[data-fastdas-command-center-nav]").count();
-  assert.equal(commandCenterNav, 1, "command center should expose a compact top control nav");
+  assert.equal(commandCenterNav, 0, "command center should not show a separate filter nav");
   const commandFilterTabs = await desktop.locator("[data-fastdas-command-filter-tab]").count();
-  assert.equal(commandFilterTabs, 4, "command center should expose top quick-filter tabs");
+  assert.equal(commandFilterTabs, 0, "command center should use the cards as the filter controls");
   const commandFilterSelects = await desktop.locator("[data-fastdas-command-filter-select], [data-fastdas-command-segment-select], [data-fastdas-command-owner-select]").count();
-  assert.equal(commandFilterSelects, 3, "command center should expose view, segment, and owner dropdown controls");
+  assert.equal(commandFilterSelects, 0, "command center should not expose extra dropdown controls");
   assert.equal(await desktop.locator("[data-fastdas-opportunity-grid]").getAttribute("data-fastdas-active-command-filter"), "high-score-opportunities", "command center should start on the high-score quick filter");
-  await desktop.locator("[data-fastdas-command-filter-select]").selectOption("follow-ups-due");
+  await desktop.locator('[data-fastdas-command-filter-card="follow-ups-due"]').click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-grid]")?.getAttribute("data-fastdas-active-command-filter") === "follow-ups-due");
-  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-record-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Mosaic West Hotel");
   const followUpRows = await desktop.locator("[data-fastdas-opportunity-grid] tr[data-if-table-row]").count();
   assert.equal(followUpRows, 2, "command center view dropdown should filter the table rows");
   assert.equal(await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']").textContent(), "2", "command center filtered counter should follow quick filters");
@@ -223,20 +199,18 @@ try {
   const selectedSignal = await desktop.locator(".if-operations-signal-grid .if-operations-signal.is-selected").textContent();
   assert.ok(selectedSignal.includes("Paid Assessment"), "clicking a metric should move framework operations selection");
   assert.equal(await desktop.locator('[data-fastdas-command-filter-card="paid-assessment-fit"]').getAttribute("data-fastdas-command-filter-active"), "true", "metric cards should expose active quick-filter state");
-  const activePanelText = await desktop.locator(".if-operations-panel-shell .if-operations-panel:visible").textContent();
-  assert.ok(activePanelText.includes("Paid Assessment Fit Drilldown"), "metric click should show the matching operations panel");
   const segmentedOptions = await desktop.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
-  assert.equal(segmentedOptions, 3, "operator mode should use framework segmented-control options");
+  assert.equal(segmentedOptions, 0, "command center should not show the operator dock segmented controls");
   const dataTableShells = await desktop.locator("[data-if-data-table].if-table-shell").count();
   assert.ok(dataTableShells >= 1, "workspace grid should use the framework data-table shell contract");
   const commandCenterOrder = await desktop.evaluate(() => {
     const grid = document.querySelector("[data-fastdas-opportunity-grid]");
     const dock = document.querySelector("[data-fastdas-command-dock]");
-    return Boolean(grid && dock && (grid.compareDocumentPosition(dock) & Node.DOCUMENT_POSITION_FOLLOWING));
+    return Boolean(grid && !dock);
   });
-  assert.equal(commandCenterOrder, true, "command center should put the work queue before demo command controls");
+  assert.equal(commandCenterOrder, true, "command center should remove the demo command dock");
   const commandWorkbenchColumns = await desktop.locator("[data-fastdas-command-center-workbench]").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length);
-  assert.ok(commandWorkbenchColumns >= 2, "command center table should share the workspace with the selected-record panel on desktop");
+  assert.equal(commandWorkbenchColumns, 1, "command center table should not share space with a side focus panel");
   const commandBandAnatomy = await desktop.locator(".if-table-command-band__leading, .if-table-command-band__filters, .if-table-command-band__actions").count();
   assert.ok(commandBandAnatomy >= 3, "table command band should use framework leading/filter/action anatomy");
   const tableFilterControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").count();
@@ -245,18 +219,12 @@ try {
   assert.ok(tableStatusCounters >= 1, "opportunity grid should expose framework status counters without duplicating selected-row state");
   const expandControls = await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-expand]").count();
   assert.ok(expandControls >= 1, "opportunity grid should expose framework row expand controls");
-  const focusPanel = desktop.locator("[data-fastdas-record-focus-panel]");
-  await focusPanel.waitFor({ timeout: 5000 });
-  let focusText = await focusPanel.textContent();
-  assert.ok(focusText.includes("Capital Ridge Senior Living"), "command-center should start with the selected opportunity in the focus panel");
+  const commandFocusPanels = await desktop.locator("[data-fastdas-record-focus-panel]:visible").count();
+  assert.equal(commandFocusPanels, 0, "command center should not show a persistent selected-record side panel");
   await desktop.locator("[data-fastdas-opportunity-grid] tr[data-if-table-row]", { hasText: "HarborPoint Garage" }).click();
-  await desktop.waitForFunction(() => document.querySelector("[data-fastdas-record-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "HarborPoint Garage");
-  focusText = await focusPanel.textContent();
-  assert.ok(focusText.includes("HarborPoint Garage"), "clicking a table row should move the focus panel to that opportunity");
-  assert.ok(focusText.includes("Cellular / DAS benchmark"), "focus panel should show the selected row's first-offer detail");
   const closedFocusedDetails = await desktop.locator('[data-fastdas-expanded-record-id="HarborPoint Garage"]').count();
-  assert.equal(closedFocusedDetails, 0, "row click should focus the panel before opening full details");
-  await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+  assert.equal(closedFocusedDetails, 0, "row click should select without opening full details");
+  await desktop.locator('[data-fastdas-table-row-id="HarborPoint Garage"] [data-if-table-expand]').click();
   await desktop.waitForSelector('[data-fastdas-expanded-record-id="HarborPoint Garage"]', { timeout: 5000 });
   const tableDetails = await desktop.locator(".if-table-detail[data-if-table-detail] .if-table-detail__content").count();
   assert.ok(tableDetails >= 1, "expanded records should use framework table-detail anatomy");
@@ -290,42 +258,24 @@ try {
   const progressBars = await desktop.locator(".if-table-progress .if-table-progress__track span").count();
   assert.ok(progressBars >= 1, "score cells should use framework progress anatomy");
   const commandCards = await desktop.locator("[data-fastdas-command-card]").count();
-  assert.equal(commandCards, 4, "desktop command dock should expose four operator commands");
+  assert.equal(commandCards, 0, "command center should not show operator command dock cards");
   const frameworkStepperSteps = await desktop.locator(".if-stepper .if-stepper__step").count();
-  assert.equal(frameworkStepperSteps, 10, "workflow lifecycle should use the framework stepper contract");
+  assert.equal(frameworkStepperSteps, 0, "command center should not show workflow lifecycle chrome");
   const runtimeKpis = await desktop.locator("[data-fastdas-operational-workflow] .if-agent-runtime-kpi").count();
-  assert.ok(runtimeKpis >= 8, "operational runtime should use framework agent-runtime KPIs");
+  assert.equal(runtimeKpis, 0, "command center should not show runtime KPI chrome");
   const ledgerEvents = await desktop.locator("[data-fastdas-audit-log] .if-ledger-list--rich li").count();
-  assert.ok(ledgerEvents >= 1, "audit trail should use the framework rich ledger contract");
+  assert.equal(ledgerEvents, 0, "command center should not show the audit log chrome");
   const commandPatternCards = await desktop.locator("[data-fastdas-command-card].if-pattern-card").count();
-  assert.equal(commandPatternCards, 4, "operator commands should use framework pattern cards");
-  await desktop.locator("[data-fastdas-command-center-ops-drawer] > summary").click();
+  assert.equal(commandPatternCards, 0, "operator command cards should be removed from command center");
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-filter]").fill("HarborPoint");
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent === "1");
   await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-clear]").click();
   await desktop.waitForFunction(() => Number(document.querySelector("[data-fastdas-opportunity-grid] [data-if-table-status='filtered']")?.textContent || "0") > 1);
 
-  await desktop.locator('[data-control-segmented="fastdas-operator-mode"] [data-control-segmented-option="Customer Review"]').click();
-  await assertAuditContains(desktop, "Operator mode changed", "operator mode selector");
-  const activeMode = await desktop.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item.is-active').textContent();
-  assert.equal(activeMode.trim(), "Customer Review", "operator mode segmented control should show the selected mode");
-  await desktop.locator('[data-fastdas-action="command-export"]').click();
-  await assertAuditContains(desktop, "Command export staged", "command dock export");
-
-  const governancePanelCards = await desktop.locator("[data-fastdas-governance-panels] .if-impact-card, [data-fastdas-governance-panels] .if-ops-runbook-card, [data-fastdas-governance-panels] .if-contract-card").count();
-  assert.equal(governancePanelCards, 3, "bottom governance panels should use framework impact, runbook, and contract cards");
-  const impactChain = await desktop.locator("[data-fastdas-governance-panels] .if-impact-chain span").count();
-  assert.ok(impactChain >= 1, "bottom governance panels should expose framework impact chains");
-  const releaseRail = await desktop.locator("[data-fastdas-release-rail].if-panel.if-panel__footer [data-fastdas-footer-status] .if-route-status").count();
-  assert.equal(releaseRail, 6, "release footer should use framework panel-footer route status chips");
-  const releaseControls = await desktop.locator("[data-fastdas-release-rail].if-release-controls .if-release-summary .if-route-status").count();
-  assert.equal(releaseControls, 6, "release footer should use framework release summary status controls");
-  const releaseLanes = await desktop.locator("[data-fastdas-release-rail] .if-release-lane-grid .if-release-lane .if-release-lane__kv").count();
-  assert.equal(releaseLanes, 4, "release footer should expose framework release lanes");
-  const deliveryReadinessText = await desktop.locator("[data-fastdas-delivery-readiness]").textContent();
-  assert.ok(deliveryReadinessText.includes("Cloudflare Pages direct upload"), "release footer should expose Cloudflare delivery readiness");
-  const releaseBrand = await desktop.locator("[data-fastdas-release-rail] .fg-footer__brand").textContent();
-  assert.ok(releaseBrand.includes("FastDAS Growth Engine"), "release footer should keep a readable product identity");
+  const visibleGovernancePanelCards = await desktop.locator("[data-fastdas-governance-panels]:visible").count();
+  assert.equal(visibleGovernancePanelCards, 0, "command center should not show bottom governance panels");
+  const visibleReleaseRail = await desktop.locator("[data-fastdas-release-rail]:visible").count();
+  assert.equal(visibleReleaseRail, 0, "command center should not show release footer chrome");
 
   await desktop.locator('[data-fastdas-action="run-signal-scan"]').click();
   await assertAuditContains(desktop, "Signal scan completed", "global scan");
@@ -372,7 +322,8 @@ try {
   assert.equal(opportunityDrawerOrder, true, "opportunity workbench should put the qualification table before operational controls");
   const opportunityFocusPanel = desktop.locator("[data-fastdas-opportunity-focus-panel]");
   let opportunityFocusText = await opportunityFocusPanel.textContent();
-  assert.ok(opportunityFocusText.includes("Synthetic Closeout Tower"), "opportunity workbench should keep the scan-created demo record in focus");
+  assert.ok(opportunityFocusText.includes("Arlington Permit Lead"), "opportunity workbench should keep the scan-created demo record in focus");
+  assert.equal(opportunityFocusText.includes("Synthetic Closeout Tower"), false, "opportunity workbench should not show the retired generated record name");
   await desktop.locator("[data-fastdas-opportunity-workbench-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-opportunity-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
   opportunityFocusText = await opportunityFocusPanel.textContent();
@@ -400,7 +351,8 @@ try {
   assert.equal(evidenceDrawerOrder, true, "evidence review should put evidence packets before operational controls");
   const evidenceFocusPanel = desktop.locator("[data-fastdas-evidence-focus-panel]");
   let evidenceFocusText = await evidenceFocusPanel.textContent();
-  assert.ok(evidenceFocusText.includes("Synthetic Closeout Tower"), "evidence review should keep the scan-created demo evidence in focus");
+  assert.ok(evidenceFocusText.includes("Arlington Permit Lead"), "evidence review should keep the scan-created demo evidence in focus");
+  assert.equal(evidenceFocusText.includes("Synthetic Closeout Tower"), false, "evidence review should not show the retired generated record name");
   await desktop.locator("[data-fastdas-evidence-review-grid] tr[data-if-table-row]", { hasText: "Partner route" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-evidence-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Partner route");
   evidenceFocusText = await evidenceFocusPanel.textContent();
@@ -428,7 +380,8 @@ try {
   assert.equal(outreachDrawerOrder, true, "outreach queue should put outreach tasks before operational controls");
   const outreachFocusPanel = desktop.locator("[data-fastdas-outreach-focus-panel]");
   let outreachFocusText = await outreachFocusPanel.textContent();
-  assert.ok(outreachFocusText.includes("Synthetic Closeout Tower"), "outreach queue should keep the scan-created demo task in focus");
+  assert.ok(outreachFocusText.includes("Arlington Permit Lead"), "outreach queue should keep the scan-created demo task in focus");
+  assert.equal(outreachFocusText.includes("Synthetic Closeout Tower"), false, "outreach queue should not show the retired generated record name");
   await desktop.locator("[data-fastdas-outreach-queue-grid] tr[data-if-table-row]", { hasText: "Capital Ridge Senior Living" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-outreach-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Capital Ridge Senior Living");
   outreachFocusText = await outreachFocusPanel.textContent();
@@ -512,7 +465,8 @@ try {
   assert.equal(conversionDrawerOrder, true, "conversion board should put conversion records before operational controls");
   const conversionFocusPanel = desktop.locator("[data-fastdas-conversion-focus-panel]");
   let conversionFocusText = await conversionFocusPanel.textContent();
-  assert.ok(conversionFocusText.includes("Synthetic Closeout Tower"), "conversion board should keep the scan-created demo record in focus");
+  assert.ok(conversionFocusText.includes("Arlington Permit Lead"), "conversion board should keep the scan-created demo record in focus");
+  assert.equal(conversionFocusText.includes("Synthetic Closeout Tower"), false, "conversion board should not show the retired generated record name");
   await desktop.locator("[data-fastdas-conversion-board-grid] tr[data-if-table-row]", { hasText: "Mosaic West Hotel" }).click();
   await desktop.waitForFunction(() => document.querySelector("[data-fastdas-conversion-focus-panel]")?.getAttribute("data-fastdas-record-focus-id") === "Mosaic West Hotel");
   conversionFocusText = await conversionFocusPanel.textContent();
@@ -534,8 +488,9 @@ try {
     await desktop.waitForSelector(`[data-fastdas-workbench-surface="${surfaceId}"]`, { timeout: 5000 });
     if (surfaceId === "command-center" || surfaceId === "signal-intake" || surfaceId === "opportunity-workbench" || surfaceId === "evidence-review" || surfaceId === "outreach-queue" || surfaceId === "agent-operations" || surfaceId === "synthetic-data" || surfaceId === "conversion-board") {
       if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
-        await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
-        const openSelector = surfaceId === "signal-intake"
+        const openSelector = surfaceId === "command-center"
+          ? "[data-fastdas-opportunity-grid] [data-if-table-expand]"
+          : surfaceId === "signal-intake"
           ? '[data-fastdas-action="open-source-details"]'
           : surfaceId === "opportunity-workbench"
             ? '[data-fastdas-action="open-opportunity-details"]'
@@ -550,12 +505,15 @@ try {
                     : surfaceId === "conversion-board"
                       ? '[data-fastdas-action="open-conversion-details"]'
                       : '[data-fastdas-action="open-record-details"]';
-        await desktop.locator(openSelector).click();
+        if (surfaceId !== "command-center") await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
+        await desktop.locator(openSelector).first().click();
       }
     }
     await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
-    const h1 = await desktop.locator("h1").textContent();
-    assert.ok(h1 && h1.trim().length > 0, `${surfaceId} should render a page title`);
+    const titleText = surfaceId === "command-center"
+      ? await desktop.locator("[data-active-page-title]").textContent()
+      : await desktop.locator("h1").textContent();
+    assert.ok(titleText && titleText.trim().length > 0, `${surfaceId} should render a page title`);
     const expandedSections = await desktop.locator("[data-fastdas-expanded-record] .fg-expanded__section").count();
     assert.equal(expandedSections, 3, `${surfaceId} should render the three-part expanded detail row`);
   }
@@ -634,12 +592,16 @@ try {
 
   await desktop.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
   if (await desktop.locator("[data-fastdas-expanded-record]").count() === 0) {
-    await desktop.waitForSelector("[data-fastdas-record-focus-panel]", { timeout: 5000 });
-    await desktop.locator('[data-fastdas-action="open-record-details"]').click();
+    await desktop.locator("[data-fastdas-opportunity-grid] [data-if-table-expand]").first().click();
   }
   await desktop.waitForSelector("[data-fastdas-expanded-record]", { timeout: 5000 });
   await desktop.locator('[data-fastdas-action="approve-record"]').first().click();
-  await assertAuditContains(desktop, "Inline record approved", "inline approval");
+  await desktop.waitForFunction(() => {
+    const session = JSON.parse(window.localStorage.getItem("fastdas.demo.operatorSession.v1") || "{}");
+    return session.operationState?.events?.some(event => event.title === "Inline record approved");
+  });
+  await desktop.goto(`${BASE_URL}#/synthetic-data`, { waitUntil: "domcontentloaded" });
+  await desktop.waitForSelector('[data-fastdas-action="guided-run-walkthrough"]');
   await desktop.locator('[data-fastdas-action="guided-run-walkthrough"]').click();
   await desktop.waitForFunction(() => document.querySelector("h1")?.textContent?.includes("Conversion Board"));
   await assertAuditContains(desktop, "Guided walkthrough completed", "guided full walkthrough");
@@ -653,15 +615,18 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 920 }, isMobile: true });
   await mobile.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
   await mobile.waitForSelector("[data-fastdas-demo-app]");
-  await mobile.waitForSelector("[data-fastdas-command-center-ops-drawer]");
   await mobile.waitForSelector("[data-if-operations-workspace]");
   await mobile.waitForSelector("[data-fg-icon-rendered]:visible");
   await assertNoPageOverflow(mobile, "mobile");
-  const mobileWorkingSetRoute = await mobile.locator("[data-fastdas-working-set-ribbon] .if-route-status").count();
-  assert.ok(mobileWorkingSetRoute >= 4, "mobile should keep route context in the OIP-style working-set ribbon");
+  const mobileVisibleRunner = await mobile.locator("[data-fastdas-guided-demo-runner]:visible").count();
+  assert.equal(mobileVisibleRunner, 0, "mobile command center should not show the guided runner");
+  const mobileVisibleWorkingSet = await mobile.locator("[data-fastdas-working-set-ribbon]:visible").count();
+  assert.equal(mobileVisibleWorkingSet, 0, "mobile command center should not show the working-set ribbon");
   const mobileWorkspaceRailVisible = await mobile.locator("[data-fastdas-workspace-rail]:visible").count();
   assert.equal(mobileWorkspaceRailVisible, 0, "mobile should not render the desktop workspace rail above the page");
-  const mobileWorkspaceRailHeight = await mobile.locator("[data-fastdas-workspace-rail]").evaluate((element) => element.getBoundingClientRect().height);
+  const mobileWorkspaceRailHeight = await mobile.locator("[data-fastdas-workspace-rail]").count() === 0
+    ? 0
+    : await mobile.locator("[data-fastdas-workspace-rail]").evaluate((element) => element.getBoundingClientRect().height);
   assert.equal(mobileWorkspaceRailHeight, 0, "hidden mobile workspace rail should not consume viewport height");
   const mobileTopnavLinks = await mobile.locator("[data-fastdas-header-route] .if-operations-topnav__link").count();
   assert.equal(mobileTopnavLinks, 3, "mobile header should keep primary framework operations topnav links");
@@ -685,42 +650,16 @@ try {
   const mobilePageMeta = await mobile.locator("[data-fastdas-page-meta] .if-route-status").count();
   assert.equal(mobilePageMeta, 3, "mobile page header should keep route-status metadata");
   const mobileSegmentedOptions = await mobile.locator('[data-control-segmented="fastdas-operator-mode"] .if-segmented-control__item').count();
-  assert.equal(mobileSegmentedOptions, 3, "mobile operator dock should preserve framework segmented controls");
+  assert.equal(mobileSegmentedOptions, 0, "mobile command center should not show operator dock controls");
   const mobileCommandCards = await mobile.locator("[data-fastdas-command-card]").count();
-  assert.equal(mobileCommandCards, 4, "mobile command dock should keep four operator commands");
+  assert.equal(mobileCommandCards, 0, "mobile command center should not show command dock cards");
   const mobileTableVisible = await mobile.locator("[data-fastdas-command-center-workbench] > .fg-table-wrap:visible").count();
   assert.equal(mobileTableVisible, 0, "mobile focused workbench should use OIP-style cards instead of the desktop table wrapper");
   const mobileRecordCards = await mobile.locator("[data-fastdas-mobile-record-card]").count();
   assert.equal(mobileRecordCards, 4, "mobile command center should render filtered records as compact cards");
   await mobile.locator('[data-fastdas-mobile-record-card-id="HarborPoint Garage"] [data-fastdas-mobile-record-card-button]').click();
-  await mobile.waitForSelector('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]');
   const mobileFocusPanels = await mobile.locator("[data-fastdas-record-focus-panel]").count();
-  assert.equal(mobileFocusPanels, 1, "mobile should render one selected-record focus panel inside the selected card");
-  const inlineFocusText = await mobile.locator('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"] [data-fastdas-record-focus-panel]').textContent();
-  assert.ok(inlineFocusText.includes("HarborPoint Garage"), "mobile card focus panel should use the clicked record");
-  const mobileInlinePlacement = await mobile.evaluate(() => {
-    const selectedCard = document.querySelector('[data-fastdas-mobile-record-card-id="HarborPoint Garage"]');
-    const selectedSummary = selectedCard?.querySelector("[data-fastdas-mobile-record-card-button]");
-    const focusCard = document.querySelector('[data-fastdas-mobile-focus-card-id="HarborPoint Garage"]');
-    const nextCard = document.querySelector('[data-fastdas-mobile-record-card-id="Arlington Medical Pavilion"]');
-    const selectedBox = selectedSummary.getBoundingClientRect();
-    const focusBox = focusCard.getBoundingClientRect();
-    const nextBox = nextCard.getBoundingClientRect();
-    return {
-      selectedBottom: selectedBox.bottom,
-      focusTop: focusBox.top,
-      focusBottom: focusBox.bottom,
-      nextTop: nextBox.top,
-    };
-  });
-  assert.ok(
-    mobileInlinePlacement.focusTop >= mobileInlinePlacement.selectedBottom - 2,
-    "mobile selected focus panel should start inside the clicked card immediately after the card summary",
-  );
-  assert.ok(
-    mobileInlinePlacement.focusBottom <= mobileInlinePlacement.nextTop + 2,
-    "mobile selected focus panel should appear before the next record card",
-  );
+  assert.equal(mobileFocusPanels, 0, "mobile command center should not render selected-record focus panels");
   await mobile.locator('[data-fastdas-mobile-open-details="HarborPoint Garage"]').click();
   await mobile.waitForSelector('[data-fastdas-mobile-expanded-card-id="HarborPoint Garage"] [data-fastdas-expanded-record-id="HarborPoint Garage"]');
   const mobileExpandedText = await mobile.locator('[data-fastdas-mobile-expanded-card-id="HarborPoint Garage"] [data-fastdas-expanded-record]').textContent();
