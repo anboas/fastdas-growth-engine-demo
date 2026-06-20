@@ -3655,8 +3655,21 @@ button.fg-product-header__brand {
     grid-column: 1 / -1;
     grid-row: 2;
     width: 100%;
-    overflow-x: auto;
+    overflow: visible;
+    flex-wrap: wrap;
     padding-bottom: 2px;
+  }
+
+  .ci-header-nav .if-operations-topnav__menu {
+    position: fixed;
+    z-index: 1000;
+    top: var(--fastdas-nav-menu-top, 90px);
+    right: 12px;
+    left: 12px;
+    width: auto;
+    min-width: 0;
+    max-height: calc(100dvh - 106px);
+    overflow-y: auto;
   }
 
   .fg-header-status,

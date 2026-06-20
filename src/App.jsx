@@ -2644,6 +2644,7 @@ function HeaderSurfaceNav({ surface, onSelect }) {
   const [executionOpen, setExecutionOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [menuTop, setMenuTop] = useState(90);
   const executionRef = useRef(null);
   const adminRef = useRef(null);
   const mobileMoreRef = useRef(null);
@@ -2687,6 +2688,11 @@ function HeaderSurfaceNav({ surface, onSelect }) {
     onSelect(id);
   }
 
+  function updateMenuPosition(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMenuTop(Math.ceil(rect.bottom + 7));
+  }
+
   function renderMenuItem(item, group) {
     return (
       <button
@@ -2715,6 +2721,7 @@ function HeaderSurfaceNav({ surface, onSelect }) {
       data-fastdas-header-route
       data-fastdas-active-route={surface.id}
       aria-label="FastDAS operations surfaces"
+      style={{ "--fastdas-nav-menu-top": `${menuTop}px` }}
     >
       {primarySurfaces.map(item => (
         <button
@@ -2740,7 +2747,8 @@ function HeaderSurfaceNav({ surface, onSelect }) {
           data-fastdas-header-execution-toggle
           data-nav-group-trigger="execution"
           data-nav-group-active-child={executionActive ? surface.id : undefined}
-          onClick={() => {
+          onClick={(event) => {
+            updateMenuPosition(event);
             setAdminOpen(false);
             setMobileMoreOpen(false);
             setExecutionOpen(open => !open);
@@ -2767,7 +2775,8 @@ function HeaderSurfaceNav({ surface, onSelect }) {
           data-fastdas-header-admin-toggle
           data-nav-group-trigger="platform-admin"
           data-nav-group-active-child={adminActive ? surface.id : undefined}
-          onClick={() => {
+          onClick={(event) => {
+            updateMenuPosition(event);
             setExecutionOpen(false);
             setMobileMoreOpen(false);
             setAdminOpen(open => !open);
@@ -2792,7 +2801,8 @@ function HeaderSurfaceNav({ surface, onSelect }) {
           aria-expanded={mobileMoreOpen}
           aria-controls="fastdas-mobile-more-menu"
           data-mobile-more-menu-button
-          onClick={() => {
+          onClick={(event) => {
+            updateMenuPosition(event);
             setExecutionOpen(false);
             setAdminOpen(false);
             setMobileMoreOpen(open => !open);

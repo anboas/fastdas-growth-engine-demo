@@ -80,6 +80,45 @@ async function assertAuditContains(page, text, label) {
   assert.ok(auditText.includes(text), `${label} should record ${text} in the audit log`);
 }
 
+async function assertMenuSurfaceUsable(page, menuSelector, label) {
+  const result = await page.locator(menuSelector).evaluate((menu) => {
+    const menuRect = menu.getBoundingClientRect();
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const items = [...menu.querySelectorAll(".if-operations-topnav__menu-item")]
+      .filter((item) => item.getClientRects().length > 0);
+    const badHits = items.map((item) => {
+      const rect = item.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      return item.contains(hit) || hit === item
+        ? null
+        : {
+            text: item.textContent.trim().slice(0, 80),
+            hitText: hit?.textContent?.trim()?.slice(0, 80) || null,
+          };
+    }).filter(Boolean);
+    return {
+      menuRect: {
+        left: menuRect.left,
+        right: menuRect.right,
+        top: menuRect.top,
+        bottom: menuRect.bottom,
+      },
+      viewport,
+      itemCount: items.length,
+      badHits,
+    };
+  });
+
+  assert.ok(result.itemCount > 0, `${label} should expose menu items`);
+  assert.ok(
+    result.menuRect.left >= -1 && result.menuRect.right <= result.viewport.width + 1,
+    `${label} menu should stay inside the viewport: ${JSON.stringify(result.menuRect)} in ${JSON.stringify(result.viewport)}`,
+  );
+  assert.deepEqual(result.badHits, [], `${label} menu items should receive pointer hits at their centers`);
+}
+
 try {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await desktop.goto(BASE_URL, { waitUntil: "domcontentloaded" });
@@ -145,6 +184,21 @@ try {
   assert.equal(headerStatusControls, 0, "command header should not render status chips");
   const headerActionButtons = await desktop.locator("[data-fastdas-header-actions].if-toolbar__group .if-btn").count();
   assert.equal(headerActionButtons, 0, "command header should not render duplicate action buttons");
+
+  const tablet = await browser.newPage({ viewport: { width: 900, height: 850 } });
+  await tablet.goto(`${BASE_URL}#/command-center`, { waitUntil: "domcontentloaded" });
+  await tablet.waitForSelector("[data-fastdas-demo-app]");
+  await tablet.waitForSelector("[data-fg-icon-rendered]:visible");
+  await assertNoPageOverflow(tablet, "tablet");
+  await tablet.locator("[data-fastdas-header-execution-toggle]").click();
+  await tablet.waitForSelector("[data-fastdas-header-execution-menu]");
+  await assertMenuSurfaceUsable(tablet, "[data-fastdas-header-execution-menu]", "tablet execution dropdown");
+  await tablet.keyboard.press("Escape");
+  await tablet.locator("[data-fastdas-header-admin-toggle]").click();
+  await tablet.waitForSelector("[data-fastdas-header-admin-menu]");
+  await assertMenuSurfaceUsable(tablet, "[data-fastdas-header-admin-menu]", "tablet admin dropdown");
+  await tablet.close();
+
   const accountMenu = await desktop.locator(".if-product-header .if-account-menu .if-avatar").count();
   assert.equal(accountMenu, 1, "topbar identity should use framework account-menu and avatar anatomy");
   const profileTrigger = desktop.locator("[data-profile-menu-trigger]");
@@ -643,6 +697,7 @@ try {
   assert.equal(await mobileMore.getAttribute("aria-expanded"), "true", "mobile More menu should open secondary route groups");
   const mobileMoreItems = await mobile.locator("[data-mobile-more-menu] .if-operations-topnav__menu-item:visible").count();
   assert.equal(mobileMoreItems, 8, "mobile More menu should expose all route rows");
+  await assertMenuSurfaceUsable(mobile, "[data-mobile-more-menu]", "mobile More dropdown");
   await mobile.keyboard.press("Escape");
   assert.equal(await mobileMore.getAttribute("aria-expanded"), "false", "Escape should close mobile More menu");
   const mobileHeaderActions = await mobile.locator("[data-fastdas-header-actions] .if-btn:visible").count();
