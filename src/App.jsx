@@ -94,7 +94,7 @@ function FastDasProfileMenu() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="workspace-profile-menu"
-        title="Active profile: Adam Boas"
+        title="Profile"
         onClick={() => setOpen(value => !value)}
         style={{
           maxWidth: 220,
@@ -105,10 +105,10 @@ function FastDasProfileMenu() {
         }}
       >
         <span className="if-avatar if-profile-avatar" data-profile-avatar aria-hidden="true" style={{ width: 28, height: 28, fontSize: 11 }}>
-          AB
+          FD
         </span>
         <span className="if-account-menu__name if-desktop-only" data-profile-menu-name>
-          Adam Boas
+          Profile
         </span>
         <span className="if-icon-slot if-account-menu__chevron" data-if-icon="chevronDown" aria-hidden="true"></span>
       </button>
@@ -469,12 +469,12 @@ export default function App() {
       data-fastdas-baseline-app
     >
       <Header />
-      <main className="if-content if-page if-operations-workspace if-operations-workspace--compact ci-opportunity-content fg-content fg-baseline-content" data-if-operations-workspace>
+      <div className="if-content if-page if-operations-workspace if-operations-workspace--compact ci-opportunity-content fg-baseline-content" data-if-operations-workspace>
         <section className="fg-baseline-canvas" data-fastdas-baseline-canvas aria-label="Baseline canvas">
           <Icon name="document" />
         </section>
-      </main>
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -119,6 +119,31 @@ async function assertBaselineOnly(page, label) {
   );
   const footerRelease = await page.locator("[data-footer-release] span").evaluateAll(nodes => nodes.map(node => node.textContent.trim()));
   assert.deepEqual(footerRelease, ["Version v0.1.0", "control-surface-ui", "Browser-local"], `${label} footer release metadata should match OIP`);
+  const shellGeometry = await page.evaluate(() => {
+    const content = document.querySelector("[data-if-operations-workspace]");
+    const footer = document.querySelector("[data-opportunity-footer]");
+    const contentRect = content?.getBoundingClientRect();
+    const footerRect = footer?.getBoundingClientRect();
+    const contentStyle = content ? getComputedStyle(content) : null;
+    return {
+      footerInsideContent: Boolean(content && footer && footer.parentElement === content),
+      contentDisplay: contentStyle?.display || "",
+      contentPaddingLeft: contentStyle?.paddingLeft || "",
+      contentPaddingRight: contentStyle?.paddingRight || "",
+      contentLeft: contentRect?.left || 0,
+      contentRight: contentRect?.right || 0,
+      footerLeft: footerRect?.left || 0,
+      footerRight: footerRect?.right || 0,
+    };
+  });
+  assert.equal(shellGeometry.footerInsideContent, true, `${label} footer should sit inside the OIP workspace content container: ${JSON.stringify(shellGeometry)}`);
+  assert.equal(shellGeometry.contentDisplay, "grid", `${label} workspace content should keep OIP grid layout: ${JSON.stringify(shellGeometry)}`);
+  assert.ok(
+    shellGeometry.footerLeft > shellGeometry.contentLeft && shellGeometry.footerRight < shellGeometry.contentRight,
+    `${label} footer should inherit OIP content padding instead of spanning the app edge: ${JSON.stringify(shellGeometry)}`,
+  );
+  assert.notEqual(shellGeometry.contentPaddingLeft, "0px", `${label} workspace should keep OIP horizontal padding: ${JSON.stringify(shellGeometry)}`);
+  assert.notEqual(shellGeometry.contentPaddingRight, "0px", `${label} workspace should keep OIP horizontal padding: ${JSON.stringify(shellGeometry)}`);
   for (const selector of REMOVED_SURFACES) {
     assert.equal(await page.locator(selector).count(), 0, `${label} should not render removed surface ${selector}`);
   }

@@ -864,7 +864,7 @@ button.fg-product-header__brand {
 
 .ci-opportunity-app {
   min-height: 100vh;
-  background: #f8fafc;
+  background: #f0f0f0;
   color: #1b1b1b;
 }
 
@@ -890,6 +890,12 @@ button.fg-product-header__brand {
 .ci-sticky-header .if-product-header__brand {
   flex: 0 0 auto;
   min-width: 0;
+}
+
+@media (min-width: 901px) {
+  .fg-baseline-root .ci-sticky-header .if-product-header__brand {
+    flex-basis: 284px;
+  }
 }
 
 .ci-sticky-header .if-brand__mark {
@@ -1304,7 +1310,7 @@ button.fg-product-header__brand {
 
 .fg-baseline-root {
   min-height: 100dvh;
-  background: #f8fafc;
+  background: #f0f0f0;
 }
 
 .fg-baseline-root .fg-product-header {
@@ -1316,10 +1322,8 @@ button.fg-product-header__brand {
 }
 
 .fg-baseline-content {
-  flex: 1 1 auto;
-  min-height: calc(100dvh - 190px);
-  padding: clamp(14px, 1.8vw, 28px);
-  background: #f8fafc;
+  min-height: calc(100dvh - 58px);
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .fg-baseline-canvas {
